@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>휴대폰에서 원격 엔지니어링 작업 완벽하게 다루기 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">휴대폰에서 원격 엔지니어링 작업 완벽하게 다루기</h1>
+    <h1 class="lang-en" hidden lang="en">Mastering remote engineering work from your phone</h1>
+    
+    <p class="art-sum lang-ko">ChatGPT 모바일 앱의 Remote를 사용하여 엔지니어링 작업을 시작하고, 진행 방향을 조정하고, 검토하고, 정리합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">Use Remote in the ChatGPT mobile app to start, steer, review, and organize engineering work.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 6월 23일</dd></div>
+      <div><dt>저자</dt><dd>Thomas Ricouard</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/mastering-codex-remote-for-engineering">https://developers.openai.com/blog/mastering-codex-remote-for-engineering</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>ChatGPT 모바일 앱의 Remote는 과소평가되기 쉽습니다.</p>
+<p>얼핏 보면 휴대폰에서 코딩 채팅의 진행 상황을 확인하는 기능처럼 보입니다. 그것도 유용하지만, 더 큰 핵심을 놓친 시각입니다. Remote의 진짜 힘은 iPhone을 작은 터미널처럼 쓰려고 하지 않으면서도, 개발 머신에서 실행 중인 작업을 시작하고, 지시하고, 검토하고, 정리할 수 있다는 점에 있습니다.</p>
+<p>지난 두 달 동안 저희는 이 흐름에 놀라울 만큼 많은 기능을 더했습니다. 원격 호스트 연결, 워크트리(worktree), 목표(goal), 사이드 채팅(side chat), 인라인 코드 리뷰, 대기 및 조정 프롬프트, 첨부 파일, 스킬과 플러그인, 보관된 채팅, 보안 제어, 그리고 앱을 실무에 쓸 만하게 만드는 수많은 세부 개선이 포함됩니다.</p>
+<p>이 글은 모든 신규 파워 유저에게 나눠 주고 싶었던 현장 가이드입니다.</p>
+<p><img src="https://developers.openai.com/images/blog/mastering-codex-remote-for-engineering.jpg" alt="Remote project picker in the ChatGPT mobile app"></p>
+<h2>올바른 사고 모델: 휴대폰은 컨트롤 플레인(control plane)</h2>
+<p>코드는 여전히 있어야 할 곳에서 실행됩니다. 바로 Mac, Windows 머신, devbox 또는 연결된 다른 호스트입니다. ChatGPT 모바일 앱에서 Remote는 그 작업을 제어하기 위한 네이티브 인터페이스를 제공합니다.</p>
+<p>이 구분은 중요합니다. 작은 화면에서 터미널의 모든 기능을 재현하는 것이 목표가 아닙니다. 어디서든 에이전트의 막힌 부분을 풀어 주는 판단을 쉽게 내릴 수 있게 하는 것이 목표입니다.</p>
+<ul>
+<li>어떤 저장소와 워크스페이스를 사용해야 합니까?</li>
+<li>현재 브랜치에서 실행해야 합니까, 새 워크트리에서 실행해야 합니까?</li>
+<li>다음 메시지는 기다려야 합니까, 아니면 진행 중인 턴의 방향을 바꿔야 합니까?</li>
+<li>이 명령을 승인해도 안전합니까?</li>
+<li>무엇이 바뀌었고, 그 변경에 동의합니까?</li>
+<li>이 작업은 지속되는 목표로 만들어야 합니까, 별도 채팅으로 분리해야 합니까, 아니면 간단한 사이드 질문으로 처리해야 합니까?</li>
+</ul>
+<p>앱을 이런 방식으로 사용하기 시작하면 원격 데스크톱 소프트웨어처럼 느껴지지 않고, 엔지니어링 컨트롤 플레인처럼 느껴지기 시작합니다.</p>
+<h2>1. 올바른 경계 설정으로 채팅 시작하기</h2>
+<p>좋은 에이전트 작업은 범위가 정확히 설정된 환경에서 시작됩니다. Remote에서는 첫 프롬프트를 보내기 전에 연결된 호스트와 워크스페이스를 선택할 수 있습니다. 새 채팅에서는 브랜치를 고르고, 별도의 워크트리를 만들고, 그에 연결된 환경 설정(setup)을 실행할 수도 있습니다.</p>
+<img src="https://developers.openai.com/images/blog/mastering-codex-remote-worktree-branch.jpg" alt="Remote controls for choosing a host, repository, worktree, and environment">
+<p>덕분에 다음과 같은 유용한 패턴이 가능해집니다.</p>
+<ul>
+<li>빠른 조사에는 현재 체크아웃을 사용합니다.</li>
+<li>격리해 두어야 하는 변경에는 새 워크트리를 만듭니다.</li>
+<li>나중에 Git 상태를 고치지 않도록 의도한 기준 브랜치에서 시작합니다.</li>
+<li>Codex에 빌드나 테스트를 요청하기 전에 환경 설정을 먼저 실행합니다.</li>
+</ul>
+<p>이것은 파워 유저에게 가장 중요한 습관 중 하나입니다. 올바른 실행 컨텍스트를 고르는 데 10초를 쓰면, 나중에 정리하는 데 드는 10분을 아낄 수 있습니다.</p>
+<p>컴포저(composer)에는 일반 텍스트보다 더 많은 컨텍스트를 담을 수 있습니다. 파일, 사진, 또는 방금 촬영한 카메라 이미지를 첨부할 수 있습니다. 스킬과 플러그인은 인라인으로 표시되므로, 프롬프트가 의도한 기능을 호출하고 있는지 훨씬 쉽게 확인할 수 있습니다.</p>
+<img src="https://developers.openai.com/images/blog/mastering-codex-remote-skills-plugins.jpg" alt="Remote composer with multiple skills and plugins added inline">
+<p>제 규칙은 간단합니다. 스크린샷, 파일, 이름이 있는 스킬로 모호함을 없앨 수 있다면, 첫 턴 전에 첨부하거나 언급하십시오.</p>
+<h2>2. Queue와 Steer의 차이 이해하기</h2>
+<p>Remote에서 효과가 크지만 가장 눈에 띄지 않는 설정은 아마 이것일 것입니다.</p>
+<p>Codex가 이미 작업 중일 때, 후속 메시지는 두 가지 중 하나로 동작할 수 있습니다.</p>
+<ul>
+<li><strong>Queue</strong>는 현재 응답이 끝날 때까지 기다린 뒤, 프롬프트를 다음 턴으로 전송합니다.</li>
+<li><strong>Steer</strong>는 이미 진행 중인 작업에 지침을 주입합니다.</li>
+</ul>
+<p>Queue가 안전한 기본값입니다. 두 번째 작업, 추가 테스트 요청, 또는 현재 작업이 끝난 뒤에 해야 하는 모든 일에 사용하십시오.</p>
+<p>Steer는 잘못된 방향으로 계속 진행할수록 비용이 커지는 상황에서 방향을 바로잡기 위한 것입니다.</p>
+<blockquote>
+<p>수정은 모바일 패키지 안에서만 하십시오. 공유 렌더러는 리팩터링하지 마십시오.</p>
+</blockquote>
+<blockquote>
+<p>재현은 재연결 이후에만 발생합니다. 라이브 경로가 아니라 재개된 경로를 테스트하십시오.</p>
+</blockquote>
+<blockquote>
+<p>UI 조사는 중단하십시오. 재개 과정에서 서버가 해당 항목을 제거했는지 확인하십시오.</p>
+</blockquote>
+<p>이렇게 하면 휴대폰은 단순한 상태 화면 이상의 도구가 됩니다. 실행 중인 작업에 판단이 필요한 바로 그 순간에 개입할 수 있습니다.</p>
+<p>기본 후속 동작은 설정에서 선택할 수 있습니다. 저는 Queue를 기본값으로 두고 Steer는 의도적으로만 사용합니다. 턴 도중에 실수로 방향을 바꾸면 보통 기다리는 것보다 비용이 더 큽니다.</p>
+<h2>3. 사이드 채팅(side chat)을 생각의 가지로 활용하기</h2>
+<p>오래 이어지는 코딩 채팅에는 가치 있는 컨텍스트가 쌓입니다. 사이드 질문이 생길 때마다 그 채팅을 끊으면 메인 대화 기록이 어수선해지고, 에이전트가 목표에서 벗어날 수도 있습니다.</p>
+<p>사이드 채팅은 바로 이 문제를 해결합니다.</p>
+<p><code>/side</code>를 사용하면 현재 채팅과 연결된 가벼운 대화를 열 수 있습니다. <code>/side &lt;prompt&gt;</code>를 사용하면 질문이 미리 입력된 상태로 대화를 열 수 있습니다. 더 좋은 방법은 대화 기록에서 텍스트를 선택하고 <strong>Ask in side chat</strong>을 고르는 것입니다. 선택한 구절이 새 대화의 시작 컨텍스트가 됩니다.</p>
+<img src="https://developers.openai.com/images/blog/mastering-codex-remote-side-chat.jpg" alt="Selected transcript text with the Ask in side chat action">
+<p>저는 사이드 채팅을 다음과 같은 질문에 사용합니다.</p>
+<ul>
+<li>Codex는 왜 이 아키텍처를 선택했습니까?</li>
+<li>이 오류는 실제로 무엇을 의미합니까?</li>
+<li>이 동작은 데스크톱 앱과 일치합니까?</li>
+<li>이 구현 세부 사항을 릴리스 노트 형식으로 정리해 주십시오.</li>
+<li>이 명령을 승인하기 전에 무엇을 확인해야 합니까?</li>
+</ul>
+<p>이 구분은 유용합니다. 메인 채팅은 작업을 담당하고, 사이드 채팅은 그 작업을 이해하도록 돕습니다.</p>
+<h2>4. 경로에는 Plan, 결과에는 Goal 사용하기</h2>
+<p>Plan 모드와 목표(goal)는 서로 다른 문제를 해결합니다.</p>
+<p>Plan 모드는 코드를 변경하기 전에 Codex가 구현 경로를 먼저 제안하도록 요청합니다. 작업이 구체적이지 않거나, 위험하거나, 여러 시스템에 영향을 줄 가능성이 높을 때 유용합니다.</p>
+<p>목표(goal)는 지속됩니다. 목표는 Codex가 여러 턴에 걸쳐 어떤 결과를 계속 추구해야 하는지 알려 줍니다. 모바일에서는 <code>/goal</code>로 해당 목표를 만들고 관리할 수 있으며, 작업이 이어지는 동안 진행 상황도 계속 확인할 수 있습니다.</p>
+<p>실용적인 패턴은 다음과 같습니다.</p>
+<ol>
+<li>위험한 변경이라면 Plan 모드로 시작합니다.</li>
+<li>제안된 범위와 경계를 검토합니다.</li>
+<li>작업에 여러 번의 반복이 필요하다면, 승인한 결과를 목표로 전환합니다.</li>
+<li>목표를 매번 다시 설명하지 않아도 Codex가 구현, 테스트, 리뷰 피드백 반영, 정리 작업까지 계속 이어서 진행하도록 합니다.</li>
+</ol>
+<p>계획은 "어떻게 접근해야 하는가?"에 답합니다. 목표는 "작업을 끝내기 전에 무엇이 충족되어야 하는가?"에 답합니다.</p>
+<h2>5. 대화를 떠나지 않고 코드 리뷰하기</h2>
+<p>리뷰 루프는 Remote가 단순히 편리한 도구를 넘어 엔지니어링에 실제로 유용해지는 지점입니다.</p>
+<p>완료된 턴에서는 변경된 파일의 요약을 볼 수 있습니다. 여기서 diff를 열고, 개별 파일을 살펴보고, 섹션을 펼치거나 접고, 긴 줄을 줄바꿈하고, 구문 강조가 적용된 소스 파일을 열 수 있습니다. 관련 줄에 인라인 코멘트를 달고, 그 리뷰 컨텍스트를 Codex에 다시 보낼 수도 있습니다.</p>
+<img src="https://developers.openai.com/images/blog/mastering-codex-remote-inline-review.jpg" alt="인라인 리뷰 코멘트가 달린 Remote diff">
+<p>이 워크플로에는 여러 단계가 있습니다.</p>
+<ul>
+<li>변경된 파일 요약을 열어 빠르게 이상 여부를 확인합니다.</li>
+<li>diff만으로는 주변 맥락이 부족할 때 전체 소스로 이동합니다.</li>
+<li>정확한 수정이 필요한 부분에는 인라인 코멘트를 추가합니다.</li>
+<li>리뷰 명령을 사용하여 로컬 변경 사항을 리뷰하거나 브랜치와 비교합니다.</li>
+<li>Codex가 특정 파일을 중점적으로 판단하기를 원할 때는 그 파일을 채팅에 링크합니다.</li>
+</ul>
+<p>이를 통해 모바일에서도 빈틈없는 리뷰 루프를 만들 수 있습니다.</p>
+<ol>
+<li>Codex가 구현을 완료합니다.</li>
+<li>저는 휴대폰으로 diff를 확인합니다.</li>
+<li>인라인 코멘트를 두 개 남깁니다.</li>
+<li>Codex가 같은 채팅에서 코멘트를 반영합니다.</li>
+<li>저는 더 작아진 후속 diff를 리뷰합니다.</li>
+</ol>
+<p>중요한 점은 휴대폰이 깊이 있는 코드 읽기에서 큰 모니터를 대체한다는 것이 아닙니다. 대체하지 못합니다. 핵심은 많은 리뷰가 한두 가지 결정 때문에 막혀 있고, 그 결정을 더 이상 책상으로 돌아올 때까지 미루지 않아도 된다는 것입니다.</p>
+<h2>6. 권한을 워크플로의 일부로 다루기</h2>
+<p>원격 작업은 통제권이 명확하게 유지될 때만 유용합니다.</p>
+<p>Remote는 명령, 파일 변경, 네트워크 접근, 연결된 도구에 대한 승인 요청을 표시합니다. 요청과 호스트 설정에 따라 승인은 한 번만, 현재 채팅에서만, 또는 더 넓은 범위에 적용될 수 있습니다.</p>
+<p>숙련된 사용자는 모든 것을 승인하지 않습니다. 작업이 계속 진행될 수 있는 범위에서 가장 좁은 권한을 선택합니다.</p>
+<p>신뢰하는 채팅에서 충분히 이해한 명령이라면, 채팅 범위 승인으로 반복되는 중단을 없앨 수 있습니다. 익숙하지 않은 명령, 민감한 저장소, 영향이 불분명한 요청이라면 한 번만 승인하거나, 거부한 뒤 Codex에 설명을 요청하거나 더 안전한 방법을 쓰도록 요청합니다.</p>
+<p>작업을 시작할 때 채팅 전체에 적용할 더 넓은 승인 동작을 선택할 수도 있습니다. 이는 호스트, 워크스페이스, 브랜치, 모델과 함께 채팅 설정의 일부로 생각하면 됩니다.</p>
+<h2>7. 문제가 되기 전에 컨텍스트 관리하기</h2>
+<p>에이전트 채팅은 상태를 유지하므로, 긴 채팅에는 결국 컨텍스트가 충분히 쌓여 속도가 느려지거나 집중도가 떨어질 수 있습니다.</p>
+<p>Remote에는 이 수명 주기를 관리하기 위한 소규모 도구 모음이 있습니다.</p>
+<ul>
+<li><code>/status</code>는 세션 세부 정보, 워크스페이스, 컨텍스트 사용량, 확인 가능한 사용량 제한(rate limit) 정보를 보여 줍니다.</li>
+<li>선택 사항인 컨텍스트 표시기를 켜면 입력창에 남은 컨텍스트가 계속 표시됩니다.</li>
+<li><code>/compact</code>는 너무 길어진 채팅을 압축하면서 유용한 작업 상태는 보존합니다.</li>
+<li><code>/fork</code>는 기존 기록은 공유하되 다른 방향으로 진행하고 싶을 때 현재 채팅에서 새 채팅을 만듭니다.</li>
+</ul>
+<p>실용적인 순서는 다음과 같습니다. 상태를 확인하고, 목표가 그대로라면 compact를 사용하며, 목표가 갈라졌다면 fork를 사용합니다.</p>
+<p>사이드 채팅과 fork를 혼용하지 마십시오. 사이드 채팅은 현재 작업과 관련된 가벼운 질문을 위한 것입니다. fork는 원래 채팅의 기록을 이어받는 새로운 메인 채팅입니다.</p>
+<h2>8. 채팅 목록을 깔끔하게 유지하기</h2>
+<p>저의 Codex 워크플로는 점점 작은 운영 데스크처럼 되어 가고 있습니다.</p>
+<p>활발하게 진행 중인 몇 개의 채팅만 고정하고, 결과를 기준으로 이름을 바꾸며, 작업이 끝나면 적극적으로 보관합니다. 보관된 채팅을 탐색할 수 있으므로 이렇게 해도 안전합니다. 보관은 정리일 뿐 삭제가 아닙니다.</p>
+<p>알림도 이 체계의 일부입니다. 완료 알림을 누르면 해당 Codex 채팅이 바로 열리므로, "에이전트가 작업을 마쳤다"에서 "사람이 리뷰한다"로 넘어가는 과정이 한 번의 탭으로 끝납니다.</p>
+<p>Spotlight와 Shortcuts로 Remote를 바로 열 수 있습니다. iPad에서는 키보드 단축키 덕분에 앱을 놀라울 만큼 효율적으로 쓸 수 있습니다. 모든 컨트롤을 일일이 누르지 않고도 새 채팅 만들기, 채팅 간 이동, 변경된 파일 열기, 고정, 이름 변경, 보관을 할 수 있습니다.</p>
+<p>이것이 Remote의 "비서실장(chief of staff)" 활용 방식입니다. 이 앱은 프롬프트를 입력하는 곳일 뿐 아니라, 어떤 엔지니어링 작업이 진행 중이고, 막혀 있고, 리뷰를 기다리고, 완료되었는지를 파악하는 곳이기도 합니다.</p>
+<h2>9. 숨겨진 명령 팔레트</h2>
+<p><code>/</code>를 입력하면 앱의 여러 고급 기능으로 가장 빠르게 접근할 수 있습니다. 사용 가능 여부는 연결된 호스트, 앱 버전, 계정 설정에 따라 달라질 수 있습니다.</p>
+<table>
+<thead>
+<tr>
+<th>명령어</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/plan</code></td>
+<td>구현 전에 Plan 모드를 켜거나 끕니다.</td>
+</tr>
+<tr>
+<td><code>/goal &lt;objective&gt;</code></td>
+<td>지속되는 목표를 만들거나 업데이트합니다.</td>
+</tr>
+<tr>
+<td><code>/side [question]</code></td>
+<td>메인 채팅의 흐름을 방해하지 않고 곁가지 질문을 합니다.</td>
+</tr>
+<tr>
+<td><code>/review</code></td>
+<td>로컬 변경 사항을 리뷰하거나 브랜치와 비교합니다.</td>
+</tr>
+<tr>
+<td><code>/status</code></td>
+<td>세션, 워크스페이스, 컨텍스트, 사용량 제한(rate limit)을 확인합니다.</td>
+</tr>
+<tr>
+<td><code>/compact</code></td>
+<td>긴 채팅의 컨텍스트를 압축합니다.</td>
+</tr>
+<tr>
+<td><code>/fork</code></td>
+<td>현재 기록을 바탕으로 새 기본 채팅을 만듭니다.</td>
+</tr>
+<tr>
+<td><code>/fast</code></td>
+<td>사용 가능한 경우 표준 실행과 더 빠른 실행 사이를 전환합니다.</td>
+</tr>
+<tr>
+<td><code>/feedback</code></td>
+<td>현재 세션과 연결된 제품 피드백을 보냅니다.</td>
+</tr>
+</tbody>
+</table>
+<p>명령 팔레트는 제품의 실제 개념 모델을 드러내므로 익혀 둘 만합니다. 그 모델은 계획하고, 추진하고, 분기하고, 리뷰하고, 점검하고, 복구하는 흐름입니다.</p>
+<h2>10. 모바일에서 특히 잘 작동하는 다섯 가지 워크플로</h2>
+<h3>릴리스 캡틴</h3>
+<p>릴리스나 풀 리퀘스트 하나에 집중하는 채팅을 시작합니다. Codex에게 현재 브랜치, CI 상태, 남아 있는 리뷰 피드백, 릴리스 포함 여부를 확인하도록 요청합니다. 그리고 채팅을 고정합니다. 새로운 정보가 들어왔을 때는 진행 중인 조사를 무효화하는 경우에만 방향을 조정(steer)하고, 그렇지 않으면 대기열에 넣습니다. 휴대폰에서 최종 diff나 릴리스 노트를 검토하고, 릴리스가 반영되면 채팅을 보관 처리합니다.</p>
+<h3>인터럽트 기반 버그 수정</h3>
+<p>스크린샷, 로그, 캡처한 파일을 첨부합니다. Codex에게 코드를 수정하기 전에 먼저 진단하도록 요청합니다. 수상한 오류 하나를 파고들 때는 사이드 채팅을 사용하여 메인 조사가 흐트러지지 않게 합니다. 원인이 분명해지면 메인 채팅으로 돌아가 범위를 좁힌 수정을 승인합니다.</p>
+<h3>모바일 리뷰어</h3>
+<p>의도한 브랜치를 대상으로 리뷰를 실행하고, 변경된 파일 요약을 확인한 뒤, 중요한 파일을 열어 인라인 코멘트를 남깁니다. 그다음 Codex에게 해당 코멘트만 반영하도록 요청하고, 후속 diff를 검토합니다.</p>
+<h3>장기 실행 목표</h3>
+<p>테스트 통과, 리뷰 피드백 해결, 재현 가능한 성능 기준 달성처럼 구체적인 완료 조건이 있는 목표를 만듭니다. "끝났나요?"라고 반복해서 묻기보다 알림과 상태 화면으로 진행 상황을 확인합니다. 추가 작업은 대기열에 넣은 프롬프트로 전달하고, 방향 조정은 수정이 필요할 때만 사용합니다.</p>
+<h3>멀티 머신 운영자</h3>
+<p>호스트 이름을 명확하게 붙이고, 머신과 워크스페이스별로 작업을 정리합니다. 알맞은 체크아웃, 자격 증명, 시뮬레이터, 운영체제를 갖춘 머신에서 채팅을 시작할 때 휴대폰을 사용합니다. 한 채팅에는 Mac이 필요하고 다른 채팅에는 Windows 호스트가 필요한 경우에 특히 유용합니다.</p>
+<h2>작지만 영향이 큰 기능</h2>
+<p>제가 특히 좋아하는 추가 기능 중에는 주목받는 핵심 기능이 아닌 것도 있습니다.</p>
+<ul>
+<li>보낸 마지막 프롬프트를 수정 요청 턴을 추가하는 대신 직접 편집할 수 있습니다.</li>
+<li>채팅에서 렌더링된 이미지를 저장하거나 복사할 수 있습니다.</li>
+<li>Codex가 실행 중일 때도 대기열에 넣은 프롬프트를 확인할 수 있습니다.</li>
+<li>알림에서 완료된 채팅을 바로 열 수 있습니다.</li>
+<li>보관된 채팅을 따로 둘러볼 수 있어 활성 목록이 복잡해지지 않습니다.</li>
+<li>좁은 화면에서 읽을 때 긴 diff 줄을 줄바꿈할 수 있습니다.</li>
+<li>Face ID나 기기 암호로 ChatGPT 모바일 앱을 보호할 수 있습니다.</li>
+<li>전송하기 전에 작성창에서 스킬과 플러그인을 인라인으로 확인할 수 있습니다.</li>
+<li>현실의 물건 자체가 컨텍스트일 때는 사진을 프롬프트에 바로 촬영해 넣을 수 있습니다.</li>
+<li>질문을 다시 설명하지 않고, 선택한 대화 기록 텍스트에서 바로 사이드 채팅을 시작할 수 있습니다.</li>
+</ul>
+<p>이 가운데 어느 것도 에이전트 모델의 근본을 바꾸지는 않습니다. 하지만 이 기능들이 모이면 원격 워크플로를 불안하게 느끼게 하는 마찰이 사라집니다.</p>
+<h2>더 큰 교훈</h2>
+<p>훌륭한 모바일 소프트웨어는 데스크톱 인터페이스를 단순히 축소하지 않습니다. 자리를 떠나 있을 때 중요한 결정이 무엇인지 가려내고, 그 결정을 빠르고 명확하며 안전하게 내릴 수 있게 만듭니다.</p>
+<p>저는 이제 Remote를 그런 관점에서 바라봅니다. Remote는 알맞은 환경을 고르고, 목표를 설정하고, 실행 방향을 바꾸고, 승인 요청에 응답하고, 결과를 점검하고, 엔지니어링 작업 전체의 대기열을 일관되게 유지할 수 있는 곳입니다.</p>
+<p>작업은 여전히 컴퓨터가 합니다. 그리고 휴대폰은 제가 통제권을 유지하게 해 줍니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>Remote in the ChatGPT mobile app is easy to underestimate.</p>
+<p>At first glance, it looks like a way to check on a coding chat from your phone. That is useful, but it misses the bigger idea. The real power of Remote is that it lets you start, direct, review, and organize work running on your development machines without pretending that an iPhone should be a tiny terminal.</p>
+<p>Over the last two months, we have added a surprising amount of depth to that loop: remote host connections, worktrees, goals, side chats, inline code review, queued and steering prompts, attachments, skills and plugins, archived chats, security controls, and a long tail of small details that make the app useful for serious work.</p>
+<p>This is the field guide I wish every new power user had.</p>
+<p><img src="https://developers.openai.com/images/blog/mastering-codex-remote-for-engineering.jpg" alt="Remote project picker in the ChatGPT mobile app"></p>
+<h2>The right mental model: Your phone is the control plane</h2>
+<p>The code still runs where it belongs: on your Mac, Windows machine, devbox, or other connected host. In the ChatGPT mobile app, Remote gives you a native interface for controlling that work.</p>
+<p>That distinction matters. The goal is not to reproduce every terminal affordance on a small screen. The goal is to make the decisions that unblock an agent easy from anywhere:</p>
+<ul>
+<li>What repository and workspace should it use?</li>
+<li>Should this run in the current branch or a fresh worktree?</li>
+<li>Should my next message wait, or should it redirect the active turn?</li>
+<li>Is this command safe to approve?</li>
+<li>What changed, and do I agree with it?</li>
+<li>Should this become a durable goal, a separate chat, or a quick side question?</li>
+</ul>
+<p>Once you use the app this way, it stops feeling like remote desktop software and starts feeling like an engineering control plane.</p>
+
+<h2>1. Start the chat with the right boundaries</h2>
+<p>Good agent work starts with a correctly scoped environment. Remote lets you choose the connected host and workspace before the first prompt. For a new chat, you can also choose a branch, create a separate worktree, and run the environment setup associated with it.</p>
+<img src="https://developers.openai.com/images/blog/mastering-codex-remote-worktree-branch.jpg" alt="Remote controls for choosing a host, repository, worktree, and environment">
+<p>That makes a few useful patterns possible:</p>
+<ul>
+<li>Use the current checkout for a quick investigation.</li>
+<li>Create a new worktree for a change that should stay isolated.</li>
+<li>Start from the intended base branch instead of fixing Git state later.</li>
+<li>Let the environment setup run before asking Codex to build or test.</li>
+</ul>
+<p>This is one of the most important power-user habits: Spend 10 seconds choosing the right execution context and save 10 minutes of cleanup later.</p>
+<p>The composer can also carry more context than plain text. You can attach files, photos, or a fresh camera capture. Skills and plugins appear inline, which makes it much easier to confirm that your prompt is invoking the capability you intended.</p>
+<img src="https://developers.openai.com/images/blog/mastering-codex-remote-skills-plugins.jpg" alt="Remote composer with multiple skills and plugins added inline">
+<p>My rule is simple: If a screenshot, file, or named skill can remove ambiguity, attach or mention it before the first turn.</p>
+<h2>2. Learn the difference between Queue and Steer</h2>
+<p>This is probably the least obvious high-leverage setting in Remote.</p>
+<p>When Codex is already working, a follow-up can do one of two things:</p>
+<ul>
+<li><strong>Queue</strong> waits until the current response finishes, then sends your prompt as the next turn.</li>
+<li><strong>Steer</strong> injects guidance into the work already in progress.</li>
+</ul>
+<p>Queue is the safe default. Use it for a second task, an extra test request, or anything that should happen after the current work.</p>
+<p>Steer is for correcting direction while the cost of continuing down the wrong path is still growing:</p>
+<blockquote>
+<p>Keep the fix inside the mobile package. Do not refactor the shared renderer.</p>
+</blockquote>
+<blockquote>
+<p>The reproduction only happens after reconnect. Test the resumed path, not the live path.</p>
+</blockquote>
+<blockquote>
+<p>Stop investigating the UI. Check whether the server removed the item during resume.</p>
+</blockquote>
+<p>That turns the phone into something more useful than a status screen. You can intervene at the exact moment a run needs judgment.</p>
+<p>You can choose the default follow-up behavior in settings. I keep Queue as the default and use Steer deliberately; accidental mid-turn redirection is usually more expensive than waiting.</p>
+<h2>3. Use side chats as a branch of thought</h2>
+<p>Long-running coding chats accumulate valuable context. Interrupting one with every side question makes the main transcript noisy and can pull the agent away from the objective.</p>
+<p>That is what side chats solve.</p>
+<p>Use <code>/side</code> to open a lightweight conversation connected to the current chat. Use <code>/side &lt;prompt&gt;</code> to open it with a question already prepared. Even better, select text in the transcript and choose <strong>Ask in side chat</strong>. The selected passage becomes the starting context for the new conversation.</p>
+<img src="https://developers.openai.com/images/blog/mastering-codex-remote-side-chat.jpg" alt="Selected transcript text with the Ask in side chat action">
+<p>I use side chats for questions such as:</p>
+<ul>
+<li>Why did Codex choose this architecture?</li>
+<li>What does this error actually mean?</li>
+<li>Is this behavior consistent with the desktop app?</li>
+<li>Give me a release-note version of this implementation detail.</li>
+<li>What should I verify before I approve this command?</li>
+</ul>
+<p>The distinction is useful: The main chat owns the work; the side chat helps me understand the work.</p>
+<h2>4. Use Plan for the path and Goal for the outcome</h2>
+<p>Plan mode and goals solve different problems.</p>
+<p>Plan mode asks Codex to propose the implementation path before changing code. It is useful when the task is underspecified, risky, or likely to touch several systems.</p>
+<p>A goal is durable. It tells Codex what outcome to keep pursuing across turns. On mobile, <code>/goal</code> can create and manage that objective, while progress remains visible as the work continues.</p>
+<p>A practical pattern is:</p>
+<ol>
+<li>Start with Plan mode for a risky change.</li>
+<li>Inspect the proposed boundaries.</li>
+<li>Turn the accepted outcome into a goal when the work will require multiple iterations.</li>
+<li>Let Codex continue through implementation, tests, review feedback, and cleanup without restating the objective every time.</li>
+</ol>
+<p>Plans answer “How should we approach this?” Goals answer “What must be true before we are done?”</p>
+<h2>5. Review code without leaving the conversation</h2>
+<p>The review loop is where Remote becomes genuinely useful for engineering rather than merely convenient.</p>
+<p>Completed turns can show a summary of changed files. From there, you can open the diff, inspect individual files, expand or collapse sections, wrap long lines, and open a source file with syntax highlighting. You can attach inline comments to the relevant lines and send that review context back to Codex.</p>
+<img src="https://developers.openai.com/images/blog/mastering-codex-remote-inline-review.jpg" alt="Remote diff with an inline review comment">
+<p>There are several levels to the workflow:</p>
+<ul>
+<li>Open the changed-file summary for a quick sanity check.</li>
+<li>Tap through to the full source when a diff lacks surrounding context.</li>
+<li>Add inline comments for precise corrections.</li>
+<li>Use the review command to review local changes or compare against a branch.</li>
+<li>Link a file back into the chat when you want Codex to reason about that file specifically.</li>
+</ul>
+<p>This makes a tight mobile review loop possible:</p>
+<ol>
+<li>Codex completes the implementation.</li>
+<li>I inspect the diff from my phone.</li>
+<li>I leave two inline comments.</li>
+<li>Codex addresses them in the same chat.</li>
+<li>I review the smaller follow-up diff.</li>
+</ol>
+<p>The important point is not that a phone replaces a large monitor for deep code reading. It does not. The point is that many reviews are blocked on one or two decisions, and those decisions no longer need to wait until I am back at my desk.</p>
+<h2>6. Treat permissions as part of the workflow</h2>
+<p>Remote work is only useful if control stays explicit.</p>
+<p>Remote surfaces approval requests for commands, file changes, network access, and connected tools. Depending on the request and host configuration, an approval may apply once, for the current chat, or more broadly.</p>
+<p>The power-user move is not to approve everything. It is to choose the narrowest permission that keeps the work moving.</p>
+<p>For a well-understood command in a trusted chat, a chat-scoped approval can remove repetitive interruptions. For an unfamiliar command, a sensitive repository, or a request whose effect is unclear, approve once—or deny it and ask Codex to explain or use a safer approach.</p>
+<p>You can also choose the chat’s broader approval behavior when starting work. Think of this as part of chat setup, alongside the host, workspace, branch, and model.</p>
+<h2>7. Manage context before it becomes a problem</h2>
+<p>Agent chats are stateful, and long chats eventually accumulate enough context to become slower or less focused.</p>
+<p>Remote has a small set of tools for managing that lifecycle:</p>
+<ul>
+<li><code>/status</code> shows session details, workspace, context usage, and available rate-limit information.</li>
+<li>The optional context indicator keeps remaining context visible in the composer.</li>
+<li><code>/compact</code> compresses an overgrown chat while preserving the useful working state.</li>
+<li><code>/fork</code> creates a new chat from the current one when you want shared history but a different direction.</li>
+</ul>
+<p>The practical sequence is: Check status, compact when the objective is still the same, and fork when the objective has diverged.</p>
+<p>Do not use a side chat and a fork interchangeably. A side chat is a lightweight question around the current work. A fork is a new primary chat that inherits the original chat’s history.</p>
+
+<h2>8. Keep a clean chat list</h2>
+<p>My own Codex workflow increasingly looks like a small operations desk.</p>
+<p>I pin the few chats that are actively moving, rename them around outcomes, and archive them aggressively once the work is done. Browsing archived chats makes this safe: Archive is organization, not deletion.</p>
+<p>Notifications are part of that system. A completion notification can open the relevant Codex chat directly, so the handoff from “agent finished” to “human reviews” is one tap.</p>
+<p>Spotlight and Shortcuts can open Remote directly. On iPad, keyboard shortcuts make the app surprisingly efficient: Create a new chat, move between chats, open changed files, pin, rename, and archive without reaching for every control.</p>
+<p>This is the “chief of staff” use case for Remote. The app is not only where I issue prompts. It is where I keep track of which pieces of engineering work are active, blocked, waiting for review, or finished.</p>
+<h2>9. The hidden command palette</h2>
+<p>Typing <code>/</code> reveals the fastest route to many of the app’s advanced behaviors. Availability can depend on the connected host, app version, and account configuration.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it is for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/plan</code></td>
+<td>Toggle Plan mode before implementation.</td>
+</tr>
+<tr>
+<td><code>/goal &lt;objective&gt;</code></td>
+<td>Create or update a durable objective.</td>
+</tr>
+<tr>
+<td><code>/side [question]</code></td>
+<td>Ask a side question without disrupting the main chat.</td>
+</tr>
+<tr>
+<td><code>/review</code></td>
+<td>Review local changes or compare them with a branch.</td>
+</tr>
+<tr>
+<td><code>/status</code></td>
+<td>Inspect the session, workspace, context, and rate limits.</td>
+</tr>
+<tr>
+<td><code>/compact</code></td>
+<td>Compress a long chat’s context.</td>
+</tr>
+<tr>
+<td><code>/fork</code></td>
+<td>Create a new primary chat from the current history.</td>
+</tr>
+<tr>
+<td><code>/fast</code></td>
+<td>Switch between standard and faster execution when available.</td>
+</tr>
+<tr>
+<td><code>/feedback</code></td>
+<td>Send product feedback tied to the current session.</td>
+</tr>
+</tbody>
+</table>
+<p>The command palette is worth learning because it exposes the product’s real conceptual model: Plan, pursue, branch, review, inspect, and recover.</p>
+<h2>10. Five workflows that work especially well on mobile</h2>
+<h3>The release captain</h3>
+<p>Start a focused chat for a release or pull request. Ask Codex to check the current branch, CI state, open review feedback, and release inclusion. Pin the chat. When new information arrives, steer only when it invalidates the active investigation; otherwise, queue it. Review the final diff or release note from the phone and archive the chat when the release lands.</p>
+<h3>The interrupt-driven bug fix</h3>
+<p>Attach a screenshot, log, or captured file. Ask Codex to diagnose before editing. Use a side chat to interrogate one suspicious error without derailing the main investigation. Once the cause is clear, return to the main chat and authorize the narrow fix.</p>
+<h3>The mobile reviewer</h3>
+<p>Run a review against the intended branch, inspect the changed-file summary, open the files that matter, and attach inline comments. Ask Codex to address only those comments, then review the follow-up diff.</p>
+<h3>The long-running objective</h3>
+<p>Create a goal with a concrete completion condition: Tests green, review feedback resolved, or a reproducible performance threshold met. Check progress from notifications and status rather than repeatedly asking “Are you done?” Use queued prompts for additional work and reserve steering for corrections.</p>
+<h3>The multi-machine operator</h3>
+<p>Keep hosts named clearly and organize work by machine and workspace. Use the phone to start a chat on the machine that has the right checkout, credentials, simulator, or operating system. This is especially useful when one chat requires a Mac and another needs a Windows host.</p>
+<h2>Small features with outsized impact</h2>
+<p>Some of my favorite additions are not headline features:</p>
+<ul>
+<li>Edit the latest sent prompt instead of adding a correction turn.</li>
+<li>Save or copy rendered images from a chat.</li>
+<li>See queued prompts while Codex is still running.</li>
+<li>Open completed chats directly from notifications.</li>
+<li>Browse archived chats instead of keeping the active list crowded.</li>
+<li>Wrap long diff lines when reading on a narrow screen.</li>
+<li>Use Face ID or the device passcode to protect the ChatGPT mobile app.</li>
+<li>See skills and plugins inline in the composer before sending.</li>
+<li>Capture a photo directly into a prompt when the real-world object is the context.</li>
+<li>Start a side chat from selected transcript text rather than re-explaining the question.</li>
+</ul>
+<p>None of these changes the fundamental agent model. Together, they remove the friction that makes a remote workflow feel fragile.</p>
+<h2>The larger lesson</h2>
+<p>The best mobile software does not shrink a desktop interface. It identifies the decisions that matter when you are away from the desk and makes those decisions fast, legible, and safe.</p>
+<p>That is how I think about Remote now. It is where I can choose the right environment, set the objective, redirect a run, answer an approval, inspect the result, and keep the whole queue of engineering work coherent.</p>
+<p>The computer still does the work. The phone keeps me in control.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

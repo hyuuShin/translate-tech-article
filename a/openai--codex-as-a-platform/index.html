@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>플랫폼으로서의 Codex: 개방형 에이전트 하네스 기반 개발 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">플랫폼으로서의 Codex: 개방형 에이전트 하네스 기반 개발</h1>
+    <h1 class="lang-en" hidden lang="en">Codex as a platform: build on the open agent harness</h1>
+    
+    <p class="art-sum lang-ko">사용자에게 이미 익숙한 제품과 워크플로에 Codex를 접목해 보십시오.</p>
+    <p class="art-sum lang-en" hidden lang="en">Build Codex into the products and workflows your users already know.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 8월 19일</dd></div>
+      <div><dt>저자</dt><dd>Nicolas Bonamy, Derrick Choi</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/codex-as-a-platform">https://developers.openai.com/blog/codex-as-a-platform</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>대부분의 사용자는 <a href="https://developers.openai.com/codex/app">앱(App)</a>, <a href="https://developers.openai.com/codex/cli">명령줄 인터페이스(Command-Line Interface)</a>, <a href="https://developers.openai.com/codex/ide">IDE 확장 프로그램(IDE Extension)</a>을 통해 Codex를 접합니다. 이러한 환경도 중요하지만, 같은 기반 시스템을 활용하는 방법 중 일부에 불과합니다.</p>
+<p><a href="https://github.com/openai/codex">오픈소스 Codex 하네스(harness)</a>가 이 모든 환경을 구동합니다. 하네스는 모델이 컨텍스트를 수집하고, 작업을 추론하고, 도구를 사용하고, 설정된 경계 안에서 동작하고, 승인을 요청하고, 작업을 이어갈 수 있도록 돕습니다.</p>
+<p>이는 개발자가 만들 수 있는 것을 바꿉니다. 모든 팀에게 작업을 범용 코딩 어시스턴트로 옮기도록 요구하는 대신, 실제 업무에 맞춰 설계된 소프트웨어 안으로 에이전트를 가져올 수 있습니다. 예를 들어 엔지니어링 워크플로, 운영 대시보드, 보안 조사, 고객 지원 콘솔, 특정 전문 팀을 위해 만든 사내 애플리케이션이 있습니다.</p>
+<h2>재사용 가능한 부분은 에이전트 루프</h2>
+<p>유능한 에이전트는 프롬프트와 모델 응답만으로 이루어지지 않습니다. 작업을 이해하고, 시간이 지나도 컨텍스트를 유지하고, 관련 정보를 살펴보고, 도구를 호출하고, 진행 상황을 보여주고, 실패를 처리하고, 필요할 때 사람의 승인을 요청하고, 유용한 결과를 돌려주는 방법이 필요합니다.</p>
+<p>이러한 실행 시스템 전체가 하네스입니다.</p>
+<p>하네스 설계는 결과를 크게 바꿀 수 있습니다. <a href="https://openai.com/index/how-two-settings-tripled-our-arc-agi-3-scores/">ARC-AGI-3</a>에서는 추론 내용 유지와 컨텍스트 압축(context compaction)을 적용하자 GPT-5.6 Sol의 점수가 13.3%에서 38.3%로 올랐고, 출력 토큰은 6분의 1로 줄었습니다.</p>
+<p>저희는 대화 상태를 관리하고, 실행을 스트리밍하고, 도구를 사용하고, 설정된 샌드박스 및 승인 정책을 적용하고, 여러 턴에 걸쳐 작업을 이어가도록 Codex 하네스를 만들었습니다. <a href="https://developers.openai.com/codex/app-server">Codex app-server</a>를 통해 이러한 기능을 문서화된 클라이언트 프로토콜로 제공합니다. 애플리케이션은 스레드를 생성하고, 턴을 시작하고, 이벤트를 수신하고, 승인 요청을 처리할 수 있습니다.</p>
+<p>에이전트가 필요한 소프트웨어를 만든다면 새로운 런타임을 직접 만드는 대신 Codex로 시작한 다음, 주변 애플리케이션이 무엇을 담당할지 결정하면 됩니다.</p>
+<h2>개발자가 살펴보고 조정할 수 있는 오픈 하네스</h2>
+<p>하네스가 오픈소스이므로 애플리케이션과 모델 사이의 계층을 직접 살펴보고, 동작 방식을 이해하고, 제품에 맞게 통합 방식을 조정할 수 있습니다.</p>
+<p>이를 통해 개발자는 에이전트를 제품에 맞추는 데 필요한 요소를 직접 제어할 수 있습니다.</p>
+<ul>
+<li>
+<p>인터페이스: 팀은 모든 상호작용을 범용 채팅 창에 억지로 넣지 않고, 기존의 대시보드, 에디터, 큐, 지도, 레코드, 승인 흐름을 그대로 유지할 수 있습니다.</p>
+</li>
+<li>
+<p>컨텍스트와 도구: 애플리케이션은 특정 워크플로에 중요한 시스템, 문서, 데이터, 작업을 노출할 수 있으며, 여기에는 애플리케이션이 직접 소유한 <a href="https://developers.openai.com/codex/extend/mcp">MCP 서비스</a>도 포함됩니다.</p>
+</li>
+<li>
+<p>운영 경계: 호스트 애플리케이션은 에이전트가 실행될 위치, 접근할 수 있는 파일이나 도구, 승인이 필요한 작업, 작업을 관찰하는 방식, 결과가 기록 시스템(system of record)으로 돌아가는 방식을 결정할 수 있습니다.</p>
+</li>
+</ul>
+<p>저희는 <a href="https://developers.openai.com/codex/cli">Codex CLI</a>, <a href="https://developers.openai.com/codex/app-server">app-server</a>, <a href="https://developers.openai.com/codex/codex-sdk">공식 Codex SDK</a>를 오픈소스 구성 요소로 공개합니다. <a href="https://developers.openai.com/codex/open-source">오픈소스 구성 요소 가이드</a>에서 제공되는 구성 요소와 각 구성 요소의 위치를 확인할 수 있습니다.</p>
+<p>오픈소스 계층은 하네스와 통합 인터페이스이며, 모델 접근과 관리형 서비스는 별도로 제공됩니다.</p>
+<h2>적합한 통합 계층 선택</h2>
+<p>Codex 기반 개발이 모든 사용 사례에 같은 통합 방식을 요구하는 것은 아닙니다.</p>
+<ul>
+<li>
+<p>스크립트, CI 작업, 일회성 백그라운드 작업에는 <a href="https://developers.openai.com/codex/non-interactive-mode">codex exec</a>가 범위가 정해진 에이전트 워크플로를 실행하고 구조화된 출력을 반환할 수 있습니다.</p>
+</li>
+<li>
+<p>Codex 작업을 시작하거나 재개하거나 스트리밍해야 하는 애플리케이션 코드에는 <a href="https://developers.openai.com/codex/codex-sdk">공식 Codex SDK</a>가 직접적인 프로그래밍 인터페이스를 제공합니다.</p>
+</li>
+</ul>
+<p>실행 가능한 예제는 <a href="https://learn.chatgpt.com/docs/codex-sdk">Codex SDK 문서</a>를 참고하십시오.</p>
+<p>에이전트가 제품 자체의 일부라면 Codex app-server를 사용하십시오. 애플리케이션이 로컬 Codex 프로세스에 연결하고, 대화를 열어 두고, 이벤트를 스트리밍하고, 작업을 중단하고, 도구를 노출하고, 승인 요청에 응답할 수 있습니다. SDK는 일반적인 프로그래밍 워크플로를 단순화하고, app-server는 제품 팀에게 수명 주기와 사용자 경험에 대한 직접적인 제어권을 제공합니다.</p>
+<h2>워크플로 중심의 소프트웨어 구축</h2>
+<p>가장 흥미로운 기회는 로고만 바꾼 Codex 앱을 다시 만드는 것이 아니라, 특정 개인이나 팀이 이미 일하는 방식을 반영한 소프트웨어를 만드는 것입니다.</p>
+<p>보안 분석가에게는 조사 큐, 최근 알림, 영향받는 서비스, 그리고 조치 티켓을 열기 전의 승인 단계가 필요할 수 있습니다. 지원 엔지니어에게는 계정 이력, 제품 로그, 사내 문서, 응답 초안이 필요할 수 있습니다. 제품 팀은 이슈를 준비 완료 상태로 옮기면 범위가 정해진 구현 워크플로가 시작되는 작업 보드를 원할 수 있습니다.</p>
+<p>이 모든 예시에서 인터페이스는 경험의 중요한 부분입니다. 인터페이스는 사용자가 무엇을 보고 있는지 에이전트에게 알려주고, 적절한 도구를 제공하며, 다음에 일어날 일을 사용자가 검토할 수 있는 공간을 제공합니다.</p>
+<figure><img src="https://developers.openai.com/images/blog/codex-platform-agent-stack.webp" alt="애플리케이션이 소유한 인터페이스, 비즈니스 컨텍스트, 동의 절차, Codex app-server의 에이전트 루프와 샌드박스 실행, 애플리케이션이 소유한 MCP 데이터와 작업을 보여주는 아키텍처 다이어그램."><figcaption><p>그림 1. 애플리케이션은 제품 컨텍스트, 비즈니스 규칙, 도구를 소유하고,
+Codex app-server는 에이전트 루프와 샌드박스 실행을 제공합니다.</p></figcaption></figure>
+<h2>예시: Relay</h2>
+<p>저희는 Codex app-server 기반의 샘플 운영 애플리케이션으로 Relay를 만들었습니다. Relay는 가상의 배송 대시보드 옆에 에이전트를 배치하고, 애플리케이션이 소유한 MCP 도구에 연결하며, 배송을 재예약하기 전에 사람의 승인을 요구합니다.</p>
+<p>사용자는 프롬프트를 처음부터 작성하는 것으로 시작하지 않습니다. 배송 건을 선택하고 <strong>Compare recovery</strong> 같은 액션을 클릭합니다. 그러면 애플리케이션이 관련 컨텍스트를 제공하고, Codex가 최신 샘플 운영 데이터를 가져오며, 에이전트가 선택 가능한 옵션을 설명합니다. 결과에 영향을 미치는 쓰기 작업은 모두 승인을 거쳐야 합니다.</p>
+<p>이후 Codex는 애플리케이션의 MCP 도구를 사용해 최신 데이터를 가져온 뒤, 조치를 권고하거나 승인 후에는 직접 조치를 수행할 수 있습니다. 도구가 기반 레코드를 변경하면 애플리케이션은 비즈니스 뷰를 새로 고칩니다. 하네스(harness)는 에이전트 루프(agent loop), 대화 상태, 스트리밍되는 활동, 도구 상호작용을 처리하고, 제품은 대시보드, 레코드, 제어 기능을 계속 직접 소유합니다.</p>
+<p>Relay는 가상의 시드 데이터를 사용하지만, 이 통합 패턴은 일반적으로 적용할 수 있습니다. 같은 패턴으로 인시던트 대응, 계정 운영, 리서치 워크플로, 또는 기존 제품 경험 안에서 에이전트가 작업해야 하는 다른 애플리케이션도 구동할 수 있습니다.</p>
+<figure><img src="https://developers.openai.com/images/blog/codex-platform-relay-operations.webp" alt="예외 큐, 배송 상세 정보, 그리고 지연된 배송 건을 조사하는 Codex 에이전트를 보여주는 Relay 배송 운영 대시보드."><figcaption><p>그림 2. Relay는 애플리케이션이 소유한 MCP 도구와 결과에 영향을 미치는 작업에 대한 사람의 승인 절차를 갖춘 배송 운영 대시보드에 Codex를 내장합니다.</p></figcaption></figure>
+<h2>개발자들이 만들고 있는 것</h2>
+<p>이 패턴은 이미 공개된 구현 사례에서 나타나고 있습니다.</p>
+<ul>
+<li>
+<p> <a href="https://github.blog/changelog/2026-07-07-codex-as-agent-provider-and-agentic-enhancements-in-jetbrains-ides/">GitHub와 JetBrains</a>는 기존 IDE 워크플로에 Codex를 도입합니다.</p>
+</li>
+<li>
+<p> <a href="https://blogs.cisco.com/ai/from-an-idea-to-a-live-app-on-cisco-in-minutes">Cisco</a>는 Cisco Cloud Control 내부의 App Builder에서 Codex SDK를 사용합니다.</p>
+</li>
+<li>
+<p> <a href="https://openai.com/index/building-self-improving-tax-agents-with-codex/">Thrive Holdings와 Crete</a>는 실무자의 피드백을 반영하는 세무 신고서 작성 워크플로에 Codex를 사용합니다. 이들의 파일럿에서는 7,000건의 신고서를 처리했고 작성 시간을 약 3분의 1 줄였습니다.</p>
+</li>
+</ul>
+<p>이러한 사례는 엔지니어링에만 국한되지 않습니다. 고객 이슈를 조사하는 지원 팀, 워크플로를 조율하는 운영 팀, 인시던트를 분류하는 보안 팀, 계정을 조사하는 영업 팀, 캠페인을 개발하는 마케팅 팀에도 같은 패턴이 적용됩니다. 어느 경우든 애플리케이션이 컨텍스트, 도구, 승인 절차를 제공하고, Codex는 그 기반이 되는 에이전트 루프를 구동합니다.</p>
+<h2>뻔한 활용을 넘어선 구축</h2>
+<p>많은 종류의 업무에서 핵심 컨텍스트는 대시보드, 타임라인, 지도, 문서 또는 시스템 레코드에 기반합니다. 이러한 뷰는 보기 좋게 만들기 위해 존재하는 것이 아닙니다. 사람들이 실제로 무슨 일이 일어나고 있는지 이해하고, 의사결정을 내리며, 통제력을 유지하는 방법이기 때문입니다.</p>
+<p>기회는 이러한 인터페이스를 범용 채팅창으로 대체하는 데 있지 않습니다. 업무를 이해하고, 적절한 컨텍스트를 조사하며, 다음 단계를 제안하고, 승인된 조치를 수행할 수 있는 에이전트를 제공해 인터페이스의 역량을 높이는 데 있습니다.</p>
+<p>Codex 앱, CLI, IDE 확장 프로그램은 하네스가 할 수 있는 일을 보여줍니다. 하네스를 오픈소스로 공개함으로써, 개발자가 이러한 기능을 직접 살펴보고, 통합하며, 자신의 제품과 워크플로에 맞게 조정할 수 있도록 합니다.</p>
+<p>Codex 하네스로 개발하려면 <a href="https://github.com/openai/codex">오픈소스 Codex 리포지토리</a>에서 시작한 다음, 제품에 맞는 통합 방식을 선택하십시오. 비대화형 작업에는 <a href="https://developers.openai.com/codex/non-interactive-mode">codex exec</a>, 프로그래밍 방식의 에이전트 워크플로에는 <a href="https://developers.openai.com/codex/codex-sdk">Codex SDK</a>, 지속적인 대화, 스트리밍 이벤트, 승인 처리가 필요한 애플리케이션에는 <a href="https://developers.openai.com/codex/app-server">Codex app-server</a>를 사용할 수 있습니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>Most people know Codex through the <a href="https://developers.openai.com/codex/app">App</a>, <a href="https://developers.openai.com/codex/cli">Command-Line Interface</a>, or <a href="https://developers.openai.com/codex/ide">IDE Extension</a>. Those experiences are important, but they are only a few of the ways the same underlying system can be used.</p>
+<p>The <a href="https://github.com/openai/codex">open-source Codex harness</a> is what powers all these experiences. It helps models gather context, reason through tasks, use tools, operate within configured boundaries, request approval, and carry work forward.</p>
+<p>That changes what developers can build. Instead of asking every team to move its work into a general-purpose coding assistant, you can bring the agent into software designed around the actual job: an engineering workflow, an operations dashboard, a security investigation, a customer-support console, or an internal application built for one specialized team.</p>
+<h2>The reusable part is the agent loop</h2>
+<p>A capable agent is more than a prompt and a model response. It needs a way to understand a task, maintain context over time, inspect relevant information, call tools, expose progress, handle failures, request human approval when necessary, and return a useful result.</p>
+<p>That surrounding execution system is the harness.</p>
+<p>Harness design can materially change results: on <a href="https://openai.com/index/how-two-settings-tripled-our-arc-agi-3-scores/">ARC-AGI-3</a>, retained reasoning and context compaction raised GPT-5.6 Sol’s score from 13.3% to 38.3% while reducing output tokens sixfold.</p>
+<p>We built the Codex harness to manage conversation state, stream execution, use tools, enforce configured sandbox and approval policies, and carry work across turns. With <a href="https://developers.openai.com/codex/app-server">Codex app-server</a>, we expose those capabilities through a documented client protocol: applications can create threads, start turns, receive events, and handle approval requests.</p>
+<p>If you are building software that needs an agent, you can start with Codex instead of inventing a new runtime, then decide what the surrounding application should own.</p>
+<h2>An open harness developers can inspect and adapt</h2>
+<p>Because the harness is open source, you can inspect the layer between your application and the model, understand how it behaves, and adapt the integration to fit your product.</p>
+<p>That gives developers control over the parts that make the agent fit their product:</p>
+<ul>
+<li>
+<p>The interface. A team can keep its existing dashboards, editors, queues, maps, records, and approval flows instead of forcing every interaction into a generic chat window.</p>
+</li>
+<li>
+<p>Context and tools. An application can expose the systems, documents, data, and actions that matter for a particular workflow, including application-owned <a href="https://developers.openai.com/codex/extend/mcp">MCP services</a>.</p>
+</li>
+<li>
+<p>Operational boundaries. The host application can decide where an agent runs, which files or tools it can access, which actions require approval, how work is observed, and how results return to the system of record.</p>
+</li>
+</ul>
+<p>We publish the <a href="https://developers.openai.com/codex/cli">Codex CLI</a>, <a href="https://developers.openai.com/codex/app-server">app-server</a>, and <a href="https://developers.openai.com/codex/codex-sdk">official Codex SDK</a> as open-source components. Our <a href="https://developers.openai.com/codex/open-source">open-source components guide</a> lists what is available and where each component lives.</p>
+<p>The open-source layer is the harness and integration surface; model access and managed services remain separate.</p>
+<h2>Choose the right integration layer</h2>
+<p>Building on Codex does not require the same integration for every use case.</p>
+<ul>
+<li>
+<p>For a script, CI job, or one-off background task, <a href="https://developers.openai.com/codex/non-interactive-mode">codex exec</a> can run a bounded agent workflow and return structured output.</p>
+</li>
+<li>
+<p>For application code that needs to start, resume, or stream Codex tasks, the <a href="https://developers.openai.com/codex/codex-sdk">official Codex SDK</a> provides a direct programmatic interface.</p>
+</li>
+</ul>
+<p>For a runnable example, see the <a href="https://learn.chatgpt.com/docs/codex-sdk">Codex SDK documentation</a>.</p>
+<p>Use Codex app-server when the agent is part of the product itself. It lets your application connect to a local Codex process, keep conversations open, stream events, interrupt work, expose tools, and respond to approval requests. The SDK simplifies common programmatic workflows; app-server gives product teams direct control over the lifecycle and user experience.</p>
+<h2>Build software around the workflow</h2>
+<p>The most interesting opportunity is not to reproduce the Codex app with a different logo, but to build software that reflects how a specific person or team already works:</p>
+<p>A security analyst might need an investigation queue, recent alerts, affected services, and an approval step before opening a remediation ticket. A support engineer might need account history, product logs, internal documentation, and a draft response. A product team might want a task board where moving an issue into a ready state begins a scoped implementation workflow.</p>
+<p>In each example, the interface is an important part of the experience. It tells the agent what the user is looking at, gives it the right tools, and gives the user a place to review what happens next.</p>
+<figure><img src="https://developers.openai.com/images/blog/codex-platform-agent-stack.webp" alt="Architecture diagram showing an application-owned interface, business context, and consent; Codex app-server agent loop and sandboxed execution; and application-owned MCP data and actions."><figcaption><p>Figure 1. Your application owns product context, business rules, and tools;
+Codex app-server provides the agent loop and sandboxed execution.</p></figcaption></figure>
+<h2>Example: Relay</h2>
+<p>We built Relay as a sample operations application on Codex app-server. It places an agent beside a fictional shipment dashboard, connects it to application-owned MCP tools, and requires human approval before a shipment is rebooked.</p>
+<p>The user does not start by writing a prompt from scratch. They select a shipment and click an action such as <strong>Compare recovery</strong>. The application supplies the relevant context, Codex retrieves the latest sample operational data, the agent explains the available options, and any consequential write requires approval.</p>
+<p>Codex can then use the application’s MCP tools to fetch current data before recommending—or, after approval, taking—an action. When a tool changes the underlying record, the application refreshes its business view. The harness handles the agent loop, conversation state, streamed activity, and tool interaction; the product continues to own its dashboard, records, and controls.</p>
+<p>Relay uses fictional seeded data, but the integration pattern is general. The same pattern could power incident response, account operations, research workflows, or other applications where an agent should work inside an existing product experience.</p>
+<figure><img src="https://developers.openai.com/images/blog/codex-platform-relay-operations.webp" alt="Relay shipment operations dashboard showing an exception queue, shipment details, and a Codex agent investigating a delayed shipment."><figcaption><p>Figure 2. Relay embeds Codex in a shipment operations dashboard, with
+application-owned MCP tools and human approval for consequential actions.</p></figcaption></figure>
+<h2>What developers are building</h2>
+<p>This pattern is already showing up in public implementations:</p>
+<ul>
+<li>
+<p> <a href="https://github.blog/changelog/2026-07-07-codex-as-agent-provider-and-agentic-enhancements-in-jetbrains-ides/">GitHub and JetBrains</a> bring Codex into existing IDE workflows.</p>
+</li>
+<li>
+<p> <a href="https://blogs.cisco.com/ai/from-an-idea-to-a-live-app-on-cisco-in-minutes">Cisco</a> uses the Codex SDK in App Builder inside Cisco Cloud Control.</p>
+</li>
+<li>
+<p> <a href="https://openai.com/index/building-self-improving-tax-agents-with-codex/">Thrive Holdings and Crete</a> use Codex in a tax-preparation workflow that incorporates practitioner feedback. Their pilot processed 7,000 returns and reduced preparation time by about a third.</p>
+</li>
+</ul>
+<p>These examples are not limited to engineering: the same pattern applies to support teams investigating customer issues, operations teams coordinating workflows, security teams triaging incidents, sales teams researching accounts, and marketing teams developing campaigns. In each case, the application provides the context, tools, and approvals, while Codex powers the underlying agent loop.</p>
+<h2>Build beyond the obvious</h2>
+<p>For many kinds of work, the essential context is grounded in a dashboard, a timeline, a map, a document, or a system record. Those views are not there to be pretty: it is how people actually understand what is happening, make decisions, and stay in control.</p>
+<p>The opportunity is not to replace those interfaces with a universal chat box, but to make them more capable by giving them an agent that can understand the work, investigate the right context, propose a next step, and take an approved action.</p>
+<p>The Codex app, CLI, and IDE extension show what the harness can do. By making the harness open source, we give developers a way to inspect those capabilities, integrate them, and adapt them to their own products and workflows.</p>
+<p>If you want to build with the Codex harness, start with the <a href="https://github.com/openai/codex">open-source Codex repository</a>, then choose the integration that fits your product: <a href="https://developers.openai.com/codex/non-interactive-mode">codex exec</a> for noninteractive jobs, the <a href="https://developers.openai.com/codex/codex-sdk">Codex SDK</a> for programmatic agent workflows, or <a href="https://developers.openai.com/codex/app-server">Codex app-server</a> for applications that need persistent conversations, streamed events, and approval handling.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

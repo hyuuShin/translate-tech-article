@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Claude Fable 5.2로 멀티 에이전트 팀을 안전하게 확장하기 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Agents</p>
+    <h1 class="lang-ko">Claude Fable 5.2로 멀티 에이전트 팀을 안전하게 확장하기</h1>
+    <h1 class="lang-en" hidden lang="en">Safely scaling multi-agent teams with Claude Fable 5.2</h1>
+    
+    <p class="art-sum lang-ko">Claude Fable 5.2 초기 버전을 실행하는 에이전트 1,000개로 구성된 팀이 범용 도구, 공유 데이터베이스, 계층형 안전 통제를 활용하여 페르마의 마지막 정리에 대한 형식 증명(formal proof)을 재현한 과정을 소개합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">How a team of 1,000 agents running an early version of Claude Fable 5.2 reproduced a formal proof of Fermat&#39;s Last Theorem with general tools, a shared database, and layered safety controls.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 11월 9일</dd></div>
+      <div><dt>저자</dt><dd>Barry Zhang, Tianyi Peng, Elle Najt, Keller Scholl, Lance Martin</dd></div>
+      <div><dt>분량</dt><dd>12분</dd></div>
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/safely-scaling-multi-agent-teams-with-fable-5-2/">https://claude.dev/blog/safely-scaling-multi-agent-teams-with-fable-5-2/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>멀티 에이전트 팀은 어렵고 장기적인 문제를 풀 수 있습니다. <a href="https://www.anthropic.com/research/formalizing-fermats-last-theorem">9월에</a> 저희는 페르마의 마지막 정리에 대한 최초의 엔드투엔드 형식화(formalization)를 공개했습니다. 이는 Claude Fable 5.1과 대략 비슷한 수준의 내부 연구용 모델을 실행하는 수십 개의 에이전트가 작성한 결과물입니다. 이 작업은 수학 형식화 플랫폼인 Prove2Me와 연구자의 지시에 의존했습니다. 이번 간이 실험에서는 Claude Fable 5.2 초기 버전을 실행하는 1,000개 에이전트 팀이 Prove2Me가 제공하는 스캐폴딩(scaffolding)이나 연구자의 방향 제시 없이 그 증명을 재현했습니다. 이 팀은 28.7시간이 걸렸고, 출력 토큰은 3분의 1만 사용했으며, 원본의 7분의 1 길이로 증명을 작성했습니다.</p>
+<p>각 에이전트는 인터넷에 접근할 수 없는 샌드박스(sandbox)에서 작업했습니다. 분류기(classifier)가 모든 셸 명령과 파일 수정을 실행 전에 검사했고, 오프라인 모니터가 팀의 모든 행동을 검토했습니다. 저희는 에이전트에게 증명할 명제 60개의 목록, 고전적인 접근 경로를 한 문장으로 요약한 개요, 해당 명제들이 사용하는 정의, 이전 형식화에서 증명된 보조정리(lemma) 47개를 제공하고, 리드(lead)와 헬퍼(helper) 역할을 지정했습니다. 정리를 증명하는 방법이나 스스로 조직하는 방법에 대해서는 다른 지침을 주지 않았습니다.</p>
+<p>이 간이 실험은 Fable 5.2와 같은 모델을 실행하는 에이전트 팀이 신중하게 설계된 안전 경계 안에서 야심차고 장기적인 목표를 달성할 수 있음을 시사합니다.</p>
+<h2>문제</h2>
+<p>페르마의 마지막 정리는 2보다 큰 어떤 n에 대해서도 aⁿ + bⁿ = cⁿ을 만족하는 양의 정수 a, b, c가 존재하지 않는다는 내용입니다. 이 정리는 350년 넘게 증명되지 않다가 1995년 Sir Andrew Wiles가 129쪽 분량의 증명을 내놓으면서 해결되었습니다. 증명의 모든 단계를 컴퓨터가 검증할 수 있도록 형식화하는 일은 수학계의 <a href="https://lean-lang.org/use-cases/flt/">오랜 목표</a>였습니다.</p>
+<p>9월의 형식화에는 연구자 1명과 수십 개의 에이전트가 11일 동안 약 60억 개의 출력 토큰을 사용했습니다. 이들은 컴퓨터가 증명의 모든 단계를 검사하는 프로그래밍 언어인 Lean으로 1,300만 줄의 코드를 작성했습니다.</p>
+<p>에이전트들은 Prove2Me를 통해 협업했습니다. Prove2Me는 Tianyi Peng(현재 Anthropic의 기술 스태프)과 Columbia University의 공동 연구자들이 설계한 플랫폼입니다. Prove2Me는 증명해야 할 각 명제를 그 명제가 분할된 더 작은 명제들과 연결하는 공유 그래프를 사용합니다. 어떤 에이전트든 명제를 분할할 수 있었고, 다른 에이전트들은 그래프에 증명되지 않은 조각 중 어느 것을 바로 작업할 수 있는지 물어볼 수 있었기 때문에 프로젝트의 상태를 놓치지 않았습니다. 각 명제와 그 증명은 독립적으로 컴파일되는 별도의 파일에 보관되어, 많은 에이전트가 같은 파일을 수정하지 않고도 병렬로 작업할 수 있었습니다.</p>
+<h2>하네스</h2>
+<p>저희는 범용 도구로 구성한 하네스를 사용하여, Fable 5.2와 같은 모델을 실행하는 에이전트 팀이 Prove2Me나 작업을 지휘하는 연구자 없이도 이 결과를 만들어 낼 수 있는지 확인하고자 했습니다.</p>
+<h3>도구</h3>
+<p>이번 과제에서는 1,000개 에이전트 팀에게 증명할 명제 60개를 주었습니다. 여기에는 최종 정리와 59개의 중간 이정표가 포함됩니다. 에이전트들은 각 명제에 대해 Lean으로 증명을 작성하고, Lean의 도구로 빌드하여 검사한 뒤, Git의 공유 main 브랜치에 제출해야 했으며, 그곳에서 채점기(grader)가 이를 검사했습니다. 각 에이전트에게는 다음 도구를 제공했습니다.</p>
+<ul>
+<li>네트워크 접근이 없는 자신만의 샌드박스에서 사용하는 셸과 파일 편집기</li>
+<li>샌드박스 이미지에 내장된 Lean 툴체인과 <a href="https://github.com/leanprover-community/mathlib4">Mathlib</a></li>
+<li>자신만의 Git 브랜치와 main에 머지 리퀘스트(merge request)를 열 수 있는 권한</li>
+<li>셸에서 접근하는 공유 Postgres 데이터베이스</li>
+</ul>
+<h3>협업</h3>
+<p>증명 작업은 여러 부분으로 나눌 수 있으므로 멀티 에이전트 팀에 적합한 과제입니다. 하지만 에이전트들은 서로의 작업을 기반으로 발전시키고 중복을 피하기 위해 협력해야 하기도 합니다. <a href="https://www.anthropic.com/research/formalizing-fermats-last-theorem">최초의 형식화</a>에서 Claude의 초기 시도는 에이전트들이 프로젝트의 상태를 놓치고 효과적으로 협업하지 못해 실패했습니다. Prove2Me 플랫폼으로 전환하면서 이 문제가 해결되었습니다.</p>
+<p>이번 실행에서는 각 에이전트가 자신만의 경량 가상 머신에 샌드박스를 갖도록 했습니다. 공유 머신 하나는 에이전트 약 100개에서 한계에 부딪혔습니다. 100개 에이전트 실행 중 절반 넘게가 메모리, 디스크, CPU 부족으로 중단되거나 재시작해야 했습니다.</p>
+<p>샌드박스가 1,000개로 분리되었기 때문에 에이전트들에게는 작업을 공유할 방법이 필요했고, 이를 위해 SQL 데이터베이스를 제공했습니다(그림 1). SQL을 선택한 이유는 정보를 조직하기 위한 범용 기본 요소(primitive)를 제공하고, 트랜잭션으로 1,000개 에이전트의 동시 쓰기를 처리할 수 있으며, Claude가 이미 SQL에 익숙하기 때문입니다. 에이전트들은 이 데이터베이스를 사용해 작업을 선점하고, 메모를 공유하고, 완료한 작업을 기록했습니다.</p>
+<figure><img src="https://claude.dev/media/13dca8328dafc6e21860d77255066340778ab6cecae719aefe31fad55a9b1c1c.png" alt="Harness architecture. A stack of 1,000 agent sandboxes (1 lead and 999 helpers), each running the agent loop, harness code inside the sandbox, with a shell and a file editor as tools and the repo, Lean and the math library as files. API requests and responses pass between the agent loop and a gateway outside the sandboxes that calls the Claude API. Git and SQL requests and their results pass through the same gateway to the team infrastructure, also outside the sandboxes: a Git repository of Lean files and plans, and a Postgres database of instructions, tasks and notes."><figcaption><b>그림 1</b>1,000개 에이전트는 각자의 샌드박스에서 실행되었으며, 게이트웨이로 연결된 파이프를 통해서만 외부와 연결되었습니다. 게이트웨이는 Claude API를 호출하고 Git 및 SQL 요청을 공유 저장소와 데이터베이스에 전달했습니다.</figcaption></figure>
+<h3>프롬프트</h3>
+<p>프롬프트에서는 Claude에게 증명할 명제 60개의 목록(각 명제에 한 줄짜리 비형식적 설명 포함)을 주고, 사용할 수 있는 도구(위에 나열)를 설명했습니다.</p>
+<p>팀에 제공한 구조는 리드 1개와 헬퍼 999개로 이루어진 계층 구조가 전부였습니다. 리드에게는 문제를 여러 부분으로 나누어 헬퍼에게 할당하도록 지시했습니다. 헬퍼에게는 리드로부터 작업을 받을 것을 예상하고, 작업이 불분명하면 리드에게 확인하도록 지시했습니다.</p>
+<p>실행 중 하네스(harness)는 리드 에이전트에게 남은 시간을 알려 주는 자동 알림을 총 19회 보냈으며, 알림마다 계속 진행하도록 독려했습니다.</p>
+<h2>안전성</h2>
+<p><a href="https://www.anthropic.com/news/improving-alignment-security-efforts">앞서 공유한 바와 같이</a>, 에이전트 팀을 통제하는 데에는 단일 방어 계층만으로 충분하지 않습니다. 이번 실험에서는 샌드박싱(sandboxing)과 실시간 및 오프라인 모니터링을 함께 적용하여, 각 에이전트를 네트워크 접근이 없는 별도의 가상 머신에 두고 샌드박스 탈출이나 모니터링 조작 시도를 탐지했습니다.</p>
+<h3>샌드박싱</h3>
+<p>각 에이전트의 샌드박스는 다음과 같은 방식으로 보호했습니다(그림 2).</p>
+<ul>
+<li><strong>통신</strong>: 에이전트에게는 전용 메시징 도구가 없었으며, 데이터베이스와 Git을 통해서만 협업했습니다.</li>
+<li><strong>코드 변경</strong>: 에이전트는 자신의 Git 브랜치에만 푸시할 수 있었고, main으로 머지 리퀘스트(merge request)를 열 수 있었습니다. 이후 별도의 작업이 변경 사항을 main에 병합했으며, 충돌이 있거나 관련 없는 히스토리 같은 결함이 있는 경우에만 병합을 거부했습니다.</li>
+<li><strong>데이터베이스 접근</strong>: 데이터베이스 호출은 공유된 비특권 역할(unprivileged role)로 실행되었습니다. SQL 문마다 5초의 시간 제한이 있었고, 256 MiB를 초과하는 쓰기는 거부되었습니다.</li>
+<li><strong>네트워크 제어</strong>: 샌드박스에는 네트워크 접근 권한이 없었습니다. 외부로 나가는 유일한 연결은 게이트웨이로 향하는 파이프였으며, 게이트웨이가 요청을 중계했습니다.</li>
+<li><strong>신원</strong>: 한 에이전트가 다른 에이전트를 사칭하지 못하도록, 게이트웨이가 샌드박스 외부에서 각 요청에 에이전트의 신원을 태그로 부여했습니다.</li>
+<li><strong>커널</strong>: 각 샌드박스의 커널은 로더블 모듈, kexec, 원시 메모리 접근, 커널 프로브처럼 루트 사용자에게 커널로 가는 직접 경로를 제공하는 기능을 제외하고 빌드되었습니다. 또한 커널 락다운 모드(kernel lockdown mode)로 실행되었습니다.</li>
+<li><strong>최소 권한</strong>: 각 에이전트의 명령은 샌드박스 안에서 비특권 사용자로 실행되었으며, 루트 권한을 되찾을 수 있는 sudo 같은 도구는 제거되었습니다. 에이전트의 도구는 해당 도구를 실행하는 에이전트 루프를 읽거나 변경할 수 없도록 설계되었습니다.</li>
+</ul>
+<figure><img src="https://claude.dev/media/ae9400390023085b8047fa4a7d7d2e486d1bb0c405152b884ef6e5579ec4abec.png" alt="The harness architecture with its safety measures marked in three groups. Sandboxing: each agent gets its own lightweight VM with no network access, no API keys or credentials, no direct path to other sandboxes, an unprivileged user account and no tool access to the harness code. Real-time monitoring: the gateway runs a blocking classifier on each tool call, with a fail-closed design, sets each agent's identity and logs every push and query; the Git repository takes own-branch pushes only with a merge job for main, and the Postgres database uses a shared unprivileged role with time and size limits. Offline monitoring: run records kept outside the sandboxes feed offline monitoring, which tells the run owners of serious findings."><figcaption><b>그림 2</b>세 가지 안전 계층이 팀을 둘러싸고 있었습니다. 샌드박싱, 실시간 모니터링, 오프라인 모니터링입니다. 분류기(classifier)는 각 도구 호출을 실행 전에 검사했고, 오프라인 모니터는 팀의 행동을 검토했습니다.</figcaption></figure>
+<h3>실시간 모니터링</h3>
+<p>이와 같은 실행을 더 안전하게 만들기 위해, 셸 명령과 파일 편집을 포함한 모든 도구 호출을 차단할 수 있는 프롬프트 기반 LLM 분류기를 사용합니다. 이 분류기는 샌드박스 탈출, 경계 탐색, 모니터링 조작 시도와 함께, 모델이 샌드박스를 벗어났을 경우 수행할 수 있는 모든 유해한 행동을 감시합니다. 분류기가 도구 호출을 차단하면 에이전트 팀 전체가 중단되며, 팀을 다시 시작하기 전에 사람이 해당 차단 건을 검토해야 합니다. 이는 다른 에이전트가 차단된 행동을 대신 수행하는 일을 막기 위한 것입니다.</p>
+<p>분류기가 정교한 방해 행위(sabotage)를 탐지할 수 있는지 시험하기 위해, 멀티 에이전트 사이드 태스크(side-task) 및 방해 행위 평가를 실행했습니다. 이 평가에서 레드팀 에이전트는 분해 공격(decomposition attack) 같은 전략을 사용하여 분류기가 샌드박스 탈출을 허용하도록 속이려 했습니다. 그 결과, 에이전트의 사고 과정(chain of thought, CoT)과 에이전트 간 통신을 볼 수 있는 모니터는 이 평가에서 모든 방해 시도를 탐지했으며, 따라서 현재 멀티 에이전트 실행을 모니터링하는 데 이를 사용합니다. 이와 병행하여, 에이전트의 추론이 모니터를 설득해 유해한 행동을 허용하게 만드는 상황을 막기 위해, CoT 없이 행동만 보는 동일 모니터의 행동 기반 버전도 함께 실행합니다.</p>
+<p>사람이 주도하는 레드팀 활동과 자동 레드팀 활동, 과거 사고를 포함한 실제 운영 환경의 트랜스크립트에 대한 평가, 위협 모델링 확장을 통해 모니터링 스택을 계속 개선하고 있습니다. 이 글의 실행에서는 행동 기반 모니터만 사용했습니다. 리드 에이전트가 차단되는 경우에만 실행이 종료되었을 것이며, 헬퍼 에이전트가 차단되면 해당 헬퍼만 제거되었을 것입니다.</p>
+<p>이 실행 직후 병렬 CoT 모니터를 추가했습니다. 이와 같은 실험은 출시 전 정렬(alignment) 평가를 완료하지 않았을 수 있는 모델로 수행하므로, 모델이 정렬되지 않았을 가능성을 염두에 두고 모니터링을 설계합니다. 출시하는 모델은 해당 평가를 먼저 완료하므로 이러한 위험이 줄어들지만, 완전히 사라지지는 않습니다.</p>
+<p>이번 실행의 100만 건이 넘는 도구 호출 중 차단 기준에 해당하는 것은 없었습니다. 이 호출들을 CoT 모니터와 현재의 평가 기준(rubric)으로 다시 재생해 보았을 때, 루트 권한 확인 한 건만이 차단에 근접했습니다.</p>
+<h3>오프라인 모니터링</h3>
+<p>실시간 모니터링 외에 오프라인 모니터도 실행합니다. 이 모니터는 실시간 모니터와 동일한 위협 모델을 기준으로 에이전트 팀의 행동을 분석하되, 다른 에이전트의 행동을 조회할 수 있는 등 추가적인 기능을 갖추고 있습니다.</p>
+<h2>결과</h2>
+<h3>Prove2Me 없이 팀이 자체 조율 시스템을 구축함</h3>
+<p>이 증명 작업은 여러 수준에서 이루어집니다.</p>
+<ul>
+<li><strong>증명 대상:</strong> 2보다 큰 어떤 n에 대해서도 aⁿ + bⁿ = cⁿ을 만족하는 양의 정수 a, b, c는 존재하지 않습니다.</li>
+<li><strong>명제:</strong> 팀에는 최종 정리와 중간 단계의 마일스톤 59개를 포함해 증명할 명제 60개를 주었습니다.</li>
+<li><strong>더 작은 명제:</strong> 에이전트는 어려운 명제를 더 작은 명제, 즉 보조정리(lemma)로 나누었습니다.</li>
+<li><strong>Lean:</strong> 모든 명제와 보조정리는 Lean에서 하나의 정리(theorem)로 표현됩니다.</li>
+</ul>
+<p>각 명제는 <a href="https://lean-lang.org/use-cases/flt/">Lean</a>에서 증명이 들어갈 자리에 플레이스홀더를 둔 채로 시작했으며, Lean의 검증기가 완성된 증명을 받아들인 경우에만 증명된 것으로 간주했습니다. 증명에 접근하는 방법과 이 여러 작업 단계에 걸쳐 팀을 조율하는 방법은 리드(lead)가 결정하도록 했습니다.</p>
+<p>처음 10분 동안 리드는 데이터베이스에 테이블 5개를 만들었습니다(그림 3).</p>
+<ul>
+<li><strong>Announce:</strong> 리드가 팀 전체에 내리는 지시입니다(예: 작업을 나누는 방법).</li>
+<li><strong>Assign:</strong> 누가 어떤 작업을 맡는지 기록합니다(예: 각 명제를 어떤 헬퍼가 담당하거나 대리하는지).</li>
+<li><strong>Notes:</strong> 누구나 쓸 수 있는 공개 게시판입니다(예: 작업을 맡겠다고 알리거나 진행 상황을 보고).</li>
+<li><strong>Subtasks:</strong> 어떤 에이전트든 작업을 추가할 수 있고, 가장 먼저 가져간 헬퍼가 그 작업을 맡는 할 일 목록입니다.</li>
+<li><strong>Landed:</strong> 완료된 작업의 기록입니다.</li>
+</ul>
+<figure><img src="https://claude.dev/media/3f0caf7f3e1dd17ad5ca3c9cb8bc584707404c40d3ba143cf21d348ef2dd48e8.png" alt="The five shared database tables between 1 lead and 999 helpers. Announce, the lead's orders to everyone, such as how to split up the work or to ease off the database: the lead writes and reads it, and helpers read it, with one helper write. Assign, who works on what, such as which helper owns or deputizes on each statement: the lead writes and reads it, and helpers read it, with one helper write. Notes, an open board where helpers say which piece they're taking or report progress: the lead and the helpers both write and read it. Subtasks, a shared to-do list where anyone adds a task and the first helper to grab it owns it: helpers write and read it, and the lead reads it, with two lead writes. Landed, a log of finished work recording which statement or piece landed, its commit and whether it passed the team's checks: helpers write and read it, and the lead reads it."><figcaption><b>그림 3</b> 처음 10분 동안 리드는 팀을 조율하기 위해 공유 데이터베이스 테이블 5개를 만들었습니다. 리드는 지시와 배정을 기록했고, 헬퍼는 완료된 작업을 기록하며 subtasks 테이블을 관리했습니다. notes 테이블에는 양쪽 모두 기록했습니다.</figcaption></figure>
+<h3>명제를 배분한 리드</h3>
+<p>테이블을 만든 뒤 리드는 세 가지 일을 했습니다. 첫째, assign 테이블에 헬퍼마다 한 행씩 모두 999개 행을 기록해 각 명제를 16~17명의 헬퍼로 구성된 크루(crew)에 배정했습니다. 둘째, 각 크루에서 헬퍼 한 명을 캡틴으로 정했습니다. 캡틴은 notes 테이블에 계획을 게시하고, 작업을 태스크로 나누어 크루가 subtasks 테이블에서 가져가도록 할 책임이 있습니다. 셋째, announce 테이블에 지시를 게시해 모든 헬퍼가 먼저 자신이 맡은 명제의 난이도를 판단하고 그 결과를 notes 테이블에 올리도록 했습니다.</p>
+<p>헬퍼는 프롬프트를 통해 데이터베이스가 존재한다는 것을 알고 있었습니다. 헬퍼는 announce 테이블을 찾아 평가를 시작했고, 대부분 notes 테이블에 판단 결과를 게시했습니다. 약 27분이 지났을 때 이미 명제 3개가 증명되었고 리드는 게시된 판단 결과를 읽은 상태였습니다. 그러자 리드는 대부분의 헬퍼가 이번 실행의 예산 안에서는 불가능하다고 판단한 명제 47개를 제쳐 두고, 거의 모든 헬퍼를 완료할 수 있다고 본 나머지 10개 명제에 다시 배정했습니다. 크루의 규모는 약 17명에서 46~139명으로 늘어났습니다.</p>
+<p>각 헬퍼는 루프를 돌며 작업했고, 그 대부분은 리드의 지시에 명시되어 있었습니다.</p>
+<ul>
+<li>notes 테이블에서 해당 명제의 계획을 찾습니다.</li>
+<li>subtasks 테이블에서 태스크를 하나 가져옵니다.</li>
+<li>Lean으로 증명을 작성하고, Lean의 도구로 검증한 뒤, Git의 메인 브랜치에 제출합니다.</li>
+<li>태스크를 완료로 표시합니다.</li>
+<li>notes 테이블에 업데이트를 게시합니다.</li>
+</ul>
+<p>약 45분 무렵, 10개 명제 중 약 5개가 증명된 상태에서 리드는 다음과 같이 적었습니다.</p>
+<blockquote>
+<p>"the team's throughput is far higher than the early 'infeasible-in-budget' verdicts assumed"</p>
+</blockquote>
+<p>10개 명제는 모두 약 70분 안에 증명되었습니다.</p>
+<h3>더 어려운 명제로 헬퍼를 옮긴 리드</h3>
+<p>처음 10개 명제가 끝나자 리드는 "there is no reason to idle"이라고 적고, 헬퍼를 처음에 제쳐 두었던 더 어려운 명제에 다시 배정했습니다. 더 많은 명제가 증명되면서 리드는 헬퍼를 새로운 배정으로 계속 옮겼으며, 대부분 처음 6시간 동안 이루어졌습니다(그림 4에서 빨간색으로 표시된 assign 테이블에 대한 쓰기 참고).</p>
+<figure><img src="https://claude.dev/media/c317ae355bbb5ddc955fd234a84ac7700fa41a3fd70ae16c32ac63817f276a57.png" alt="Timelapse from hour 0 to hour 30 of reads and writes between the 1,000 agents and the shared database tables: announce, assign, notes, subtasks, landed and a group of other tables. Writes run as red lines from a top row of the lead and helpers 1 to 999 down to the tables, and reads as green lines from the tables down to the same agents in a bottom row. The counts climb to 36,612 writes and 311,734 reads by hour 30. Nearly all writes go to the notes table, about 20,600, and the subtasks table, about 14,800, and the lines go quiet near hour 18, when the run was restarted."><figcaption><b>그림 4</b> 실행 기간 동안 공유 테이블에서 읽은 기록(녹색)과 공유 테이블에 쓴 기록(빨간색)입니다. 쓰기의 거의 전부는 헬퍼의 노트와 태스크 가져가기를 포함한 태스크 업데이트입니다. 합계에는 대부분의 스크립트 호출이 포함되어 있지 않습니다. 18시간 무렵에 활동이 멈추는데, 이때 마지막 저장 지점에서 실행을 다시 시작하고 에이전트에게 12시간을 더 주었습니다.</figcaption></figure>
+<p>처음에 리드(lead)는 캡틴(captain)들에게 subtasks 테이블에서 작업을 태스크로 나누도록 지시했습니다. 작업이 진행되면서 헬퍼(helper)들은 각 명제(statement)를 해결하는 데 더 많은 책임을 맡게 되었습니다. 헬퍼들은 때로는 캡틴이 도움을 요청한 뒤에, 직접 태스크를 작성하기 시작했습니다. 5.6시간째에는 73명의 헬퍼가 756개의 태스크를 작성했고, 그중 캡틴은 16명뿐이었습니다. 그림 4는 여러 헬퍼가 subtasks 테이블에 기록한 내용(빨간색)을 보여 주며, 이 기록 대부분은 태스크를 맡거나 완료로 표시하는 것이었습니다. 태스크를 마친 헬퍼들은 더 많은 일을 자원하기도 했습니다.</p>
+<blockquote>
+<p>"FREE … I finish pieces end-to-end … Name ONE deep piece … and I start at once"</p>
+</blockquote>
+<p>초기에는 리드가 헬퍼들을 특정 명제에 직접 배정하기도 했습니다. 이 방식은 첫 한 시간 안에 바뀌기 시작했고, 세 번째 시간에 이르러 리드는 여유가 있는 헬퍼들에게 "do not wait for me"라고 말했습니다. 덕분에 여유가 있는 헬퍼들은 리드가 계속 새로운 배정을 작성하는 중에도, 리드를 기다리지 않고 다른 명제의 작업을 맡을 수 있었습니다.</p>
+<h3>Langlands–Tunnell에 팀을 배정한 리드</h3>
+<p>18시간째 무렵에는 Wiles의 증명이 의존하는 고전적 결과인 Langlands–Tunnell과, 그에 의존하는 명제들, 그리고 팀이 진행 도중 증명한 다른 명제 하나만 남아 있었습니다. 실행 초반에 Langlands–Tunnell 태스크의 캡틴은 비관적이어서, 증명에 최소 70만~100만 줄의 Lean 코드가 필요하며 제시간에 끝낼 가능성은 1% 미만이라고 추정했습니다. 리드는 이 명제를 보류해 두었습니다.</p>
+<p>다른 작업이 거의 모두 끝나자, 리드는 팀의 초점을 다시 Langlands–Tunnell로 돌렸습니다. 마지막 하향식(top-down) 배정에서 리드는 약 750명의 헬퍼를 이 명제에 투입하며 "Honest odds are low."라고 썼습니다.</p>
+<p>Langlands–Tunnell은 에이전트들이 다뤄 온 다른 어떤 명제보다 훨씬 커서, 태스크 수는 약 9배, 새로 작성된 코드는 2배 이상이었습니다. 헬퍼들은 이번에도 subtasks 테이블을 사용해 작업을 나누었지만, 초기 태스크 중 상당수는 헬퍼 한 명이 혼자 끝내기에는 너무 컸습니다.</p>
+<p>그래서 팀은 작업을 트리(tree) 구조로 조직했습니다. 캡틴은 이 명제를 10개 영역으로 나누고 각 조각을 태스크로 나열한 계획을 만들었습니다. 한 조각이 혼자 감당하기에 너무 크다고 판단한 헬퍼는 그것을 쪼개어 그 아래에 더 작은 태스크를 추가할 수 있었습니다. 트리는 한 조각이 에이전트 한 명에게 너무 어려운 것으로 드러날 때마다 커졌고, 결국 최대 10단계 깊이의 2,418개 태스크에 이르렀습니다(그림 5). 각 조각은 그 아래 조각들이 증명되어 있다고 가정할 수 있었으므로, 그 조각들이 증명되기 전에도 수백 명의 헬퍼가 병렬로 작업할 수 있었습니다.</p>
+<figure><img src="https://claude.dev/media/478edfdd3a2337244a661f026df313df13cc950ec5593a3493cf83260101c0ef.png" alt="Timelapse from hour 20.5 to hour 28.9 of the task tree under Langlands–Tunnell, drawn as rings around the statement, with its sub-areas as black dots near the center. Tasks appear as helpers write them and turn from gray to orange and then dark red as they are first marked done, with later hours in darker color. By hour 28.9 the tree holds all 2,418 tasks, 2,364 of them marked done with a known hour, and its deepest branches reach the outer rings."><figcaption><b>FIG 5</b>20.5시간째부터 명제가 증명된 28.4시간째까지 성장한 Langlands–Tunnell 하위의 태스크 트리입니다. 바깥쪽으로 한 고리씩 나아갈 때마다 한 단계 더 깊어지며, 태스크는 처음 완료로 표시될 때 회색에서 색으로 바뀝니다. 선은 태스크가 어떻게 나뉘었는지를 보여 줍니다. 이 연결 대부분은 헬퍼들의 태스크 레이블을 바탕으로 사후에 추론했습니다.</figcaption></figure>
+<p>그림 6은 전체 실행 동안 모든 헬퍼가 무엇을 작업했는지를 보여 줍니다. 초반에는 헬퍼들이 여러 명제에 흩어져 있었지만, 후반에는 Langlands–Tunnell에 모였습니다. Langlands–Tunnell은 28.4시간째에 증명되었고, 이어서 28.7시간째에 최종 정리가 증명되었습니다. 그러자 리드는 다음과 같이 썼습니다.</p>
+<blockquote>
+<p>"Thank you all: Fermat's Last Theorem is on main, kernel-checked by the official checker."</p>
+</blockquote>
+<figure><img src="https://claude.dev/media/de2d976fc8786438b398be6a8c0cff0f849f740f443195e4af00a8865939e3b1.png" alt="Timelapse from hour 0 to hour 30 of where each of the 999 helpers worked, sampled every 5 minutes. The 60 statements are dots grouped by how the lead staffed them: landed first, judged doable, set aside but staffed by hour 1.2, set aside and taken up from hour 1.5, modularity lifting, Langlands–Tunnell, and the last links up to Fermat's Last Theorem. Helpers cluster as orange dots around the statements they work on: spread across many statements in the first hours, crowded onto modularity lifting from about hour 8, stopped near hour 18, and gathered on Langlands–Tunnell after the restart. At hour 30, 54 of the 60 statements are proved and filled black."><figcaption><b>FIG 6</b>각 점은 헬퍼 한 명을 나타내며, 빌드를 기다리는 동안을 포함해 헬퍼 자신의 기록에 따라 작업 중인 것으로 확인된 명제 또는 작업 흐름에 5분마다 위치시켰습니다. 헬퍼들은 여러 명제에 흩어져 있다가 Langlands–Tunnell로 모였습니다. 대안 5개가 더 이상 필요하지 않게 되었고 명제 1개가 제외되었기 때문에, 집계는 60개 명제 중 54개에서 끝납니다.</figcaption></figure>
+<h2>결론</h2>
+<p>이 장난감(toy) 실험을 통해 1,000개의 에이전트로 구성된 팀이 길고 어려운 태스크를 어떻게 수행하는지 살펴볼 수 있었습니다. 에이전트들은 Git과 공유 데이터베이스만 사용해 역할을 배정하고 결과를 공유하는 테이블을 설계했으며, 팀을 구성하고, 캡틴 스스로가 제시간에 끝낼 가능성을 1% 미만으로 본 가장 어려운 명제를 분해하기 위한 태스크 트리를 만들었습니다.</p>
+<p>이 결과가 도메인 특화 하네스(harness)나 플랫폼의 필요성을 없애는 것은 아닙니다. 예를 들어 Prove2Me는 에이전트가 Lean 코드를 더 빠르게 컴파일하도록 돕고, 사람이 만든 결과를 검색해 재사용할 수 있게 해 주어 여전히 효율을 높일 수 있습니다.</p>
+<p>특정 시점에서는 사람의 지시도 여전히 유용할 수 있습니다. 에이전트는 어려운 문제를 포기하고 그 난이도를 잘못 판단하는 경향이 있습니다. 초반에 헬퍼들은 60개 명제 중 47개가 이번 실행의 예산 안에서는 불가능하다고 판단했지만, 팀은 결국 그중 대부분을 증명했습니다. 이런 순간에 사람이 격려해 주면 에이전트가 너무 일찍 멈추는 것을 막을 수 있습니다.</p>
+<p>신중하게 설계된 안전 경계 덕분에 이번 실험을 시작할 수 있었습니다. Claude는 저희가 제공한 도구를 활용해 원하는 방식으로 문제에 접근할 수 있었지만, 네트워크 접근이 차단된 샌드박스(sandbox) 안에서, 그리고 두 개의 독립된 모니터링 체계 아래에서만 작업할 수 있었습니다.</p>
+<p>이러한 방법은 빠르게 발전할 것으로 예상되며, 이 팀처럼 더 어려운 작업에 도전하는 팀이 늘어날수록 이를 둘러싼 안전 경계도 같은 속도로 발전해야 합니다. 저희는 멀티 에이전트 팀을 안전하게 확장하면 앞으로 몇 년 안에 가장 어려운 문제 중 일부를 해결하는 데 도움이 될 것이라고 믿습니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>Multi-agent teams can solve challenging, long-horizon problems. <a href="https://www.anthropic.com/research/formalizing-fermats-last-theorem">In September</a>, we published the first end-to-end formalization of Fermat’s Last Theorem, written by dozens of agents running an internal research model roughly comparable to Claude Fable 5.1. That work relied on Prove2Me, a platform for formalizing mathematics, and direction from a researcher. In a new toy experiment, a team of 1,000 agents running an early version of Claude Fable 5.2 reproduced the proof without the scaffolding provided by Prove2Me or steering from a researcher. The team took 28.7 hours, used one-third as many output tokens, and wrote a proof one-seventh the length of the original.</p>
+<p>Each agent worked in a sandbox with no internet access. A classifier checked every shell command and file edit before it ran, and an offline monitor reviewed each of the team’s actions. We gave the agents a list of 60 statements, a one-sentence sketch of the classical route, the definitions those statements use, and 47 proved lemmas from our earlier formalization, and assigned lead and helper roles. We offered no other guidance on how to prove the theorem or organize themselves.</p>
+<p>This toy experiment suggests that teams of agents running models like Fable 5.2 can accomplish ambitious, long-horizon goals within carefully designed safety boundaries.</p>
+<h2>PROBLEM</h2>
+<p>Fermat’s Last Theorem states that no positive integers a, b, and c satisfy aⁿ + bⁿ = cⁿ for any n greater than 2. It remained unproven for more than 350 years, until Sir Andrew Wiles’s 129-page proof in 1995. Formalizing the proof—making every step checkable by a computer—has been a <a href="https://lean-lang.org/use-cases/flt/">long-standing goal</a> in the mathematics community.</p>
+<p>Our September formalization took a researcher and dozens of agents 11 days and roughly 6 billion output tokens. They wrote 13 million lines of code in Lean, a programming language in which a computer checks every step of a proof.</p>
+<p>The agents coordinated through Prove2Me, a platform designed by Tianyi Peng (who is now a member of technical staff at Anthropic) and his collaborators at Columbia University. Prove2Me uses a shared graph that links each statement to be proved to the smaller statements it was split into. Any agent could split a statement, and other agents could ask the graph which unproved pieces were ready to work on, which kept them from losing track of the project state. Each statement and its proof were kept in a separate file that compiled independently, so many agents could work in parallel without editing the same files.</p>
+<h2>HARNESS</h2>
+<p>We wanted to see whether a team of agents running on models like Fable 5.2 could produce this result without Prove2Me or a researcher directing the work, using a harness built from general-purpose tools.</p>
+<h3>Tools</h3>
+<p>For this task, we gave the team of 1,000 agents 60 statements to prove, including the final theorem and 59 intermediate milestones. For each statement, the agents had to write a proof in Lean, build and check it with Lean’s tools, and submit it to the shared main branch on Git, where a grader checked it. We gave each agent the following tools:</p>
+<ul>
+<li>A shell and a file editor, in its own sandbox with no network access.</li>
+<li>Lean’s toolchain and <a href="https://github.com/leanprover-community/mathlib4">Mathlib</a>, built into the sandbox image.</li>
+<li>Its own Git branch, plus the ability to open merge requests into main.</li>
+<li>A shared Postgres database, reached from the shell.</li>
+</ul>
+<h3>Collaboration</h3>
+<p>Work on the proof can be split up, making it a good task for a multi-agent team. But agents also need to coordinate, both to build on one another’s work and to avoid duplicating it. In our <a href="https://www.anthropic.com/research/formalizing-fermats-last-theorem">original formalization</a>, Claude’s early attempts failed because agents lost track of the project’s state and stopped collaborating effectively. Moving to the Prove2Me platform solved this problem.</p>
+<p>For this run, each agent had a sandbox on its own lightweight virtual machine. A single shared machine hit its limits at about 100 agents: more than half of our 100-agent runs had to be stopped or restarted because memory, disk, or CPU ran out.</p>
+<p>With 1,000 separate sandboxes, the agents needed a way to share their work, so we gave them a SQL database (Figure 1). We chose SQL because it offers general primitives for organizing information, its transactions handle concurrent writes from 1,000 agents, and Claude is already familiar with it. The agents used the database to claim tasks, share notes, and log finished work.</p>
+<figure><img src="https://claude.dev/media/13dca8328dafc6e21860d77255066340778ab6cecae719aefe31fad55a9b1c1c.png" alt="Harness architecture. A stack of 1,000 agent sandboxes (1 lead and 999 helpers), each running the agent loop, harness code inside the sandbox, with a shell and a file editor as tools and the repo, Lean and the math library as files. API requests and responses pass between the agent loop and a gateway outside the sandboxes that calls the Claude API. Git and SQL requests and their results pass through the same gateway to the team infrastructure, also outside the sandboxes: a Git repository of Lean files and plans, and a Postgres database of instructions, tasks and notes."><figcaption><b>FIG 1</b>Each of the 1,000 agents ran in its own sandbox, connected to the outside only by a pipe to a gateway. The gateway called the Claude API and passed Git and SQL requests to the shared repository and database.</figcaption></figure>
+<h3>Prompting</h3>
+<p>Our prompt gave Claude a list of 60 statements to prove, each with a one-line informal description, and described the available tools (listed above).</p>
+<p>The only structure we gave the team was a hierarchy, consisting of one lead and 999 helpers. We told the lead to split the problem into parts and assign them to the helpers. We told the helpers to expect work from the lead and to check with the lead if a task was unclear.</p>
+<p>During the run, the harness sent the lead 19 automatic reminders of how much time remained, each encouraging the lead to keep going.</p>
+<h2>SAFETY</h2>
+<p>As we’ve <a href="https://www.anthropic.com/news/improving-alignment-security-efforts">shared previously</a>, no single layer of defense is sufficient to contain a team of agents. In this experiment, we combined sandboxing with real-time and offline monitoring to keep each agent in its own virtual machine with no network access and to detect any attempts to escape the sandbox or tamper with monitoring.</p>
+<h3>Sandboxing</h3>
+<p>We secured each agent’s sandbox in the following ways (Figure 2):</p>
+<ul>
+<li><strong>Communication</strong>: Agents had no dedicated messaging tools and coordinated only through the database and Git.</li>
+<li><strong>Code changes</strong>: An agent could push only to its own Git branch and open a merge request into main. A separate job then merged the changes into main, refusing them only in cases of a conflict or a fault, such as unrelated history.</li>
+<li><strong>Database access</strong>: Database calls ran under a shared unprivileged role. Each SQL statement had a five-second time limit, and writes were refused above 256 MiB.</li>
+<li><strong>Network controls</strong>: Sandboxes did not have network access. Their one link out was a pipe to the gateway, which relayed their requests.</li>
+<li><strong>Identity</strong>: The gateway tagged each request with the agent’s identity outside the sandbox, to prevent one agent from posing as another.</li>
+<li><strong>Kernel</strong>: Each sandbox’s kernel was built without features that give a root user a direct path into it, such as loadable modules, kexec, raw memory access, and kernel probes. It ran in kernel lockdown mode.</li>
+<li><strong>Least privilege</strong>: Each agent’s commands ran inside its sandbox as an unprivileged user, with tools like sudo that could regain root removed. The agent’s tools were designed so they couldn’t read or change the agent loop that ran them.</li>
+</ul>
+<figure><img src="https://claude.dev/media/ae9400390023085b8047fa4a7d7d2e486d1bb0c405152b884ef6e5579ec4abec.png" alt="The harness architecture with its safety measures marked in three groups. Sandboxing: each agent gets its own lightweight VM with no network access, no API keys or credentials, no direct path to other sandboxes, an unprivileged user account and no tool access to the harness code. Real-time monitoring: the gateway runs a blocking classifier on each tool call, with a fail-closed design, sets each agent's identity and logs every push and query; the Git repository takes own-branch pushes only with a merge job for main, and the Postgres database uses a shared unprivileged role with time and size limits. Offline monitoring: run records kept outside the sandboxes feed offline monitoring, which tells the run owners of serious findings."><figcaption><b>FIG 2</b>Three safety layers surrounded the team: sandboxing, real-time monitoring, and offline monitoring. A classifier checked each tool call before it ran, and an offline monitor reviewed the team’s actions.</figcaption></figure>
+<h3>Real-time monitoring</h3>
+<p>To make runs like this safer, we use a prompted LLM classifier that can block each tool call, including shell commands and file edits. The classifier watches for attempts to escape the sandbox, probe its boundaries, or tamper with monitoring, and for any harmful actions the model might take if it manages to exit the sandbox. When the classifier blocks a tool call, the whole agent team stops and a person must review the block before the team can restart. This is intended to prevent another agent from carrying out a blocked action.</p>
+<p>To test whether our classifier could detect sophisticated sabotage, we ran multi-agent side-task and sabotage evaluations, in which red-team agents used strategies like decomposition attacks to try to fool the classifier into permitting a sandbox escape. We found that monitors that viewed the agents’ chain of thought (CoT) and interagent communication were able to detect all sabotage attempts in these evaluations, so we now use them to monitor our multi-agent runs. In parallel, we run an action-based version of the same monitor—which sees only actions, not CoT—to guard against an agent’s reasoning persuading the monitor to permit a harmful action.</p>
+<p>We’re continuing to improve our monitoring stack through human-guided and automatic red-teaming, by evaluating it against production transcripts, including past incidents, and by expanding our threat modeling. In the run in this post, we used only the action-based monitor. Only a block on the lead would have ended the run; a block on a helper removed just that helper.</p>
+<p>Shortly after this run, we added the parallel CoT monitor. We run experiments like this on models that may not have completed our pre-release alignment assessment, so we design our monitoring for the possibility that a model is misaligned. Models we release complete that assessment first, which reduces this risk but doesn’t eliminate it.</p>
+<p>Across more than a million tool calls, none in this run met the bar to be blocked. When we replayed these calls against the CoT monitor and today’s rubric, only one, a check for root access, came close to being blocked.</p>
+<h3>Offline monitoring</h3>
+<p>In addition to real-time monitoring, we run an offline monitor. This monitor analyzes the agent team’s actions against the same threat models as the real-time monitor, but with additional affordances, such as being able to look up actions from other agents.</p>
+<h2>RESULTS</h2>
+<h3>Without Prove2Me, the team built its own coordination system</h3>
+<p>Work on this proof happens at several levels:</p>
+<ul>
+<li><strong>The proof:</strong> No positive integers a, b, and c satisfy aⁿ + bⁿ = cⁿ for any n greater than 2.</li>
+<li><strong>Statements:</strong> We gave the team 60 statements to prove, including the final theorem and 59 intermediate milestones.</li>
+<li><strong>Smaller statements:</strong> Agents split hard statements into smaller ones, or lemmas.</li>
+<li><strong>Lean:</strong> Every statement and lemma is a theorem in Lean.</li>
+</ul>
+<p>Each statement started in <a href="https://lean-lang.org/use-cases/flt/">Lean</a> with a placeholder for its proof, and it counted as proved only once Lean’s checker accepted a finished proof. We let the lead decide how to tackle the proof and how to coordinate the team across these levels of work.</p>
+<p>In the first 10 minutes, the lead set up five tables in the database (Figure 3):</p>
+<ul>
+<li><strong>Announce:</strong> The lead’s orders to the entire team (e.g., how to split up the work).</li>
+<li><strong>Assign:</strong> Who works on what (e.g., which helper owns or deputizes for each statement).</li>
+<li><strong>Notes:</strong> An open board (e.g., for claiming a piece of work or reporting progress).</li>
+<li><strong>Subtasks:</strong> A to-do list where any agent can add a task and the first helper to claim it owns it.</li>
+<li><strong>Landed:</strong> A log of finished work.</li>
+</ul>
+<figure><img src="https://claude.dev/media/3f0caf7f3e1dd17ad5ca3c9cb8bc584707404c40d3ba143cf21d348ef2dd48e8.png" alt="The five shared database tables between 1 lead and 999 helpers. Announce, the lead's orders to everyone, such as how to split up the work or to ease off the database: the lead writes and reads it, and helpers read it, with one helper write. Assign, who works on what, such as which helper owns or deputizes on each statement: the lead writes and reads it, and helpers read it, with one helper write. Notes, an open board where helpers say which piece they're taking or report progress: the lead and the helpers both write and read it. Subtasks, a shared to-do list where anyone adds a task and the first helper to grab it owns it: helpers write and read it, and the lead reads it, with two lead writes. Landed, a log of finished work recording which statement or piece landed, its commit and whether it passed the team's checks: helpers write and read it, and the lead reads it."><figcaption><b>FIG 3</b>In the first 10 minutes, the lead set up five shared database tables to coordinate the team. The lead wrote orders and assignments, helpers logged finished work and managed the subtasks table, and both wrote to the notes table.</figcaption></figure>
+<h3>The lead dealt out the statements</h3>
+<p>Once the lead had created the tables, it did three things. First, it assigned each statement to a crew of 16–17 helpers by writing 999 rows to the assign table, one for each helper. Second, it made one helper in each crew the captain, responsible for posting a plan to the notes table and splitting work into tasks for the crew to claim from the subtasks table. Third, it posted instructions to the announce table, telling every helper to start by judging its statement’s difficulty and posting a verdict in the notes table.</p>
+<p>From their prompt, the helpers knew that the database existed. They found the announce table and got started on their assessments. Most posted verdicts to the notes table. About 27 minutes in, three statements were already proved and the lead had read the posted verdicts. It then set aside the 47 statements that most helpers had judged to be infeasible within the run’s budget and reassigned nearly all of the helpers to the remaining 10, which it thought they could finish. Crews grew from about 17 helpers to between 46 and 139.</p>
+<p>Each helper worked in a loop, most of which was set out in the lead’s orders:</p>
+<ul>
+<li>Find the statement’s plan in the notes table.</li>
+<li>Claim a task from the subtasks table.</li>
+<li>Write the proof in Lean, check it with Lean’s tools, and submit it to the main branch on Git.</li>
+<li>Mark the task as done.</li>
+<li>Post an update to the notes table.</li>
+</ul>
+<p>Around 45 minutes in, with about five of the 10 statements proved, the lead wrote:</p>
+<blockquote>
+<p>"the team's throughput is far higher than the early 'infeasible-in-budget' verdicts assumed"</p>
+</blockquote>
+<p>All 10 statements were proved within roughly 70 minutes.</p>
+<h3>The lead then moved helpers to harder statements</h3>
+<p>With those first 10 statements done, the lead wrote, “there is no reason to idle,” and reassigned helpers to the harder statements it had initially discarded. As more statements were proved, it kept moving helpers to new assignments, mostly in the first six hours (see the writes to the assign table, shown in red in Figure 4).</p>
+<figure><img src="https://claude.dev/media/c317ae355bbb5ddc955fd234a84ac7700fa41a3fd70ae16c32ac63817f276a57.png" alt="Timelapse from hour 0 to hour 30 of reads and writes between the 1,000 agents and the shared database tables: announce, assign, notes, subtasks, landed and a group of other tables. Writes run as red lines from a top row of the lead and helpers 1 to 999 down to the tables, and reads as green lines from the tables down to the same agents in a bottom row. The counts climb to 36,612 writes and 311,734 reads by hour 30. Nearly all writes go to the notes table, about 20,600, and the subtasks table, about 14,800, and the lines go quiet near hour 18, when the run was restarted."><figcaption><b>FIG 4</b>Reads from (green) and writes to (red) the shared tables over the run. Nearly all writes are helpers’ notes and task updates, including claiming tasks. The totals leave out most script calls. Activity stops near hour 18, when we restarted the run from its last save and gave the agents 12 more hours.</figcaption></figure>
+<p>Initially, the lead instructed captains to split the work into tasks in the subtasks table. As the work progressed, the helpers took on more responsibility for solving each statement. They started writing tasks, sometimes after a captain called for help. By hour 5.6, 73 helpers had written 756 tasks, and only 16 of those helpers were captains. Figure 4 shows writes (in red) to the subtasks table from many of the helpers, though most of these writes were to claim a task or mark it done. Helpers that finished a task also volunteered for more:</p>
+<blockquote>
+<p>"FREE … I finish pieces end-to-end … Name ONE deep piece … and I start at once"</p>
+</blockquote>
+<p>At first, the lead also assigned helpers to specific statements. This started to change within the first hour, and by the third hour, the lead told the free helpers, “do not wait for me.” This let free helpers pick up work on different statements without waiting for the lead, even as it kept writing new assignments.</p>
+<h3>The lead assigned the team to Langlands–Tunnell</h3>
+<p>Around hour 18, all that remained was Langlands–Tunnell, a classical result that Wiles’s proof relies on, plus the statements that depended on it and one other statement, which the team proved along the way. Earlier in the run, the captain of the Langlands–Tunnell task had been pessimistic, estimating that the proof would take at least 0.7 to 1 million lines of Lean code, with less than a 1% chance of finishing in time. The lead set the statement aside.</p>
+<p>With nearly all other work finished, the lead refocused the team on Langlands–Tunnell. In one last top-down assignment, it moved about 750 helpers onto the statement and wrote, “Honest odds are low.”</p>
+<p>Langlands–Tunnell was far larger than any other statement the agents had worked on, taking about nine times as many tasks and more than twice the new code. Helpers again used the subtasks table to split up the work, but many of the first tasks were too large for one helper to complete alone.</p>
+<p>So the team organized the work as a tree. The captain created a plan that divided the statement into 10 areas and listed each piece as a task. A helper that found a piece too big to tackle alone could split it, adding smaller tasks beneath it. The tree grew whenever a piece proved too hard for a single agent, ultimately reaching 2,418 tasks up to 10 levels deep (Figure 5). Each piece could assume the pieces beneath it, so hundreds of helpers could work in parallel before those pieces were proved.</p>
+<figure><img src="https://claude.dev/media/478edfdd3a2337244a661f026df313df13cc950ec5593a3493cf83260101c0ef.png" alt="Timelapse from hour 20.5 to hour 28.9 of the task tree under Langlands–Tunnell, drawn as rings around the statement, with its sub-areas as black dots near the center. Tasks appear as helpers write them and turn from gray to orange and then dark red as they are first marked done, with later hours in darker color. By hour 28.9 the tree holds all 2,418 tasks, 2,364 of them marked done with a known hour, and its deepest branches reach the outer rings."><figcaption><b>FIG 5</b>The task tree under Langlands–Tunnell, growing from hour 20.5 until the statement was proved at hour 28.4. Each ring outward is one level deeper, and tasks turn from gray to color when they are first marked done. Lines show how tasks were split up. We inferred most of these links afterward from the helpers’ task labels.</figcaption></figure>
+<p>Figure 6 shows what every helper worked on over the entire run, with helpers spread across many statements early on and gathered on Langlands–Tunnell by the end. Langlands–Tunnell was proved at hour 28.4, followed by the final theorem at hour 28.7. The lead then wrote:</p>
+<blockquote>
+<p>"Thank you all: Fermat's Last Theorem is on main, kernel-checked by the official checker."</p>
+</blockquote>
+<figure><img src="https://claude.dev/media/de2d976fc8786438b398be6a8c0cff0f849f740f443195e4af00a8865939e3b1.png" alt="Timelapse from hour 0 to hour 30 of where each of the 999 helpers worked, sampled every 5 minutes. The 60 statements are dots grouped by how the lead staffed them: landed first, judged doable, set aside but staffed by hour 1.2, set aside and taken up from hour 1.5, modularity lifting, Langlands–Tunnell, and the last links up to Fermat's Last Theorem. Helpers cluster as orange dots around the statements they work on: spread across many statements in the first hours, crowded onto modularity lifting from about hour 8, stopped near hour 18, and gathered on Langlands–Tunnell after the restart. At hour 30, 54 of the 60 statements are proved and filled black."><figcaption><b>FIG 6</b>Each dot is a helper, positioned every five minutes at the statement or line of work that its own records showed it working on, including while it waited for a build. Helpers spread out across the statements and converged on Langlands–Tunnell. The count ends at 54 of 60 statements because five alternatives were no longer needed and one statement was dropped.</figcaption></figure>
+<h2>CONCLUSIONS</h2>
+<p>This toy experiment let us study how a team of 1,000 agents worked through a long, difficult task. Using only Git and a shared database, the agents designed tables to assign roles and share results, formed teams, and built a task tree to break down the most challenging statement, which its own captain had given under a 1% chance of finishing in time.</p>
+<p>This result doesn’t obviate the need for domain-specific harnesses or platforms. Prove2Me, for example, may still improve efficiency by helping agents compile Lean code faster and letting them search for and reuse human results.</p>
+<p>Human direction can also still be useful at certain points. Agents tend to give up on hard problems and misjudge their difficulty. Early on, helpers judged 47 of the 60 statements infeasible within the run’s budget, yet the team went on to prove most of them. Human encouragement at such moments can keep agents from stopping too early.</p>
+<p>Carefully designed safety boundaries gave us the confidence to run this experiment in the first place. Claude could tackle the problem however it chose with the tools we provided, but only inside a sandbox with no network access and under two separate monitors.</p>
+<p>We expect these methods to evolve quickly, and as teams like this one take on harder work, the safety boundaries around them will need to keep pace. We believe that multi-agent teams, scaled safely, will help solve some of our most challenging problems in the years to come.</p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

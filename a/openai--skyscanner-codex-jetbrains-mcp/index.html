@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Skyscanner의 JetBrains MCP를 활용한 Codex 성능 강화 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">Skyscanner의 JetBrains MCP를 활용한 Codex 성능 강화</h1>
+    <h1 class="lang-en" hidden lang="en">Supercharging Codex with JetBrains MCP at Skyscanner</h1>
+    
+    <p class="art-sum lang-ko">Skyscanner가 Codex CLI를 JetBrains IDE와 통합하여 디버깅, 테스트, 개발 워크플로를 가속한 방법</p>
+    <p class="art-sum lang-en" hidden lang="en">How Skyscanner integrated Codex CLI with JetBrains IDEs to speed up debugging, testing, and development workflows.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 1월 11일</dd></div>
+      <div><dt>저자</dt><dd>Jack Waller (Software Engineer, Skyscanner)</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/skyscanner-codex-jetbrains-mcp">https://developers.openai.com/blog/skyscanner-codex-jetbrains-mcp</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p><em>Skyscanner가 OpenAI의 Codex CLI를 JetBrains IDE와 통합하여, AI 어시스턴트에게 사람 개발자와 동일한 디버깅 및 테스트 도구를 제공함으로써 성능을 크게 끌어올린 방법을 소개합니다.</em></p>
+<p>Skyscanner는 품질을 해치지 않으면서 개발 속도를 높일 방법을 항상 찾고 있습니다. 저는 지난 몇 달 동안 일상적인 업무 흐름에서 OpenAI의 Codex를 페어 프로그래머(pair programmer)로 활용하는 실험을 해 왔습니다.</p>
+<p>여기에 한 가지 변화를 주었습니다. JetBrains의 Model Context Protocol(MCP) 서버를 이용해 Codex CLI를 JetBrains IDE에 연결한 것입니다. 쉽게 말해 AI가 IDE의 기능을 보고 직접 사용할 수 있게 한 것입니다. 이 통합은 판도를 바꿔 놓았습니다. 이 글에서는 Codex에 JetBrains 도구를 사용할 수 있게 해서 문제 해결 능력이 어떻게 향상되었고 개발 속도가 어떻게 빨라졌는지 공유하겠습니다.</p>
+<h2>Codex에 IDE의 컨텍스트 제공하기</h2>
+<p><a href="https://www.jetbrains.com/help/idea/mcp-server.html">JetBrains MCP 서버</a>를 사용해 Codex와 작업하면, AI가 평소에는 "볼" 수 없던 풍부한 개발 환경 컨텍스트를 활용할 수 있습니다.</p>
+<p>JetBrains MCP를 사용하면 Codex는 IDE에 추가 컨텍스트를 요청할 수 있습니다. 예를 들어 다음과 같습니다.</p>
+<ul>
+<li><a href="https://www.jetbrains.com/help/idea/mcp-server.html#get_file_problems"><em>Find file problems</em></a>: IntelliJ 인스펙션을 사용해 파일의 오류와 경고를 분석하고, 정확한 문제(오류 메시지와 위치 포함)를 반환합니다.</li>
+<li><a href="https://www.jetbrains.com/help/idea/mcp-server.html#execute_run_configuration"><em>Execute run configurations</em></a>: 단위 테스트, 린터, 포매터 같은 사전 정의된 실행 구성(run configuration)을 실행하고 종료 코드와 출력을 가져옵니다.</li>
+</ul>
+<p>이 방식은 매우 강력하다는 것이 입증되었습니다. 사람 개발자가 코드를 작성하고 컴파일하고 테스트할 때 의존하는 것과 동일한 피드백 루프를 활용하면, Codex가 IDE의 컨텍스트를 이용해 자신의 결과물을 더 효과적으로 점검하고 검증할 수 있으며 반복에 걸리는 시간도 줄어듭니다.</p>
+<h3>더 빠르게 오류 잡기: 실제 사례</h3>
+<p>Databricks의 Java SDK를 사용하는 코드에서 오류 처리에 대한 단위 테스트를 작성하던 중, Codex에게 예외 상황을 스텁(stub)으로 만들어 달라고 요청했습니다. Codex는 자신 있게 다음과 비슷한 Java 코드 한 줄을 생성했습니다.</p>
+<pre><code>var stubError = new NotFound("dummy error");</code></pre>
+<p>얼핏 보면 합리적으로 보입니다. <code>NotFound</code> 오류를 시뮬레이션하려는 것이니까요. 하지만 잠시 뒤 IntelliJ가 해당 줄에 굵은 빨간 밑줄을 표시했습니다.</p>
+<p>문제는 Databricks SDK의 <code>NotFound</code> 예외 클래스에 문자열 인자 하나를 받는 생성자가 없다는 점이었습니다(Databricks SDK 소스인 <a href="https://github.com/databricks/databricks-sdk-java/blob/4074f4e0ed2dc09f2feffddf14d7abdf20412119/databricks-sdk-java/src/main/java/com/databricks/sdk/core/error/platform/NotFound.java">NotFound.java</a>에서 확인할 수 있습니다). 즉, Codex가 제안한 코드는 애초에 컴파일될 수 없었습니다.</p>
+<p>기본 상태의 Codex는 이 실수를 알지 못합니다. 나중에 테스트를 실행하려고 할 때에야 문제가 있다는 것을 깨달을 수도 있습니다. 하지만 JetBrains MCP 통합 덕분에 Codex는 오류를 즉시 알아챘습니다. <a href="https://github.com/Jack-Waller/.codex/blob/91acb8cf907bb91133cdf4d5e4e13253f6045873/AGENTS.md?plain=1#L100-L108">내부적으로</a> Codex가 IDE의 <code>get_file_problems</code> 도구를 호출해 파일을 점검했고, 이 도구가 컴파일 문제(일치하는 생성자 없음)를 바로 반환했습니다.</p>
+<p>MCP가 없었다면 흐름은 아마 다음과 같았을 것입니다.</p>
+<ol>
+<li>코드 생성</li>
+<li>단위 테스트 실행 방법 파악</li>
+<li>단위 테스트 실행(경우에 따라 사용자에게 명령 승인을 요청해야 함)</li>
+<li>실패 메시지를 읽고 분석</li>
+<li>오류 수정 시도</li>
+</ol>
+<p>JetBrains MCP를 사용하면 이 루프가 훨씬 짧아집니다.</p>
+<ol>
+<li>코드 생성</li>
+<li>JetBrains에 파일 문제 요청</li>
+<li>IntelliJ가 보고한 정확한 오류 수정</li>
+</ol>
+<p>이 방식은 시간과 컨텍스트를 아껴 주었고, 마치 "아, 그 클래스에는 그런 생성자가 없네요. 실제로는 다른 것이 필요합니다. 바로 고치겠습니다"라고 즉시 말해 주는 엔지니어와 페어 프로그래밍을 하는 느낌이었습니다.</p>
+<h3>사전 정의된 테스트와 포매팅</h3>
+<p>또 다른 장점은 Codex가 IDE에서 기존 빌드 및 테스트 도구를 직접 구동하도록 할 수 있다는 점입니다. 대부분의 프로젝트에서 저는 테스트 실행, 포매팅, 린팅 같은 로컬 실행 구성을 이미 IDE에 정의해 두었습니다. JetBrains MCP를 사용하면 Codex가 이러한 구성을 필요할 때 찾아서 실행할 수 있습니다.</p>
+<p>실제로 이는 Codex가 이러한 기능의 실행 방법을 알아내는 데 필요한 시간과 컨텍스트를 줄여 주며, 원래의 문제에 계속 집중할 수 있게 해 줍니다. 이렇게 바꾼 뒤로 Codex가 테스트, 포매팅, 린팅을 실행할 때 더 이상 헤매지 않는 것을 확인했습니다.</p>
+<p>그래서 <a href="https://github.com/Jack-Waller/.codex/blob/91acb8cf907bb91133cdf4d5e4e13253f6045873/AGENTS.md?plain=1#L93-L108">커스텀 에이전트 지침</a>에 변경할 때마다 테스트, 린팅, 포매팅을 실행하도록 Codex에 지시해 두었습니다.</p>
+<pre data-lang="markdown"><code>## Code edit instructions
+
+After you've finished editing
+
+- Use the jetbrains mcp (if available) to find any problems
+- Run format command if available
+- Run lint command if available</code></pre>
+<p>이제 Codex가 제가 개입하지 않아도 스스로 문제를 해결하는 경우가 많다는 것을 느끼고 있습니다. 개발자로서 이는 큰 성과입니다.</p>
+<ul>
+<li>Codex가 무언가를 변경할 때마다 테스트, 린팅, 포매팅을 직접 실행하지 않아도 됩니다.</li>
+<li>오류 메시지를 채팅에 복사해서 붙여 넣지 않아도 됩니다.</li>
+<li>Codex가 변경 사항이 실제로 동작하는지에 대해 빠르고 정확한 피드백을 받으므로 피드백 주기가 줄어듭니다.</li>
+</ul>
+<p>덕분에 당면한 과제, 즉 높은 품질의 동작하는 소프트웨어를 만드는 일에 더 집중할 시간이 생깁니다.</p>
+<h2>우리의 개발 방식에 주는 의미</h2>
+<p>Codex를 JetBrains MCP와 통합한 뒤로 AI 어시스턴트가 개발 프로세스에서 눈에 띄게 더 유능하고 믿음직해졌습니다. 우리가 확인한 실질적인 이점은 다음과 같습니다.</p>
+<ul>
+<li><strong>더 빠른 피드백 루프</strong>: Codex가 컴파일 오류와 실패한 테스트에 대한 피드백을 IDE로부터 즉시 받습니다.</li>
+<li><strong>줄어든 프롬프트 주고받기</strong>: Codex가 제가 무언가를 실행하고 오류 메시지를 붙여 넣을 때까지 항상 기다릴 필요 없이 IDE에 직접 질의할 수 있습니다.</li>
+<li><strong>더 높은 품질의 제안</strong>: Codex가 IDE가 보는 것을 함께 볼 수 있으므로, 수정한 코드가 처음부터 컴파일되고 테스트를 통과할 가능성이 더 높습니다.</li>
+<li><strong>기존 워크플로와의 더 나은 정합성</strong>: Codex가 자체 방식을 만들어 내는 대신 우리의 기존 도구에 연결되어 동작합니다.</li>
+</ul>
+<p>전반적으로 Codex는 독립적인 도구에서 우리 개발 생태계에 더 긴밀히 통합된 일부로 바뀌었습니다.</p>
+<h2>요약</h2>
+<p>Skyscanner에서 저희가 얻은 핵심 통찰은 단순합니다. 바로 컨텍스트가 전부라는 점입니다. Codex만으로도 강력하지만, IDE를 인식하는 Codex는 훨씬 더 효과적입니다. 이러한 컨텍스트는 Codex에 더 많은 통찰을 제공하여 정확한 수정안을 더 빠르게 만들어 내도록 하고, 그 결과물에 대한 저의 신뢰도 한층 높여 줍니다.</p>
+<p>저희의 이야기가 다른 분들께서 이러한 통합 기능을 직접 시도해 보는 계기가 되기를 바랍니다. 이제는 도구를 사용한다는 느낌보다, 저희가 보는 것을 함께 볼 수 있는 AI 페어 프로그래머와 협업한다는 느낌이 훨씬 더 강하게 듭니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p><em>Learn how Skyscanner turbocharged OpenAI’s Codex CLI by integrating it with JetBrains IDEs, giving their AI assistant the same debugging and testing tools that human developers use.</em></p>
+<p>At Skyscanner, we’re always looking for ways to accelerate development without compromising quality. Over the past few months, I’ve been experimenting with OpenAI’s Codex as a pair programmer in my daily workflow.</p>
+<p>The twist? I hooked the Codex CLI into JetBrains’ IDEs using their Model Context Protocol (MCP) server: essentially letting the AI see and use the IDE’s capabilities. This integration has been a game-changer. In this post, I’ll share how giving Codex access to JetBrains tools has improved its problem-solving skills and sped up our development.</p>
+<h2>Giving Codex an IDE’s Context</h2>
+<p>Working with Codex using the <a href="https://www.jetbrains.com/help/idea/mcp-server.html">JetBrains MCP server</a> means the AI can now tap into the rich context of my development environment—things it normally wouldn’t “see”.</p>
+<p>With the JetBrains MCP, Codex can ask the IDE for extra context, for example:</p>
+<ul>
+<li><a href="https://www.jetbrains.com/help/idea/mcp-server.html#get_file_problems"><em>Find file problems</em></a>: analyse a file for errors and warnings using IntelliJ inspections and return the exact issues (with error messages and locations).</li>
+<li><a href="https://www.jetbrains.com/help/idea/mcp-server.html#execute_run_configuration"><em>Execute run configurations</em></a>: run predefined run configurations (like unit tests, linters, or formatters) and retrieve exit codes and output.</li>
+</ul>
+<p>This has proved to be extremely powerful—by tapping into the same feedback loops human developers rely on when writing, compiling, and testing code, Codex can use the IDE’s context to check and verify its output more effectively, reducing iteration time.</p>
+<h3>Catching Errors Faster: A Real-World Example</h3>
+<p>As I was writing unit tests for error handling in our code that uses Databricks’ Java SDK, I prompted Codex to help me stub out an exception scenario. It confidently produced a line of Java code which looked something like this:</p>
+<pre><code>var stubError = new NotFound("dummy error");</code></pre>
+<p>At first glance, that looks reasonable—we want to simulate a <code>NotFound</code> error. But moments later, IntelliJ highlighted that line with a big red underline.</p>
+<p>The problem: the <code>NotFound</code> exception class in the Databricks SDK doesn’t have a constructor that takes a single string argument (you can see this in the Databricks SDK source: <a href="https://github.com/databricks/databricks-sdk-java/blob/4074f4e0ed2dc09f2feffddf14d7abdf20412119/databricks-sdk-java/src/main/java/com/databricks/sdk/core/error/platform/NotFound.java">NotFound.java</a>). In other words, Codex’s suggested code was never going to compile.</p>
+<p>By default, Codex wouldn’t know about this mistake. It might only realise something’s wrong later when trying to run tests. However, because of the JetBrains MCP integration, Codex immediately noticed the error. <a href="https://github.com/Jack-Waller/.codex/blob/91acb8cf907bb91133cdf4d5e4e13253f6045873/AGENTS.md?plain=1#L100-L108">Behind the scenes</a>, Codex called the IDE’s <code>get_file_problems</code> tool to inspect the file, which returned the compilation issue (no matching constructor) right away.</p>
+<p>Without the MCP, the likely flow would have been:</p>
+<ol>
+<li>Generate code</li>
+<li>Determine how to run unit tests</li>
+<li>Run the unit tests (potentially needing to escalate commands to the user)</li>
+<li>Read and parse the failure message</li>
+<li>Attempt to fix the error</li>
+</ol>
+<p>With the JetBrains MCP, that loop is much tighter:</p>
+<ol>
+<li>Generate code</li>
+<li>Ask JetBrains for file problems</li>
+<li>Fix the exact error that IntelliJ reports</li>
+</ol>
+<p>This saved time and context, and it felt very much like pair programming with an engineer who immediately says, “Ah, that class doesn’t have a constructor like that—it actually requires something different. Let me quickly fix that”.</p>
+<h3>Predefined testing and formatting</h3>
+<p>Another advantage I’ve enjoyed is letting Codex drive our existing build and test tooling directly from the IDE. For most of our projects, I have already defined local run configurations in my IDE, such as running tests, formatting and linting. With the JetBrains MCP, Codex can discover and run these configurations on demand.</p>
+<p>In practice, this reduces the time and context required for Codex to figure out how to run this functionality, helping it maintain focus on the original problem. With this change, I’ve observed that Codex no longer stumbles when running tests, formatting or linting.</p>
+<p>In my <a href="https://github.com/Jack-Waller/.codex/blob/91acb8cf907bb91133cdf4d5e4e13253f6045873/AGENTS.md?plain=1#L93-L108">custom agent instructions</a>, I therefore instruct Codex to run tests, linting and formatting after every change.</p>
+<pre data-lang="markdown"><code>## Code edit instructions
+
+After you've finished editing
+
+- Use the jetbrains mcp (if available) to find any problems
+- Run format command if available
+- Run lint command if available</code></pre>
+<p>I’ve noticed Codex now often solves issues itself without me having to intervene. As a developer, that feels like a huge win:</p>
+<ul>
+<li>I don’t have to manually run tests, linting and formatting every time Codex changes something.</li>
+<li>I don’t have to copy-paste error messages back into the chat.</li>
+<li>Codex gets rapid, precise feedback on whether its changes actually work, reducing the number of feedback cycles.</li>
+</ul>
+<p>This gives me more time to focus on the task at hand: delivering high-quality working software.</p>
+<h2>What This Means for How We Build</h2>
+<p>Integrating Codex with JetBrains MCP has made our AI assistant markedly more capable and reliable in our development process. Some of the practical benefits we’ve seen are:</p>
+<ul>
+<li><strong>Faster feedback loops</strong>: Codex gets immediate feedback from the IDE about compile errors and failing tests.</li>
+<li><strong>Fewer back-and-forth prompts</strong>: Codex doesn’t always have to wait for me to run something and paste an error message—it can query the IDE directly.</li>
+<li><strong>Higher-quality suggestions</strong>: Because Codex can see what the IDE sees, its fixes are more likely to compile and pass tests on the first try.</li>
+<li><strong>Better alignment with existing workflows</strong>: Codex plugs into our existing tooling, instead of inventing its own.</li>
+</ul>
+<p>Overall, it has turned Codex from a standalone tool into a more integrated part of our development ecosystem.</p>
+<h2>Summary</h2>
+<p>For us at Skyscanner, the key insight has been simple: context is everything. Codex on its own is powerful, but Codex with IDE awareness is far more effective. This context gives Codex even more insight, enabling it to produce accurate fixes faster and further increasing my trust in its output.</p>
+<p>We hope our story inspires others to experiment with these integrations. It truly feels much less like using a tool and much more like collaborating with an AI pair programmer that can see what we see.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Codex로 장기 작업 수행하기 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">Codex로 장기 작업 수행하기</h1>
+    <h1 class="lang-en" hidden lang="en">Run long horizon tasks with Codex</h1>
+    
+    <p class="art-sum lang-ko">OpenAI 개발자 블로그</p>
+    <p class="art-sum lang-en" hidden lang="en">OpenAI Developer Blog</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 2월 23일</dd></div>
+      <div><dt>저자</dt><dd>Derrick Choi</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/run-long-horizon-tasks-with-codex">https://developers.openai.com/blog/run-long-horizon-tasks-with-codex</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>2025년 9월, OpenAI는 에이전트형 코딩(agentic coding)에 최적화된 첫 번째 GPT-5 버전으로 GPT-5-Codex를 선보였습니다. 2025년 12월에는 5.2를 출시했고, 이때부터 사람들은 자율 코딩 에이전트를 신뢰하고 사용할 수 있다고 생각하기 시작했습니다. 특히 모델이 지시를 안정적으로 따를 수 있는 시간이 크게 늘어났습니다.</p>
+<p>저는 이 기준선을 직접 시험해 보고 싶었습니다. 그래서 Codex에게 빈 저장소와 전체 권한을 주고, 처음부터 디자인 도구를 만들라는 하나의 과제를 맡겼습니다. 그런 다음 GPT-5.3-Codex를 "Extra High" 추론 설정으로 실행했습니다. Codex는 약 25시간 동안 중단 없이 실행되었고, 약 1,300만 개의 토큰을 사용했으며, 약 3만 줄의 코드를 생성했습니다.</p>
+<p>이는 프로덕션 도입이 아니라 실험이었습니다. 그럼에도 장시간 작업에서 중요한 부분인 스펙 준수, 작업 집중 유지, 검증 실행, 실패 복구를 진행하는 내내 잘 수행했습니다.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-16.jpeg" alt="Codex Design Desk UI"></p>
+<h2>장시간 Codex 세션의 모습</h2>
+<p>저는 Codex에게 세션 데이터를 요약하는 페이지를 생성해 달라고 요청했습니다.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-1.jpeg" alt="Codex session summary dashboard"></p>
+<p>다음은 CLI 세션 통계와 토큰 사용량을 보여 주는 화면입니다.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-2.jpeg" alt="Codex CLI session stats and token usage"></p>
+<p>이 스크린샷은 핵심적인 변화를 눈에 보이게 해 준다는 점에서 유용합니다. 에이전트형 코딩은 단발성 지능만이 아니라 점점 더 시간 지평(time horizon)의 문제가 되고 있습니다.</p>
+<h2>진짜 변화는 시간 지평</h2>
+<p>이는 단순히 "모델이 더 똑똑해졌다"는 이야기가 아닙니다. 실질적인 변화는 에이전트가 더 오래 일관성을 유지하고, 더 큰 규모의 작업을 처음부터 끝까지 완료하며, 맥락을 잃지 않고 오류에서 복구할 수 있게 되었다는 점입니다.</p>
+<p>시간 지평 벤치마크에 관한 METR의 연구는 이 추세를 이해하는 데 도움이 되는 틀입니다. 최신 에이전트가 약 50%와 80%의 신뢰도로 완료할 수 있는 소프트웨어 작업의 길이는 대략 7개월마다 두 배가 되는 속도로 빠르게 늘어 왔습니다. <a href="https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/">Measuring AI Ability to Complete Long Tasks (METR)</a>를 참고하십시오.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-3.jpeg" alt="METR chart measuring AI ability to complete long tasks"></p>
+<p>최근 GPT-5.3-Codex <a href="https://openai.com/index/introducing-gpt-5-3-codex/">출시 발표</a>는 에이전트 작업을 두 가지 실용적인 측면에서 한 단계 더 끌어올렸습니다.</p>
+<ol>
+<li>다단계 실행(계획 → 구현 → 검증 → 복구)에 더 강합니다.</li>
+<li>전체 실행을 초기화하지 않고도 진행 중에 방향을 조정하기가 더 쉽습니다(방향을 수정해도 진행 상황이 사라지지 않습니다).</li>
+</ol>
+<p>저는 Cursor가 장시간 실행되는 자율 코딩 시스템에 대해 쓴 글에서도 영감을 받았습니다. 여기에는 브라우저를 만드는 실험도 포함되어 있습니다. <a href="https://cursor.com/blog/scaling-agents">How Cursor built a web browser (Scaling agents)</a>를 참고하십시오.</p>
+<p>Cursor 팀은 OpenAI 모델이 "장시간 자율 작업에서 훨씬 더 뛰어나다. 지시를 따르고, 집중을 유지하며, 방향 이탈을 피하고, 정확하고 완전하게 구현한다"고 썼습니다.</p>
+<h2>Codex가 장시간 작업에서도 일관성을 유지하는 이유</h2>
+<p>장시간 작업에서 중요한 것은 거대한 프롬프트 하나보다 모델이 그 안에서 동작하는 에이전트 루프(agent loop)입니다.</p>
+<p>Codex의 루프는 대략 다음과 같습니다.</p>
+<ol>
+<li>계획</li>
+<li>코드 수정</li>
+<li>도구 실행(테스트/빌드/린트)</li>
+<li>결과 확인</li>
+<li>실패 복구</li>
+<li>문서/상태 업데이트</li>
+<li>반복</li>
+</ol>
+<p>이 루프가 중요한 이유는 에이전트에게 다음을 제공하기 때문입니다.</p>
+<ul>
+<li>실제 피드백(오류, diff, 로그)</li>
+<li>외부화된 상태(저장소, 파일, 문서, worktree, 출력물)</li>
+<li>시간에 따른 조종 가능성(결과에 따라 방향을 수정할 수 있음)</li>
+</ul>
+<p>Codex 모델이 일반적인 채팅 창보다 Codex 환경에서 더 잘 동작하는 것도 같은 이유입니다. 하네스(harness)가 구조화된 컨텍스트(저장소 메타데이터, 파일 트리, diff, 명령어 출력)를 제공하고, 규율 있는 "완료 조건" 절차를 강제하기 때문입니다.</p>
+<p>최근 Codex 에이전트 루프에 대한 더 자세한 내용을 담은 <a href="https://openai.com/index/unrolling-the-codex-agent-loop/">글</a>을 게시했습니다.</p>
+<p>여기에 더해, 이 루프를 일상적으로 사용할 수 있게 해 주는 Codex 앱도 출시했습니다.</p>
+<ul>
+<li><a href="https://developers.openai.com/codex/projects">프로젝트 간 병렬 스레드</a>(장시간 작업이 본업을 방해하지 않습니다)</li>
+<li><a href="https://developers.openai.com/codex/build-skills">Skills</a>(계획/구현/테스트/보고 절차를 표준화합니다)</li>
+<li><a href="https://developers.openai.com/codex/automations/">Automations</a>(반복 작업을 백그라운드에서 처리합니다)</li>
+<li><a href="https://developers.openai.com/codex/environments/git-worktrees/">Git worktrees</a>(실행을 격리하고, diff를 검토 가능한 상태로 유지하며, 불필요한 변경을 줄입니다)</li>
+</ul>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-4.jpeg" alt="Codex app workspace with project thread"></p>
+<h2>테스트 구성</h2>
+<p>이번 "실험"에 디자인 도구를 고른 이유는 까다로운 테스트이기 때문입니다. UI, 데이터 모델, 편집 연산, 수많은 예외 상황이 모두 얽혀 있습니다. 이런 작업은 대충 넘어갈 수 없습니다. 아키텍처가 잘못되면 금방 무너집니다.</p>
+<p>저는 GPT-5.3-Codex에게 충실한 스펙을 주고 "Extra High" 추론 설정으로 실행했습니다. 그 결과 약 25시간 동안 중단 없이 실행되었고, 일관성을 유지하면서 품질 높은 코드를 만들어 냈습니다. 또한 모델은 완료한 모든 마일스톤마다 검증 단계(테스트, 린트, 타입 체크)를 실행했습니다.</p>
+<h2>핵심 아이디어: 지속형 프로젝트 메모리(durable project memory)</h2>
+<p>가장 중요한 기법은 지속형 프로젝트 메모리였습니다. 저는 스펙, 계획, 제약 조건, 상태를 Codex가 반복해서 다시 읽을 수 있는 마크다운 파일로 작성했습니다. 덕분에 방향 이탈을 막고 "완료"의 정의를 일관되게 유지할 수 있었습니다.</p>
+<p>저장소는 아래에 링크되어 있으며, 파일 구성은 다음과 같았습니다.</p>
+<h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/prompt.md">Prompt.md</a>(스펙과 산출물)</h4>
+<p>목적: 에이전트가 "인상적이지만 잘못된 것"을 만들지 않도록 목표를 고정합니다.</p>
+<p>파일의 주요 섹션:</p>
+<ul>
+<li>목표와 비목표</li>
+<li>필수 제약 조건(성능, 결정성, UX, 플랫폼)</li>
+<li>산출물(완료 시점에 반드시 존재해야 하는 것)</li>
+<li>"완료 조건"(검증 항목과 데모 흐름)</li>
+</ul>
+<p>초기 프롬프트는 Codex에게 프롬프트/스펙 파일을 프로젝트 전체 명세로 취급하고, 마일스톤 기반 계획을 생성하라고 지시했습니다.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-5.jpeg" alt="Prompt used to kickstart the Codex run"></p>
+<h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/plans.md">Plan.md</a>(마일스톤과 검증)</h4>
+<p>목적: 끝이 정해지지 않은 작업을 에이전트가 완료하고 검증할 수 있는 일련의 체크포인트로 바꿉니다.</p>
+<p>파일의 주요 섹션:</p>
+<ul>
+<li>한 번의 루프로 완료할 수 있을 만큼 작은 마일스톤</li>
+<li>마일스톤별 인수 기준과 검증 명령어</li>
+<li>중단 후 수정 규칙(stop-and-fix rule): 검증에 실패하면 다음 단계로 넘어가기 전에 먼저 수정합니다</li>
+<li>같은 결정을 번복하는 일을 막기 위한 결정 기록</li>
+<li>코드베이스의 의도된 아키텍처</li>
+</ul>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-6.jpeg" alt="Codex referring to the plans markdown file while working"></p>
+<p><em>최근 Codex 앱, CLI, IDE 확장 프로그램에 네이티브 계획 모드(plan mode)가 추가되었습니다. 이 모드는 변경을 시작하기 전에 큰 작업을 명확하고 검토 가능한 단계로 나누어 주므로, 접근 방식을 미리 합의할 수 있습니다. 추가 확인이 필요하면 Codex가 후속 질문을 합니다. 이 모드를 켜려면 /plan 슬래시 명령어를 사용하십시오.</em></p>
+<h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/implement.md">Implement.md</a> (계획을 참조하는 실행 지침)</h4>
+<p>목적: 이 파일은 런북(runbook)입니다. 계획을 따르고, diff의 범위를 제한하고, 검증을 실행하고, 문서를 업데이트하는 등 Codex가 어떻게 작업해야 하는지 정확하게 알려 줍니다.</p>
+<p>파일의 주요 섹션은 다음과 같습니다.</p>
+<ul>
+<li>계획 마크다운 파일이 기준이 되는 단일 진실 공급원(source of truth)이며, 마일스톤 단위로 진행합니다</li>
+<li>마일스톤마다 검증을 실행하고, 실패하면 즉시 수정합니다</li>
+<li>diff의 범위를 제한하고, 작업 범위를 확장하지 않습니다</li>
+<li>문서 마크다운 파일을 지속적으로 업데이트합니다</li>
+</ul>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-7.jpeg" alt="Prompt instructing Codex to read implement.md as execution instructions"></p>
+<h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/documentation.md">Documentation.md</a> (진행 상태와 결정 사항 기록)</h4>
+<p>목적: 이 파일은 공유 메모리이자 감사 로그입니다. 몇 시간 자리를 비웠다가 돌아와도 무슨 일이 있었는지 파악할 수 있는 이유가 바로 이 파일입니다.</p>
+<p>파일의 주요 섹션은 다음과 같습니다.</p>
+<ul>
+<li>현재 마일스톤 상태 (완료된 작업과 다음 작업)</li>
+<li>내린 결정과 그 이유</li>
+<li>실행 및 데모 방법 (명령어와 간단한 스모크 테스트)</li>
+<li>알려진 이슈와 후속 작업</li>
+</ul>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-8.jpeg" alt="Documentation file showing milestone status updates"></p>
+<p>실행 중 마일스톤 검증이 실제로 어떻게 이루어졌는지는 다음과 같습니다.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-9.jpeg" alt="Commands Codex ran to verify quality during milestones"></p>
+<h3>모든 마일스톤에서의 검증</h3>
+<p>Codex는 코드를 작성한 뒤 잘 동작하기를 바라고 넘어가지 않았습니다. 마일스톤이 끝날 때마다 검증 명령어를 실행했고, 실패한 부분을 고친 뒤에 다음 단계로 진행했습니다.</p>
+<p>다음은 Codex에게 사용하도록 지시한 품질 검증 명령어의 예입니다.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-10.jpeg" alt="Quality commands for lint, typecheck, tests, build, and export"></p>
+<p>다음은 lint 실패 이후 Codex가 문제를 수정한 예입니다.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-11.jpeg" alt="Codex fixing issues after npm run lint"></p>
+<h2>에이전트가 만든 결과물</h2>
+<p>결과물이 완벽하거나 프로덕션 수준은 아니었지만, 실제로 동작하고 테스트할 수 있었습니다. 이번 실행의 기준은 "컴파일이 되는가"가 아니라 "지시를 따르는가, 그리고 실제로 동작하는가"였습니다.</p>
+<p>구현된 주요 기능은 다음과 같습니다.</p>
+<ol>
+<li>캔버스 편집 (프레임, 그룹, 도형, 텍스트, 이미지와 아이콘, 버튼, 차트)</li>
+<li>실시간 협업 (접속 상태, 커서, 선택 영역, 탭 간 편집 내용 동기화)</li>
+<li>인스펙터 컨트롤 (위치와 크기, 스타일, 텍스트)</li>
+<li>레이어 관리 (검색, 이름 변경, 잠금과 숨김, 순서 변경)</li>
+<li>가이드, 정렬, 스냅</li>
+<li>히스토리 스냅샷과 복원</li>
+<li>리플레이 타임라인과 이전 시점에서의 분기</li>
+<li>프로토타입 모드 (핫스팟과 플로우 내비게이션)</li>
+<li>댓글 (해결 및 재오픈이 가능한 고정 스레드)</li>
+<li>내보내기 (저장, 가져오기, 내보내기와 JSON 및 React + Tailwind로의 CLI 내보내기)</li>
+</ol>
+<h2>장기 Codex 작업을 위한 시사점</h2>
+<p>이번 실행이 성공한 비결은 한 가지 기발한 프롬프트가 아니라 다음 요소들의 조합이었습니다.</p>
+<ul>
+<li>명확한 목표와 제약 조건 (스펙 파일)</li>
+<li>인수 기준이 포함된 체크포인트 방식의 마일스톤 (<code>plans.md</code>)</li>
+<li>에이전트가 어떻게 작업해야 하는지 정리한 런북 (<code>implement.md</code>)</li>
+<li>지속적인 검증 (테스트, lint, 타입 체크, 빌드)</li>
+<li>실행 과정을 언제든 확인할 수 있도록 하는 실시간 상태 및 감사 로그 (<code>documentation.md</code>)</li>
+</ul>
+<p>장기(long-horizon) 코딩 작업은 이러한 방향으로 나아가고 있습니다. 일일이 지켜봐야 하는 일은 줄고, 가드레일을 갖춘 위임은 늘어납니다.</p>
+<h2>장시간 실행되는 작업에 Codex 사용해 보기</h2>
+<p>이번 25시간 Codex 실행은 코드로 무언가를 만드는 방식이 앞으로 어디로 향하는지 보여 주는 미리보기입니다. 한 번에 끝나는 프롬프트나 긴밀한 페어 프로그래밍 루프를 넘어, 실제 업무의 한 부분을 처음부터 끝까지 맡을 수 있는 장기 실행형 팀원으로 나아가고 있습니다. 사용자는 모든 줄을 세세하게 관리하는 대신 마일스톤 단계에서 방향을 잡아 주면 됩니다.</p>
+<p>Codex의 방향은 단순합니다. 더 강력한 팀원으로서의 동작, 실제 업무 맥락과의 더 긴밀한 통합, 그리고 작업을 신뢰할 수 있고 검토하기 쉬우며 배포하기 쉽게 유지해 주는 가드레일입니다. 에이전트가 반복적인 구현과 검증을 맡으면 개발자가 더 빠르게 일할 수 있다는 점을 이미 확인하고 있습니다. 사람은 설계, 아키텍처, 제품 의사결정, 그리고 참고할 템플릿이 없는 새로운 문제처럼 가장 중요한 일에 집중할 수 있습니다.</p>
+<p>이러한 변화는 개발자에게서 멈추지 않을 것입니다. Codex가 의도를 더 잘 파악하고 안전한 스캐폴딩(계획, 검증, 미리보기, 롤백)을 제공하게 되면, 더 많은 비개발자도 IDE에 매이지 않고 무언가를 만들고 개선할 수 있게 됩니다. Codex의 다양한 서피스와 모델에서 더 많은 업데이트가 예정되어 있지만, 나침반이 되는 목표는 변하지 않습니다. 에이전트가 지켜봐야 하는 도구라기보다, 장기 작업에서 믿고 맡길 수 있는 팀원처럼 느껴지게 하는 것입니다.</p>
+<p>직접 사용해 보고 싶다면 다음 문서부터 시작하십시오.</p>
+<ul>
+<li><a href="https://developers.openai.com/codex/">Codex 개요</a></li>
+<li><a href="https://developers.openai.com/codex/quickstart/">Codex 빠른 시작</a></li>
+<li><a href="https://developers.openai.com/codex/models/">Codex 모델</a></li>
+<li><a href="https://developers.openai.com/codex/features/">Codex 기능</a></li>
+</ul></article>
+  <article class="prose lang-en" hidden lang="en"><p>In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably follow instructions.</p>
+<p>I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.</p>
+<p>This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-16.jpeg" alt="Codex Design Desk UI"></p>
+<h2>What a long-run Codex session looks like</h2>
+<p>I asked Codex to generate a summary page for the session data:</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-1.jpeg" alt="Codex session summary dashboard"></p>
+<p>And here is a view of the CLI session stats and token usage:</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-2.jpeg" alt="Codex CLI session stats and token usage"></p>
+<p>These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.</p>
+<h2>The real shift is time horizon</h2>
+<p>This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.</p>
+<p>METR’s work on time-horizon benchmarks is a helpful framing for this trend: the length of software tasks frontier agents can complete with ~50% and 80% reliability has been climbing fast, with a rough ~7 month doubling time. Refer to <a href="https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/">Measuring AI Ability to Complete Long Tasks (METR)</a>.</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-3.jpeg" alt="METR chart measuring AI ability to complete long tasks"></p>
+<p>Our recent GPT-5.3-Codex <a href="https://openai.com/index/introducing-gpt-5-3-codex/">launch announcement</a> pushes this further for agent work in two practical ways:</p>
+<ol>
+<li>It’s better at multi-step execution (plan → implement → validate → repair).</li>
+<li>It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).</li>
+</ol>
+<p>I was also inspired by Cursor’s writing on long-running autonomous coding systems, including their browser-building experiment: <a href="https://cursor.com/blog/scaling-agents">How Cursor built a web browser (Scaling agents)</a>.</p>
+<p>The Cursor team wrote that OpenAI models are “much better at extended autonomous work: following instructions, keeping focus, avoiding drift, and implementing things precisely and completely.”</p>
+<h2>Why Codex can stay coherent on long tasks</h2>
+<p>Long-running work is less about one giant prompt and more about the agent loop the model operates inside.</p>
+<p>In Codex, the loop is roughly:</p>
+<ol>
+<li>Plan</li>
+<li>Edit code</li>
+<li>Run tools (tests/build/lint)</li>
+<li>Observe results</li>
+<li>Repair failures</li>
+<li>Update docs/status</li>
+<li>Repeat</li>
+</ol>
+<p>That loop matters because it gives the agent:</p>
+<ul>
+<li>Real feedback (errors, diffs, logs)</li>
+<li>Externalized state (repo, files, docs, worktrees, outputs)</li>
+<li>Steerability over time (you can course-correct based on outcomes)</li>
+</ul>
+<p>This is also why Codex models feel better on Codex surfaces than a generic chat window: the harness supplies structured context (repo metadata, file tree, diffs, command outputs) and enforces a disciplined “done when” routine.</p>
+<p>We recently published an <a href="https://openai.com/index/unrolling-the-codex-agent-loop/">article</a> about the Codex agent loop that has more details.</p>
+<p>To top this off, we also launched the Codex app that makes that loop usable day-to-day:</p>
+<ul>
+<li><a href="https://developers.openai.com/codex/projects">Parallel threads across projects</a> (long work doesn’t block your day job)</li>
+<li><a href="https://developers.openai.com/codex/build-skills">Skills</a> (standardize plan/implement/test/report)</li>
+<li><a href="https://developers.openai.com/codex/automations/">Automations</a> (routine work in the background)</li>
+<li><a href="https://developers.openai.com/codex/environments/git-worktrees/">Git worktrees</a> (isolate runs, keep diffs reviewable, reduce thrash)</li>
+</ul>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-4.jpeg" alt="Codex app workspace with project thread"></p>
+<h2>My setup for the test</h2>
+<p>I picked a design tool for this “experiment” because it’s an unforgiving test: UI + data model + editing operations + lots of edge cases. You can’t bluff it. If the architecture is wrong, it breaks quickly.</p>
+<p>I gave GPT-5.3-Codex a meaty spec, ran it at “Extra High” reasoning, and it ended up running uninterrupted for ~25 hours and was able to stay coherent and ship quality code. The model also ran verification steps (tests, lint, typecheck) for every milestone it completed.</p>
+<h2>The key idea: durable project memory</h2>
+<p>The most important technique was durable project memory. I wrote the spec, plan, constraints, and status in markdown files that Codex could revisit repeatedly. That prevented drift and kept a stable definition of “done.”</p>
+<p>The repository is linked below and the file stack was as follows:</p>
+<h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/prompt.md">Prompt.md</a> (spec + deliverables)</h4>
+<p>Purpose: Freeze the target so the agent doesn’t “build something impressive but wrong.”</p>
+<p>Key sections in the file:</p>
+<ul>
+<li>Goals + non-goals</li>
+<li>Hard constraints (perf, determinism, UX, platform)</li>
+<li>Deliverables (what must exist when finished)</li>
+<li>“Done when” (checks + demo flow)</li>
+</ul>
+<p>The initial prompt told Codex to treat the prompt/spec file as the full project specification and generate a milestone-based plan:</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-5.jpeg" alt="Prompt used to kickstart the Codex run"></p>
+<h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/plans.md">Plan.md</a> (milestones + validations)</h4>
+<p>Purpose: Turn open-ended work into a sequence of checkpoints the agent can finish and verify.</p>
+<p>Key sections in the file:</p>
+<ul>
+<li>Milestones small enough to complete in one loop</li>
+<li>Acceptance criteria + validation commands per milestone</li>
+<li>Stop-and-fix rule: if validation fails, repair before moving on</li>
+<li>Decision notes to avoid oscillation</li>
+<li>Intended architecture of the codebase</li>
+</ul>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-6.jpeg" alt="Codex referring to the plans markdown file while working"></p>
+<p><em>Note that we recently added a native plan mode to the Codex app, CLI, and IDE extension. This helps break a larger task into a clear, reviewable sequence of steps before making changes, so you can align on approach upfront. If additional clarification is needed, Codex will ask follow up questions. To toggle it on, use the /plan slash command.</em></p>
+<h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/implement.md">Implement.md</a> (execution instructions referencing the plan)</h4>
+<p>Purpose: This is the runbook. It tells Codex exactly how to operate: follow the plan, keep diffs scoped, run validations, update docs.</p>
+<p>Key sections in the file:</p>
+<ul>
+<li>Plans markdown file is source of truth (milestone-by-milestone)</li>
+<li>Run validation after each milestone (fix failures immediately)</li>
+<li>Keep diffs scoped (don’t expand scope)</li>
+<li>Update documentation markdown file continuously</li>
+</ul>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-7.jpeg" alt="Prompt instructing Codex to read implement.md as execution instructions"></p>
+<h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/documentation.md">Documentation.md</a> (status + decisions as it shipped)</h4>
+<p>Purpose: This is the shared memory and audit log. It’s how I can step away for hours and still understand what happened.</p>
+<p>Key sections in the file:</p>
+<ul>
+<li>Current milestone status (what’s done, what’s next)</li>
+<li>Decisions made (and why)</li>
+<li>How to run + demo (commands + quick smoke tests)</li>
+<li>Known issues / follow-ups</li>
+</ul>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-8.jpeg" alt="Documentation file showing milestone status updates"></p>
+<p>This is what milestone verification looked like in practice during the run:</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-9.jpeg" alt="Commands Codex ran to verify quality during milestones"></p>
+<h3>Verification at every milestone</h3>
+<p>Codex did not just write code and hope it worked. After milestones, it ran verification commands and repaired failures before continuing.</p>
+<p>Here are examples of the quality commands it was instructed to use:</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-10.jpeg" alt="Quality commands for lint, typecheck, tests, build, and export"></p>
+<p>And an example of Codex fixing issues after a lint failure:</p>
+<p><img src="https://developers.openai.com/images/blog/long-horizon-11.jpeg" alt="Codex fixing issues after npm run lint"></p>
+<h2>What the agent built</h2>
+<p>The result was not perfect or production-ready, but it was real and testable. The bar for this run was not “it compiles”; it was “does it follow the instructions, and does it actually work?”</p>
+<p>High-level capabilities implemented:</p>
+<ol>
+<li>Canvas editing (frames, groups, shapes, text, images/icons, buttons, charts)</li>
+<li>Live collaboration (presence, cursors, selections, edits sync across tabs)</li>
+<li>Inspector controls (geometry, styling, text)</li>
+<li>Layers management (search, rename, lock/hide, reorder)</li>
+<li>Guides/alignment/snapping</li>
+<li>History snapshots + restore</li>
+<li>Replay timeline + branch from a prior point</li>
+<li>Prototype mode (hotspots + flow navigation)</li>
+<li>Comments (pinned threads with resolve/reopen)</li>
+<li>Export (save/import/export + CLI export to JSON and React + Tailwind)</li>
+</ol>
+<h2>Takeaways for long-horizon Codex tasks</h2>
+<p>What made this run work was not a single clever prompt. It was the combination of:</p>
+<ul>
+<li>A clear target and constraints (spec file)</li>
+<li>Checkpointed milestones with acceptance criteria (<code>plans.md</code>)</li>
+<li>A runbook for how the agent should operate (<code>implement.md</code>)</li>
+<li>Continuous verification (tests/lint/typecheck/build)</li>
+<li>A live status/audit log (<code>documentation.md</code>) so the run stayed inspectable</li>
+</ul>
+<p>This is the direction long-horizon coding work is moving toward: less babysitting, more delegation with guardrails.</p>
+<h2>Try Codex on your own long-running task</h2>
+<p>This 25-hour Codex run is a preview of where building with code is going. We’re moving beyond single-shot prompts and tight pair-programming loops toward long-running teammates that can take a real slice of work end to end, with you steering at milestones instead of micromanaging every line.</p>
+<p>Our direction with Codex is simple: stronger teammate behavior, tighter integration with your real context, and guardrails that keep work reliable, reviewable, and easy to ship. We’re already seeing developers move faster when the agent absorbs routine implementation and verification, freeing humans up for the parts that matter most: design, architecture, product decisions, and the novel problems that don’t have a template.</p>
+<p>And this won’t stop with developers. As Codex gets even better at capturing intent and providing safe scaffolding (plans, validations, previews, rollbacks), more non-developers will be able to build and iterate without living in an IDE. There’s more coming across Codex surfaces and models, but the north star stays the same: make the agent feel less like a tool you babysit and more like a teammate you can trust on long-horizon work.</p>
+<p>If you want to try this yourself, start with:</p>
+<ul>
+<li><a href="https://developers.openai.com/codex/">Codex overview</a></li>
+<li><a href="https://developers.openai.com/codex/quickstart/">Codex quickstart</a></li>
+<li><a href="https://developers.openai.com/codex/models/">Codex models</a></li>
+<li><a href="https://developers.openai.com/codex/features/">Codex features</a></li>
+</ul></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

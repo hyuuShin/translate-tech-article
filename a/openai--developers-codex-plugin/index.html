@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>OpenAI Developers 플러그인 · OpenAI Learn</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html" class="on">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-learn/index.html">OpenAI Learn</a> / Docs</p>
+    <h1 class="lang-ko">OpenAI Developers 플러그인</h1>
+    <h1 class="lang-en" hidden lang="en">OpenAI Developers plugin</h1>
+    
+    <p class="art-sum lang-ko">ChatGPT, Codex, Claude Code, Cursor에 OpenAI Developers 플러그인을 설치하면 OpenAI API로 서비스를 구축하고, 문제를 해결하며, 배포할 수 있습니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">Install the OpenAI Developers plugin in ChatGPT, Codex, Claude Code, or Cursor to build, troubleshoot, and ship experiences with the OpenAI API.</p>
+    
+    <dl class="art-meta">
+      
+      
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/learn/developers-codex-plugin">https://developers.openai.com/learn/developers-codex-plugin</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>OpenAI Developers 플러그인은 OpenAI Platform 접근 권한과 OpenAI API 설정 가이드를 제공하여, ChatGPT와 Codex에서 AI 애플리케이션과 에이전트를 구축하도록 돕습니다.
+ChatGPT와 Codex는 범용 플러그인 디렉터리(universal plugin directory)에서 이 플러그인의 목록을 함께 사용합니다.
+Claude Code와 Cursor용 버전은 이식 가능한 개발자 스킬과
+공개 OpenAI Docs MCP 서버를 묶어 제공하며, Codex 전용 Platform 커넥터는 포함하지 않습니다. Codex에서는
+설치 시 함께 제공되는 OpenAI Docs 스킬과 함께 플러그인이 동작합니다.</p>
+<p>포함된 기능은 다음과 같습니다.</p>
+<ul>
+<li><strong>OpenAI API Platform:</strong> ChatGPT 또는 Codex를
+<a href="https://platform.openai.com/">OpenAI API Platform</a>에 연결합니다.</li>
+<li><strong>OpenAI Docs MCP:</strong> Claude Code 또는 Cursor에서 최신 OpenAI 문서를 활용합니다.</li>
+<li><strong>API 키 설정:</strong> Codex에서 프로젝트 API 키를 생성, 저장, 연결하거나, Claude Code와 Cursor에서 로컬 <code>OPENAI_API_KEY</code> 설정을 안내받을 수 있습니다.</li>
+<li><strong>Agents SDK:</strong> 아이디어, 저장소, 또는 이전 Codex 작업을 바탕으로 OpenAI Agents SDK 앱을 구축하고 배포합니다.</li>
+<li><strong>API 마이그레이션:</strong> 설치된 환경에 마이그레이션 스킬이 포함되어 있으면, 기존 LLM 앱과 에이전트를 OpenAI로 마이그레이션하거나 Responses API 연동을 개선할 수 있습니다. 이때 동작은 유지하면서 성능과 효율을 높이도록 설계된 변경 사항을 적용합니다. 합의된 변경 사항은 전체를 다시 작성하지 않고도 단계적으로 적용할 수 있습니다.</li>
+<li><strong>문제 해결:</strong> 흔히 발생하는 OpenAI API 오류를 식별하고
+다음에 취할 적절한 단계를 안내합니다.</li>
+</ul>
+<h2>Codex 시작하기</h2>
+<p>Codex를 처음 사용한다면 플러그인을 설치하기 전에 다음 단계부터 진행하십시오.</p>
+<ol>
+<li>macOS 또는 Windows용 <a href="https://developers.openai.com/codex/app#getting-started">ChatGPT 데스크톱 앱을 다운로드</a>합니다.</li>
+<li><a href="https://developers.openai.com/codex/quickstart">Codex 빠른 시작</a>을 따라 로그인하고, 프로젝트를 선택한 뒤, 첫 메시지를 보냅니다.</li>
+</ol>
+<h2>플러그인 설치</h2>
+     옵션 선택
+<p>OpenAI Developers 플러그인 설치</p>
+<ol>
+<li>
+<p>Codex 열기</p>
+<p>터미널에서 Codex를 시작합니다.</p>
+<pre data-lang="bash"><code>codex</code></pre>
+</li>
+<li>
+<p>플러그인 브라우저 열기</p>
+<p>다음을 실행합니다.</p>
+<pre data-lang="text"><code>/plugins</code></pre>
+</li>
+<li>
+<p>플러그인 설치</p>
+<p><strong>OpenAI Developers</strong>를 검색하여 열고 <code>Install plugin</code>을 선택합니다.</p>
+</li>
+<li>
+<p>설정 안내 완료</p>
+<p>Codex에서 함께 제공되는 OpenAI Platform 앱을 연결하라고 안내하면,
+플러그인이 필요할 때 프로젝트 API 키를 생성할 수 있도록 해당 설정을 완료합니다.</p>
+</li>
+<li>
+<p>새 채팅 시작</p>
+<p>플러그인을 처음 사용하기 전에 새 채팅을 시작합니다.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p>플러그인 설정 열기</p>
+<p>Claude 앱에서 <strong>Settings</strong>를 열고 <strong>Plugins</strong>를 선택합니다.</p>
+</li>
+<li>
+<p>마켓플레이스 추가</p>
+<p>오른쪽 상단의 <strong>Add</strong>를 선택한 다음 <strong>Add Marketplace</strong>를 선택합니다.
+모달 창에서 <strong>Add from a repository</strong>를 선택합니다.</p>
+</li>
+<li>
+<p>저장소 추가</p>
+<p><code>https://github.com/openai/openai-developers-for-claude</code>를 입력하고
+<strong>Sync</strong>를 선택합니다. <code>.git</code> 접미사는 붙이지 마십시오.</p>
+</li>
+<li>
+<p>플러그인 설치</p>
+<p><strong>OpenAI Developers</strong>가 표시되면 열어서 <strong>Install</strong>을 선택합니다.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p>플러그인 마켓플레이스 추가</p>
+<p>Claude Code에서 다음을 실행합니다.</p>
+<pre data-lang="text"><code>/plugin marketplace add openai/openai-developers-for-claude</code></pre>
+</li>
+<li>
+<p>플러그인 설치</p>
+<p>다음을 실행합니다.</p>
+<pre data-lang="text"><code>/plugin install openai-developers@openai-developers</code></pre>
+</li>
+<li>
+<p>새 세션 시작</p>
+<p>플러그인을 처음 사용하기 전에 새 Claude Code 세션을 시작합니다.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p>플러그인 설정 열기</p>
+<p>Cursor에서 <strong>Settings</strong>를 열고 <strong>Plugins</strong>를 선택합니다.</p>
+</li>
+<li>
+<p>저장소 추가</p>
+<p>플러그인 검색창에 <code>https://github.com/openai/openai-developers-for-cursor</code>를 붙여넣습니다.</p>
+</li>
+<li>
+<p>플러그인 설치</p>
+<p><strong>OpenAI Developers</strong>가 표시되면 열어서 <strong>Install</strong>을 선택합니다.</p>
+</li>
+</ol>
+<h2>플러그인 사용</h2>
+<p>설치가 끝나면 에이전트와 함께 개발을 시작할 수 있습니다. API 키 생성이나 API 문제 해결처럼 작업에서 OpenAI Platform과의 상호작용이 필요한 경우, ChatGPT 또는 Codex가
+플러그인을 자동으로 사용할 수 있습니다. Claude Code와 Cursor는 OpenAI API, 모델,
+Agents SDK, 플러그인에 관한 안내를 위해 플러그인의 스킬과 함께 제공되는 Docs MCP 서버를 사용할 수 있습니다.</p>
+<p>다음과 같은 경우에 코딩 에이전트와 함께 이 플러그인을 사용하면 유용합니다.</p>
+<ul>
+<li>OpenAI API를 사용하는 앱이나 에이전트를 구축할 때</li>
+<li>구축 중인 앱에 OpenAI API 접근을 설정할 때</li>
+<li>흔히 발생하는 OpenAI API 오류를 진단하고 다음 단계를 안내받을 때</li>
+</ul>
+<h3>기존 앱 마이그레이션</h3>
+<p>마이그레이션 스킬이 설치되어 있다면 다음을 시도해 보십시오.</p>
+<pre data-lang="text"><code>Migrate this app to use OpenAI Responses API best practices.</code></pre>
+<h2>예시 프롬프트</h2>
+<p>새 앱 구축</p>
+<h3> Responses API로 앱 구축 </h3>
+<p>브리프를 완성도 높은 카피와 생성된 시각적 방향성으로 바꿔 주는 캠페인 스튜디오를 만들어 주세요.</p>     
+ChatGPT에서 열기
+<h3> Agents SDK로 에이전트 구축 </h3>
+<p>프런트엔드, 유용한 도구, 관측 가능성(observability) 훅을 갖춘 출시 계획 에이전트를 만들어 주세요.</p>     
+ChatGPT에서 열기
+<h3> 실시간 오디오 앱 구축 </h3>
+<p>지연 시간이 짧은 오디오 상호작용을 지원하는, 음성 중심의 세계관 구축 도우미를 만들어 주세요.</p>     
+ChatGPT에서 열기
+<p>기존 앱 개선</p>
+<h3> 최신 모델로 업그레이드 </h3>
+<p>동작은 유지하면서 모델과 API 사용 방식을 최신화하기 위한, 코드 변경 없는 계획을 만들어 주세요.</p>     
+ChatGPT에서 열기
+<h3> API 구현 최적화 </h3>
+<p>품질, 지연 시간, 안정성, 비용을 개선하기 위한 코드 변경 없는 최적화 계획을 만들어 주세요.</p>     
+ChatGPT에서 열기
+<h3> Responses API에서 Agents SDK로 마이그레이션 </h3>
+<p>Agents SDK로 전환해야 하는지, 전환한다면 어떻게 할지에 대한 코드 변경 없는 마이그레이션 계획을 만들어 주세요.</p>     
+ChatGPT에서 열기</article>
+  <article class="prose lang-en" hidden lang="en"><p>The OpenAI Developers plugin helps you build AI applications and agents in
+ChatGPT and Codex with OpenAI Platform access and OpenAI API setup guidance.
+ChatGPT and Codex share its listing in the universal plugin directory.
+Adaptations for Claude Code and Cursor bundle the portable developer skills and
+public OpenAI Docs MCP server without the Codex-specific Platform connector. In
+Codex, the plugin works with the OpenAI Docs skill bundled with your install.</p>
+<p>It includes:</p>
+<ul>
+<li><strong>OpenAI API Platform:</strong> connect ChatGPT or Codex to the
+<a href="https://platform.openai.com/">OpenAI API Platform</a>.</li>
+<li><strong>OpenAI Docs MCP:</strong> use current OpenAI documentation from Claude Code or
+Cursor.</li>
+<li><strong>API key setup:</strong> create, save, and connect a project API key from Codex, or
+get guided local <code>OPENAI_API_KEY</code> setup in Claude Code and Cursor.</li>
+<li><strong>Agents SDK:</strong> build and deploy OpenAI Agents SDK apps from an idea, a repo,
+or a prior Codex task.</li>
+<li><strong>API migration:</strong> when your installation includes the migration skill, migrate
+existing LLM apps and agents to OpenAI or improve their Responses API
+integration through changes designed to preserve behavior and improve
+performance and efficiency. Apply agreed changes incrementally without
+requiring a full rewrite.</li>
+<li><strong>Troubleshooting:</strong> identify common OpenAI API failures and route
+you to the right next step.</li>
+</ul>
+<h2>Get started with Codex</h2>
+<p>If you are new to Codex, start here before installing the plugin:</p>
+<ol>
+<li><a href="https://developers.openai.com/codex/app#getting-started">Download the ChatGPT desktop app</a> for macOS or Windows.</li>
+<li>Follow the <a href="https://developers.openai.com/codex/quickstart">Codex quickstart</a> to sign in, choose a
+project, and send your first message.</li>
+</ol>
+<h2>Install the plugin</h2>
+     Choose an option          <p>Install the OpenAI Developers plugin</p>     <ol>
+<li>
+<p>Open Codex</p>
+<p>Start Codex from your terminal:</p>
+<pre data-lang="bash"><code>codex</code></pre>
+</li>
+<li>
+<p>Open the plugin browser</p>
+<p>Run:</p>
+<pre data-lang="text"><code>/plugins</code></pre>
+</li>
+<li>
+<p>Install the plugin</p>
+<p>Search for <strong>OpenAI Developers</strong>, open it, and select <code>Install plugin</code>.</p>
+</li>
+<li>
+<p>Complete any setup prompts</p>
+<p>If Codex asks you to connect the bundled OpenAI Platform app, complete
+that setup so the plugin can create project API keys when needed.</p>
+</li>
+<li>
+<p>Start a new chat</p>
+<p>Start a new chat before using the plugin for the first time.</p>
+</li>
+</ol>      <ol>
+<li>
+<p>Open the plugin settings</p>
+<p>In the Claude app, open <strong>Settings</strong>, then select <strong>Plugins</strong>.</p>
+</li>
+<li>
+<p>Add the marketplace</p>
+<p>Select <strong>Add</strong> in the top-right corner, then choose <strong>Add Marketplace</strong>.
+In the modal, select <strong>Add from a repository</strong>.</p>
+</li>
+<li>
+<p>Add the repository</p>
+<p>Enter <code>https://github.com/openai/openai-developers-for-claude</code> and select
+<strong>Sync</strong>. Do not append a <code>.git</code> suffix.</p>
+</li>
+<li>
+<p>Install the plugin</p>
+<p>When <strong>OpenAI Developers</strong> appears, open it and select <strong>Install</strong>.</p>
+</li>
+</ol>      <ol>
+<li>
+<p>Add the plugin marketplace</p>
+<p>In Claude Code, run:</p>
+<pre data-lang="text"><code>/plugin marketplace add openai/openai-developers-for-claude</code></pre>
+</li>
+<li>
+<p>Install the plugin</p>
+<p>Run:</p>
+<pre data-lang="text"><code>/plugin install openai-developers@openai-developers</code></pre>
+</li>
+<li>
+<p>Start a new session</p>
+<p>Start a new Claude Code session before using the plugin for the first
+time.</p>
+</li>
+</ol>      <ol>
+<li>
+<p>Open the plugin settings</p>
+<p>In Cursor, open <strong>Settings</strong>, then select <strong>Plugins</strong>.</p>
+</li>
+<li>
+<p>Add the repository</p>
+<p>Paste <code>https://github.com/openai/openai-developers-for-cursor</code> into the
+plugin search box.</p>
+</li>
+<li>
+<p>Install the plugin</p>
+<p>When <strong>OpenAI Developers</strong> appears, open it and select <strong>Install</strong>.</p>
+</li>
+</ol>      
+<h2>Use the plugin</h2>
+<p>After installation, start building with your agent. ChatGPT or Codex can use
+the plugin automatically when the task calls for OpenAI Platform interactions,
+such as creating API keys or troubleshooting API issues. Claude Code and Cursor
+can use the plugin’s skills and bundled Docs MCP server for OpenAI API, model,
+Agents SDK, and plugin guidance.</p>
+<p>The plugin is useful when you want your coding agent to:</p>
+<ul>
+<li>build an app or agent that uses the OpenAI API</li>
+<li>set up OpenAI API access for the app you are building</li>
+<li>diagnose common OpenAI API errors and explain the next step.</li>
+</ul>
+<h3>Migrate an existing app</h3>
+<p>When the migration skill is installed, try:</p>
+<pre data-lang="text"><code>Migrate this app to use OpenAI Responses API best practices.</code></pre>
+<h2>Sample prompts</h2>
+<p>Build a new app</p>
+     <h3> Build an app with the Responses API </h3> <p>Create a campaign studio that turns a brief into polished copy and generated visual directions.</p>     
+Open in ChatGPT
+       <h3> Build an agent with the Agents SDK </h3> <p>Create a launch-planning agent with a frontend, useful tools, and observability hooks.</p>     
+Open in ChatGPT
+       <h3> Build a realtime audio app </h3> <p>Make a voice-first worldbuilding companion with low-latency audio interactions.</p>     
+Open in ChatGPT
+  
+<p>Improve an existing app</p>
+     <h3> Upgrade to the latest model </h3> <p>Create a no-code-change plan to modernize model/API usage while preserving behavior.</p>     
+Open in ChatGPT
+       <h3> Optimize my API implementation </h3> <p>Create a no-code-change optimization plan for quality, latency, reliability, and cost.</p>     
+Open in ChatGPT
+       <h3> Migrate from Responses API to Agents SDK </h3> <p>Create a no-code-change migration plan for whether and how to move to the Agents SDK.</p>     
+Open in ChatGPT</article>
+
+  <p class="art-back"><a href="../../s/openai-learn/index.html">← OpenAI Learn 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Codex를 위한 맞춤형 코드 리뷰 규칙 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">Codex를 위한 맞춤형 코드 리뷰 규칙</h1>
+    <h1 class="lang-en" hidden lang="en">Custom Code Review rules for Codex</h1>
+    
+    <p class="art-sum lang-ko">Codex가 코드 리뷰 중에 문제를 더 잘 찾아내고 팀의 컨벤션을 더 충실히 따를 수 있도록, 더 상세한 규칙을 제공합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">Provide more detailed rules for Codex to spot issues and better adhere your conventions during code review.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 7월 20일</dd></div>
+      <div><dt>저자</dt><dd>Hari Srikanth</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/custom-code-review-rules-for-codex">https://developers.openai.com/blog/custom-code-review-rules-for-codex</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>Codex로 코드 리뷰를 하다 보면 반복해서 나오는 코멘트가 있습니다. 이전 API 계약을 유지해야 한다거나, 고객 데이터를 로그에 남기지 않아야 한다거나, 다른 서비스를 깨뜨릴 수 있는 이름 변경을 피해야 한다는 내용입니다. 이러한 확인 사항은 중요하지만, 맥락을 아는 사람이 소수의 리뷰어에게 한정되어 있으면 놓치기 쉽습니다.</p>
+<p>이제 Codex Code Review는 <code>AGENTS.md</code>에 정의한 커스텀 리포지토리 규칙(repository rules)을 사용해 이러한 문제를 찾아내고, 발견 사항의 근거가 되는 지침을 작성자에게 안내할 수 있습니다. 이미 코딩 작업을 안내하는 데 <code>AGENTS.md</code>를 사용하고 있다면, 같은 파일로 리뷰도 안내할 수 있습니다. 기여자나 코딩 에이전트가 리포지토리에서 익숙하지 않은 영역을 작업하고 있어 그 이력을 아직 모르는 경우에 특히 유용합니다. 이 글에서는 리포지토리 규칙이 어떤 역할을 하는지, 그리고 규칙을 잘 작성하는 방법을 테스트 과정에서 얻은 교훈과 함께 소개합니다.</p>
+<h2>더 많아지는 코드 출시</h2>
+<p>코딩 에이전트는 더 큰 규모의 변경을 맡아 더 오랜 시간 동안 작업할 수 있어, 팀이 더 많은 아이디어를 코드로 옮기는 데 도움이 됩니다. OpenAI에서는 주간 PR 수가 4분기 이후 두 배 넘게 늘었고, 많은 고객에게서도 비슷한 추세가 나타나고 있습니다. 코드가 많아지는 것은 좋은 일입니다. 팀이 새로운 기능을 출시하고 더 많은 문제를 해결하는 데 도움이 되기 때문입니다. 하지만 무엇을 살펴봐야 하는지 아는 사람을 기다리는 풀 리퀘스트도 그만큼 늘어나고, 코드 리뷰가 금세 병목이 될 수 있습니다.</p>
+<img src="https://developers.openai.com/images/blog/codex-pr-volume-trend.svg" alt="세 분기에 걸친 주간 PR 수 증가">
+<p>여러 변경이 한꺼번에 들어오면 리뷰는 더 어려워집니다. diff만 보면 전혀 문제가 없어 보여도, 이전 클라이언트를 깨뜨리거나 작성자가 알지 못하는 경계를 넘을 수 있습니다. 작성자가 아직 대응할 수 있을 때, 누군가가 그 맥락을 기억해 공유해야 합니다.</p>
+<h2>리뷰 병목</h2>
+<p>더 많은 풀 리퀘스트가 올라오면 리뷰어는 각 변경의 의도를 파악하고 관련 맥락을 모아 피드백을 남길 시간이 줄어듭니다. 작성자가 다른 작업으로 넘어간 뒤에는 작은 수정조차 더 오래 걸릴 수 있습니다. 빠른 피드백은 사람이 병목이 되지 않으면서도 빨라진 개발 속도를 최대한 활용하는 데 도움이 됩니다.</p>
+<p>diff만으로는 찾아내기 어려운 문제도 있습니다. 응답 필드의 이름을 바꾸는 것은 일상적인 정리처럼 보일 수 있지만, 기존 계약에 여전히 의존하는 클라이언트를 깨뜨릴 수 있습니다. 경험이 많은 리뷰어는 그 필드를 유지해야 하는 이유를 기억하고 있을 수 있지만, 신규 기여자나 해당 서비스에서 처음 작업하는 에이전트는 아마 그렇지 못할 것입니다.</p>
+<h2>인터페이스로서의 규칙</h2>
+<p>그렇다면 팀이 시간이 지나면서 자연스럽게 쌓아 온 맥락을 코딩 에이전트에게 어떻게 전달할 수 있을까요? 새로운 리포지토리 규칙 인터페이스를 사용하면 간결하고 적용 범위가 명확한 리뷰 지침을 <code>AGENTS.md</code>에 넣을 수 있습니다. Codex Code Review는 변경 사항과 관련된 규칙을 적용하고, 발견 사항에서 해당 규칙을 인용할 수 있습니다. 모든 풀 리퀘스트마다 같은 설명을 반복하는 대신, 규칙이 적용되는 코드 가까이에 지침을 둘 수 있습니다.</p>
+<p>코딩 모델이 더 잘 조종(steerable)될수록, 범위가 잘 정해진 짧은 지침 하나가 긴 리뷰를 팀이 실제로 중요하게 여기는 사항에 집중시키는 데 도움이 됩니다. <a href="https://github.com/openai/codex/blob/5c18cc0acc3734f0e78e422a7fd94ea4a2be652e/AGENTS.md#L85-L110">Codex 리포지토리 자체도 <code>AGENTS.md</code>에 Code Review 규칙을 두고 있으며</a>, 모델에 노출되는 컨텍스트와 호환성을 깨뜨리는 변경 같은 사항을 다룹니다.</p>
+<p>실제 사례를 소개합니다.</p>
+<p>Codex app-server는 <code>rawResponseItem/completed</code>라는 이름의 내부 알림을 보냅니다. 이 알림은 실험적(experimental)으로 표시되어 있지만, Codex Cloud는 이미 이를 사용하고 있습니다. 이 리포지토리의 <a href="https://github.com/openai/codex/blob/5c18cc0acc3734f0e78e422a7fd94ea4a2be652e/AGENTS.md#L102-L110">호환성을 깨뜨리는 변경(breaking change) 리뷰 규칙</a>은 <code>rawResponseItem/*</code>를 실험적인 상태이더라도 리뷰어가 유지해야 하는 통합 지점으로 명시하고 있습니다.</p>
+<p><a href="https://github.com/openai/codex/blob/5c18cc0acc3734f0e78e422a7fd94ea4a2be652e/codex-rs/app-server-protocol/src/protocol/common.rs#L1665-L1670">기존 wire name은 app-server 프로토콜에 정의되어 있습니다.</a> 정리 작업에서 다음과 같이 한 줄이 바뀌었다고 가정해 보겠습니다.</p>
+<pre data-lang="diff"><code>-RawResponseItemCompleted =&gt; "rawResponseItem/completed"
++RawResponseItemCompleted =&gt; "rawResponseItem/done"</code></pre>
+<p>이 변경은 컴파일되지만, 기존 알림을 수신하던 클라이언트는 더 이상 알림을 받지 못하게 됩니다. 관련된 리포지토리 규칙 발췌문은 간결합니다.</p>
+<pre data-lang="md"><code>## Code Review Rules
+
+### Breaking changes
+
+Search for breaking changes in external integration surfaces:
+
+- raw response item events (`rawResponseItem/*`), even while experimental</code></pre>
+<p>이 예시 diff에 대해 Code Review의 발견 사항은 다음과 같을 수 있습니다.</p>
+<blockquote>
+<p><strong>기존 <code>rawResponseItem/completed</code> 알림을 유지하십시오.</strong> Codex Cloud 소비자가 이 wire name을 수신하고 있으므로, 이벤트가 실험적이더라도 이름을 바꾸면 해당 소비자가 깨집니다. <code>AGENTS.md</code>에 설명된 대로 기존 이름을 유지하거나 하위 호환되는 이벤트를 추가하십시오.</p>
+</blockquote>
+<p>Codex 팀은 <a href="https://github.com/openai/codex/pull/29086">Codex Cloud 소비자를 보호하기 위해 이 규칙을 특별히 추가했습니다</a>. 리포지토리 전체에 적용되는 규칙은 루트에, 서비스별 규칙은 해당 디렉터리에 두십시오. 리뷰 중에 Codex는 변경된 파일에 해당하는 지침을 적용하고 관련 규칙을 작성자에게 안내할 수 있습니다. 관련 없는 변경에는 app-server 컨텍스트가 필요하지 않습니다.</p>
+<p>규칙은 팀이 이미 사용하고 있는 다른 도구와 함께 쓰입니다. 테스트와 린터는 결정적으로 표현할 수 있는 검사에 적합하고, 리포지토리 규칙은 코드로 옮기기 어려운 판단을 담는 데 도움이 됩니다. 호환성 요구 사항과 데이터 경계가 시작하기 좋은 영역입니다. 작성자가 변경을 하기 전에 과거의 모든 사고나 로컬 관례를 알 필요는 없습니다. 관련 지침이 이미 그곳에 있기 때문입니다.</p>
+<h2>효과가 지속되는 규칙 작성</h2>
+<p>저희는 알려진 규칙 위반 사례와 안전한 반례를 포함한 평가(eval) 모음으로 Code Review가 리포지토리 지침을 얼마나 잘 활용하는지 테스트했습니다. 주요 평가 모음에서 규칙을 적용한 변형은 필요한 커스텀 발견 사항의 98%를 찾아냈으며, 기준 대조군의 58.3%와 비교됩니다.</p>
+<p>규칙 위반을 찾는 것은 업무의 일부일 뿐입니다. 여러 규칙이 주의를 두고 경쟁하거나 풀 리퀘스트가 이미 복잡한 경우에 어떤 일이 일어나는지도 알고 싶었습니다. 중대한 위반과 그대로 두어야 하는 변경을 모두 테스트하고, 그 결과를 네 가지 질문을 중심으로 정리했습니다.</p>
+<p>평가 항목</p>
+<p>커버리지(Coverage)</p>
+<p>diff가 복잡하고 규칙들이 주의를 두고 경쟁하는 상황에서도 Codex가 의도한 위반을 찾아낼 수 있습니까?</p>
+<p>절제(Restraint)</p>
+<p>문제가 없는 변경과 유효한 예외에 대해 불필요한 발견 사항을 내지 않습니까?</p>
+<p>유지(Retention)</p>
+<p>Code Review는 저장소 규칙에 포함되지 않은 일반적인 버그도 계속 찾아내는가?</p>
+<p>실행 가능성(Actionability)</p>
+<p>각 발견 사항은 관련 지침, 위치, 우선순위를 명확히 제시하는가?</p>
+<p>또한 짧은 글머리 기호 목록부터 특정 팀이 담당하는 섹션까지, 지침을 작성하는 익숙한 방식들도 시도해 보았습니다.</p>
+<p>내부 저장소에서 규칙을 사용하면서도 같은 패턴을 확인했습니다. Codex는 기본 리뷰에서 놓칠 수 있는 로컬 지침을 찾아 인용할 수 있었지만, 범위가 넓은 지침은 쉽게 노이즈를 만들어 냈습니다. 명시적인 안전 경로(safe path)가 있는 작고 범위가 한정된 규칙 모음을 사용하자, Codex는 인접한 모든 변경에 규칙을 적용하지 않고 가장 유용한 부분에 집중할 수 있었습니다.</p>
+<p><strong>중요하면서 자명하지 않은 불변 조건(invariant)부터 시작합니다.</strong> 호환성 요구 사항이나 데이터 경계처럼 리뷰어가 반복해서 설명하는 검사 항목을 규칙으로 만드십시오. 규칙을 제거해도 리뷰 결과가 달라지지 않는다면 그 규칙은 넣지 마십시오.</p>
+<p><strong>규칙의 범위를 해당 규칙이 적용되는 코드로 한정합니다.</strong> 저장소 전체에 적용되는 지침은 루트에, 특정 서비스에 대한 지침은 하위 디렉터리의 <code>AGENTS.md</code>에 두십시오. 범위를 좁히면 관련 없는 지침이 주의를 두고 경쟁하는 일을 막을 수 있고, 담당 주체도 명확해집니다.</p>
+<p><strong>불변 조건과 안전 경로를 함께 명시합니다.</strong> <code>rawResponseItem/*</code> 규칙은 호환성 위험을 짚어 줍니다. "기존 이름을 유지하거나 하위 호환 이벤트를 추가하십시오"라는 문구는 작성자에게 명확한 대안을 제시합니다.</p>
+<p><strong>규칙을 오래 유지되고 최신 상태로 관리합니다.</strong> 바뀔 수 있는 함수 이름이 아니라 결과를 기술하십시오. 규칙 변경 사항도 리뷰하고, 노이즈를 반복해서 만드는 지침은 범위를 좁히거나 제거하십시오.</p>
+<p>포맷팅과 그 밖의 기계적인 검사는 CI에 맡기십시오. 저장소 규칙은 리뷰어가 그렇지 않으면 다시 물어야 하는 질문을 위해 남겨 두십시오.</p>
+<h2>시작하기</h2>
+<p>저장소에서 이미 Codex Code Review를 사용하고 있다면, 해당하는 <code>AGENTS.md</code> 파일에 규칙을 두세 개 추가하고 대표적인 풀 리퀘스트(pull request)를 열어 보십시오. Code Review를 처음 사용한다면 <a href="https://developers.openai.com/codex/third-party/github">Code Review 빠른 시작</a>에서 GitHub 저장소에 이를 활성화하는 방법을 확인할 수 있습니다. <code>@codex review</code>로 리뷰를 직접 요청할 수도 있습니다.</p>
+<p>리뷰어가 반복해서 하는 설명이나, 놓치면 영향이 큰 저장소 고유의 실수부터 시작하십시오. 규칙을 작동시켜야 하는 변경 하나, 안전한 반례 하나, 관련 없는 변경 하나를 시도해 보십시오. 첫 번째 변경에서는 유용한 발견 사항이 나오고 나머지에서는 노이즈가 생기지 않는지 확인한 뒤, 결과를 바탕으로 지침을 다듬으십시오.</p>
+<p>Codex Code Review는 여전히 추가적인 리뷰어입니다. 테스트, 브랜치 보호(branch protection), 필수 승인은 계속해서 강제 수단의 역할을 합니다.</p>
+<p>변경 사항을 작성하는 시간보다 리뷰하는 시간이 더 길어지고 있다면, 팀에서 반복하는 검사 항목 하나부터 시작하십시오. 그 항목을 <code>AGENTS.md</code>에 추가하고 다음 풀 리퀘스트에서 Codex Code Review를 사용해 보십시오.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>When doing code reviews with Codex, some comments keep coming back. It could be about preserving an older API contract, keeping customer data out of logs, or avoiding a rename that would break another service. These checks are important, but they are easy to miss when the context lives with a handful of reviewers.</p>
+<p>Codex Code Review can now use custom repository rules in <code>AGENTS.md</code> to catch those issues and point authors to the guidance behind a finding. If you already use <code>AGENTS.md</code> to guide coding tasks, the same file can help guide reviews, too. This is especially useful when contributors or coding agents are working in an unfamiliar part of a repository and may not know its history yet. In this post, we’ll show where repository rules fit and how to write them well, including what we learned while testing them.</p>
+<h2>Shipping more code</h2>
+<p>Coding agents can take on larger changes and work over longer horizons, helping teams move more of their ideas into code. At OpenAI, weekly PR volume has more than doubled since Q4, and we’re seeing similar trends for many of our customers. More code is good: it helps teams ship new features and solve more problems. It also means more pull requests waiting for someone who knows what to look for, and code review can quickly become the bottleneck.</p>
+<img src="https://developers.openai.com/images/blog/codex-pr-volume-trend.svg" alt="Weekly PR volume increases across three quarters">
+<p>Review gets harder when several changes arrive at once. A diff can look completely reasonable and still break an older client or cross a boundary the author did not know about. Someone has to remember that context and share it while the author can still act on it.</p>
+<h2>The review bottleneck</h2>
+<p>When more pull requests land, reviewers have less time to work out what each change is trying to do and gather the relevant context before leaving feedback. Once an author moves on to something else, even a small revision can take longer. Fast feedback helps teams make the most of faster development without asking people to become the bottleneck.</p>
+<p>Some issues are also hard to spot from the diff alone. Renaming a response field might look like routine cleanup, but it can break clients that still depend on the existing contract. An experienced reviewer may remember why that field needs to stay; a new contributor or an agent working in the service for the first time probably won’t.</p>
+<h2>Rules as an interface</h2>
+<p>So how do you give a coding agent the context your team normally picks up over time? The new repository-rules interface lets you put concise, scoped review guidance in <code>AGENTS.md</code>. Codex Code Review can apply the rules that matter to a change and cite them in a finding. Instead of repeating the same explanation in every pull request, you can keep it close to the code it applies to.</p>
+<p>As coding models become more steerable, a short, well-scoped instruction can help focus a long review on the things your team actually cares about. The <a href="https://github.com/openai/codex/blob/5c18cc0acc3734f0e78e422a7fd94ea4a2be652e/AGENTS.md#L85-L110">Codex repository itself keeps Code Review rules in <code>AGENTS.md</code></a>, covering concerns such as model-visible context and breaking changes.</p>
+<p>Here’s a real example:</p>
+<p>The Codex app-server emits an internal notification named <code>rawResponseItem/completed</code>. It is marked experimental, but Codex Cloud already consumes it. The repository’s <a href="https://github.com/openai/codex/blob/5c18cc0acc3734f0e78e422a7fd94ea4a2be652e/AGENTS.md#L102-L110">breaking-change review rule</a> explicitly calls out <code>rawResponseItem/*</code> as an integration surface that reviewers should preserve, even while experimental.</p>
+<p>The <a href="https://github.com/openai/codex/blob/5c18cc0acc3734f0e78e422a7fd94ea4a2be652e/codex-rs/app-server-protocol/src/protocol/common.rs#L1665-L1670">existing wire name is defined in the app-server protocol</a>. Imagine a cleanup changed one line:</p>
+<pre data-lang="diff"><code>-RawResponseItemCompleted =&gt; "rawResponseItem/completed"
++RawResponseItemCompleted =&gt; "rawResponseItem/done"</code></pre>
+<p>The change compiles, but clients listening for the existing notification would stop receiving it. The relevant repository-rule excerpt is concise:</p>
+<pre data-lang="md"><code>## Code Review Rules
+
+### Breaking changes
+
+Search for breaking changes in external integration surfaces:
+
+- raw response item events (`rawResponseItem/*`), even while experimental</code></pre>
+<p>For that illustrative diff, a Code Review finding could read:</p>
+<blockquote>
+<p><strong>Keep the existing <code>rawResponseItem/completed</code> notification.</strong> Codex Cloud consumers listen for this wire name, so renaming it will break them even though the event is experimental. Keep the existing name or add a backward-compatible event, as described in <code>AGENTS.md</code>.</p>
+</blockquote>
+<p>The Codex team <a href="https://github.com/openai/codex/pull/29086">added this rule specifically to protect Codex Cloud consumers</a>. Keep repository-wide rules at the root and service-specific rules in the relevant directory. During review, Codex can apply the guidance that covers the changed files and point authors to the relevant rule; an unrelated change does not need app-server context.</p>
+<p>Rules sit alongside the other tools teams already rely on. Tests and linters work well for checks you can express deterministically; repository rules help capture the judgment that is harder to encode. Compatibility requirements and data boundaries are good places to start. Authors do not need to know every past incident or local convention before they make a change; the relevant guidance is already there.</p>
+<h2>Writing rules that hold up</h2>
+<p>We tested how well Code Review could use repository guidance with an eval suite that included known rule violations and safe counterexamples. In the primary suite, rule-guided variants recovered 98% of the required custom findings, compared with 58.3% in the baseline control.</p>
+<p>Finding a rule violation is only part of the job. We also wanted to know what happens when several rules compete for attention or a pull request is already busy. We tested both consequential violations and changes that should be left alone, then organized the results around four questions:</p>
+<p>What we evaluated</p><p>Coverage</p><p>Can Codex surface intended violations when diffs are busy and rules
+compete for attention?</p><p>Restraint</p><p>Do clean changes and valid exceptions avoid unnecessary findings?</p><p>Retention</p><p>Does Code Review continue to catch ordinary bugs outside the repository
+rules?</p><p>Actionability</p><p>Does each finding identify the relevant guidance, location, and
+priority?</p>
+<p>We also tried familiar ways of writing guidance, from short bullet lists to sections owned by a specific team.</p>
+<p>We found the same pattern while using rules in internal repositories. Codex could find and cite local guidance that a default review might miss, but broad instructions could easily create noise. Small, scoped sets with an explicit safe path helped Codex focus on what was most useful without applying a rule to every nearby change.</p>
+<p><strong>Start with a consequential, non-obvious invariant.</strong> Encode a check reviewers repeatedly explain, such as a compatibility requirement or data boundary. If removing a rule would not change the review, leave it out.</p>
+<p><strong>Scope rules to the code they govern.</strong> Put repository-wide guidance at the root and service-specific guidance in a nested <code>AGENTS.md</code>. Narrow scope keeps unrelated instructions from competing for attention and makes ownership clear.</p>
+<p><strong>State the invariant and the safe path.</strong> The <code>rawResponseItem/*</code> rule identifies the compatibility risk. “Keep the existing name or add a backward-compatible event” gives authors a clear alternative.</p>
+<p><strong>Keep rules durable and current.</strong> Describe outcomes, not function names that may change. Review updates to the rules and narrow or remove guidance that repeatedly produces noise.</p>
+<p>Keep formatting and other mechanical checks in CI. Save repository rules for the questions a reviewer would otherwise have to ask again.</p>
+<h2>Getting started</h2>
+<p>If your repository already has Codex Code Review enabled, add two or three rules to the applicable <code>AGENTS.md</code> file and open a representative pull request. If you are new to Code Review, the <a href="https://developers.openai.com/codex/third-party/github">Code Review quickstart</a> explains how to turn it on for a GitHub repository. You can also request a review directly with <code>@codex review</code>.</p>
+<p>Start with an explanation reviewers keep repeating or a repository-specific mistake that would be consequential to miss. Try one change that should trigger the rule, one safe counterexample, and one unrelated change. Check that the first produces a useful finding and the others do not create noise, then refine the guidance from what you see.</p>
+<p>Codex Code Review is still an additional reviewer; tests, branch protections, and required approvals continue to provide hard enforcement.</p>
+<p>If you find yourself spending more time reviewing changes than writing them, start with one check your team keeps repeating. Add it to <code>AGENTS.md</code> and try Codex Code Review on your next pull request.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

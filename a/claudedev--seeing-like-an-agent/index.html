@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>에이전트의 관점에서 보기: Claude Code에서 도구를 설계하는 방법 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Agents</p>
+    <h1 class="lang-ko">에이전트의 관점에서 보기: Claude Code에서 도구를 설계하는 방법</h1>
+    <h1 class="lang-en" hidden lang="en">Seeing like an agent: how we design tools in Claude Code</h1>
+    
+    <p class="art-sum lang-ko">Claude Code 팀이 모델의 관점에서 생각하며 도구를 설계하고, 테스트하고, 발전시키는 방법을 알아봅니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">Learn how the Claude Code team designs, tests, and evolves tools by thinking from the model&#39;s point of view.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 4월 10일</dd></div>
+      <div><dt>저자</dt><dd>Thariq Shihipar</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/seeing-like-an-agent/">https://claude.dev/blog/seeing-like-an-agent/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>에이전트 하네스(harness)를 구축할 때 가장 어려운 부분 중 하나는 도구를 구성하는 일입니다.</p>
+<p>Claude는 전적으로 <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview">도구 호출(tool calling)</a>을 통해 동작합니다. 다만 Claude API에서는 <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/bash-tool">bash</a>, <a href="https://code.claude.com/docs/en/skills">스킬</a>, <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool">코드 실행</a> 같은 기본 요소(primitive)로 도구를 구성하는 방법이 여러 가지 있습니다. (Claude API의 프로그래매틱 도구 호출에 관한 자세한 내용은 <a href="https://x.com/RLanceMartin/status/2027450018513490419">@RLanceMartin의 새 글</a>에서 확인하실 수 있습니다.)</p>
+<p>그렇다면 에이전트의 도구는 어떻게 설계해야 할까요? bash나 코드 실행 같은 범용 도구 하나를 주어야 할까요? 아니면 사용 사례마다 하나씩, 특화된 도구 쉰 개를 주어야 할까요?</p>
+<p>모델의 입장이 되어 보려면 어려운 수학 문제를 받았다고 상상해 보십시오. 문제를 풀기 위해 어떤 도구가 필요할까요? 그것은 자신의 역량에 따라 달라집니다!</p>
+<p>종이는 최소한의 도구이지만, 손으로 계산해야 한다는 한계가 있습니다. 계산기는 더 낫지만, 고급 기능을 쓰려면 조작법을 알아야 합니다. 가장 빠르고 강력한 선택지는 컴퓨터이지만, 코드를 작성하고 실행하는 방법을 알아야 합니다.</p>
+<p>이는 에이전트를 설계할 때 유용한 사고의 틀입니다. 에이전트 자신의 능력에 맞는 형태의 도구를 주어야 합니다. 그렇다면 그 능력이 무엇인지는 어떻게 알 수 있을까요? 주의 깊게 관찰하고, 출력을 읽고, 실험하면 됩니다. 에이전트의 관점에서 보는 법을 익히는 것입니다.</p>
+<p>에이전트를 만들고 계신다면 저희가 겪은 것과 같은 질문을 마주하게 될 것입니다. 언제 도구를 추가하고, 언제 제거하며, 그 차이를 어떻게 판단할 것인가 하는 질문입니다. 아래에서는 Claude Code를 만들면서 이 질문에 어떻게 답해 왔는지, 처음에 잘못 판단했던 부분까지 포함해 소개합니다.</p>
+<h2>AskUserQuestion 도구로 질문 유도(elicitation) 개선하기</h2>
+<figure><img src="https://claude.dev/media/047bf332e6ff4962c8faee154feb4060e1f5a2b0cc73cf5235f9ce8c1d9e3890.png" alt='Diagram titled "Finding the sweet spot": a spectrum from "no structure" to "too rigid". Modified markdown output sits near "no structure" (free but messy, hard to format). An ExitPlanTool parameter sits near "too rigid" (the plan is already formed, so the questions come too late). The AskUserQuestion tool is highlighted in the middle (structured, composable, with a clear UI surface).'></figure>
+<p>AskUserQuestion 도구를 만들 때 저희의 목표는 Claude의 질문 능력(흔히 elicitation이라고 부릅니다)을 개선하는 것이었습니다.</p>
+<p>Claude가 일반 텍스트로 질문할 수도 있었지만, 그 질문에 답하는 데 불필요하게 많은 시간이 든다고 느꼈습니다. 이러한 마찰을 줄이고 사용자와 Claude 사이의 의사소통 대역폭을 늘리려면 어떻게 해야 했을까요?</p>
+<h3>시도 1: ExitPlanTool 수정</h3>
+<p>처음 시도한 방법은 ExitPlanTool에 파라미터를 추가해 계획과 함께 질문 배열을 받는 것이었습니다. 구현하기 가장 쉬운 해결책이었지만 Claude를 혼란스럽게 했습니다. 계획과 그 계획에 대한 질문 목록을 동시에 요청하고 있었기 때문입니다. 사용자의 답변이 계획의 내용과 충돌하면 어떻게 될까요? Claude가 ExitPlanTool을 두 번 호출해야 할까요? 이 방식은 통하지 않으리라 판단하고 처음부터 다시 구상했습니다. (ExitPlanTool을 만든 이유는 <a href="https://x.com/trq212/status/2024574133011673516">프롬프트 캐싱에 관한 저희 글</a>에서 더 자세히 읽어보실 수 있습니다.)</p>
+<h3>시도 2: 출력 형식 변경</h3>
+<p>다음으로 Claude의 출력 지침을 수정해, 질문할 때 사용할 수 있는 약간 변형된 마크다운 형식을 제공하도록 했습니다. 예를 들어 글머리 기호로 질문 목록을 출력하고 대안은 대괄호 안에 적도록 요청할 수 있었습니다. 그러면 그 질문을 파싱해 사용자용 UI로 구성할 수 있었습니다.</p>
+<p>Claude는 대체로 이 형식을 만들어 낼 수 있었지만 안정적이지는 않았습니다. 문장을 덧붙이거나, 선택지를 빠뜨리거나, 구조 자체를 버리기도 했습니다. 그래서 다음 접근법으로 넘어갔습니다.</p>
+<h3>시도 3: AskUserQuestion 도구</h3>
+<figure><img src="https://claude.dev/media/155e8e285e14309b55a9f5342ffd62d3bfb45be1a66d48c2496818836cb4062a.png" alt='The AskUserQuestion tool in the Claude Code terminal: tabs for Paradigm, Theme, Snacks, Indentation and Submit, the question "Which programming paradigm do you prefer for this project?", and numbered options: Functional, Object-Oriented, Procedural, Mixed, Type something, and Chat about this.'></figure>
+<p>마지막으로 Claude가 언제든 호출할 수 있는 도구를 만들기로 했고, 특히 플랜 모드(plan mode)에서 이 도구를 호출하도록 프롬프트를 구성했습니다. 이 도구가 호출되면 질문을 보여 주는 모달을 띄우고, 사용자가 답할 때까지 에이전트 루프를 중단시켰습니다.</p>
+<p>이 도구 덕분에 Claude에게 구조화된 출력을 요청할 수 있었고, Claude가 사용자에게 여러 선택지를 제시하도록 보장하는 데도 도움이 되었습니다. 또한 사용자가 이 기능을 조합해 쓸 수 있게 되었습니다. 예를 들어 <a href="https://platform.claude.com/docs/en/agent-sdk/overview">Agent SDK</a>에서 호출하거나 스킬에서 참조할 수 있습니다.</p>
+<p>무엇보다 Claude가 이 도구를 호출하는 것을 좋아하는 것처럼 보였고, 그 출력도 잘 작동했습니다. 아무리 잘 설계한 도구라도 Claude가 호출하는 방법을 이해하지 못하면 소용이 없기 때문입니다.</p>
+<p>이것이 Claude Code에서 질문 유도의 최종 형태일까요? 그렇지 않을 것으로 봅니다. Claude의 능력이 향상될수록 이를 뒷받침하는 도구도 함께 진화해야 합니다. 다음 절에서는 한때 도움이 되었던 도구가 오히려 방해가 되기 시작한 사례를 살펴봅니다.</p>
+<h3>역량 변화에 맞춘 업데이트: 태스크와 할 일 목록</h3>
+<figure><img src="https://claude.dev/media/6ec2a2426b22bc0a627a34ed01cf7db43d6b9ea3b67f824363f8b3511e4e52e8.png" alt='Diagram titled "From todos to tasks": on the left, a single agent with a checklist (set up project, write tests, implement feature, deploy). An arrow labeled "models improve" points to the right, where Agent A and Agent B share tasks with dependencies: Tasks 1 and 2 are done and feed Task 3, which is in progress, followed by Task 4.'></figure>
+<p>Claude Code를 처음 출시했을 때, 모델이 작업 방향을 잃지 않으려면 <a href="https://platform.claude.com/docs/en/agent-sdk/todo-tracking">할 일 목록(todo list)</a>이 필요하다는 점을 알게 되었습니다. 작업을 시작할 때 할 일을 작성해 두고, 모델이 작업을 진행하면서 완료한 항목을 체크하는 방식이었습니다. 이를 위해 Claude에게 TodoWrite 도구를 제공했고, 이 도구는 할 일을 작성하거나 업데이트하여 사용자에게 보여 주었습니다.</p>
+<p>그런데도 Claude가 해야 할 일을 잊어버리는 경우가 자주 있었습니다. 이를 보완하기 위해 5턴마다 Claude에게 목표를 상기시키는 시스템 리마인더(system reminder)를 삽입했습니다.</p>
+<p>모델이 발전하면서 To-do 목록이 오히려 제약이 되기 시작했습니다. To-do 목록을 상기시키는 알림을 받으면 Claude는 방향을 바꿔야 한다는 것을 깨달았을 때에도 목록을 수정하지 않고 목록을 그대로 따라야 한다고 생각했습니다. 또한 Opus 4.5가 서브에이전트(subagent)를 훨씬 잘 활용하게 되는 모습도 확인했는데, 서브에이전트들이 하나의 공유 To-do 목록을 두고 어떻게 협업할 수 있을까요?</p>
+<p>이를 확인한 뒤 TodoWrite 기능을 <a href="https://x.com/trq212/status/2014480496013803643">Task 도구</a>로 대체했습니다. To-do가 모델이 작업 궤도를 유지하도록 돕는 데 초점을 맞춘다면, Task는 에이전트들이 서로 소통하도록 돕습니다. Task는 의존성을 포함할 수 있고, 서브에이전트 간에 업데이트를 공유할 수 있으며, 모델이 Task를 수정하거나 삭제할 수도 있습니다.</p>
+<p>모델의 성능이 향상되면 과거에 모델에 필요했던 도구가 이제는 오히려 모델을 제약할 수 있습니다. 어떤 도구가 필요한지에 대한 <a href="https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/">기존의 가정을 지속적으로 다시 점검하는 것</a>이 중요합니다. 이것이 성능 특성이 상당히 비슷한 소수의 모델만 지원하는 방식이 유용한 이유이기도 합니다.</p>
+<h2>검색 인터페이스 설계</h2>
+<p>우리가 만든 도구 중 가장 큰 영향을 준 것은 Claude가 스스로 컨텍스트를 찾을 수 있게 해 주는 도구입니다.</p>
+<p>Claude Code를 사내에 처음 공개했을 때는 RAG를 사용했습니다. 벡터 데이터베이스가 코드베이스를 미리 인덱싱해 두면, 하네스(harness)가 관련 코드 조각을 검색해서 매 응답 전에 Claude에게 전달하는 방식이었습니다. RAG는 강력하고 빠르기는 했지만, 인덱싱과 설정이 필요했고 다양한 환경에서 불안정할 수 있었습니다. 무엇보다 Claude가 컨텍스트를 스스로 찾는 것이 아니라 컨텍스트를 <em>제공받는</em> 방식이었다는 점이 가장 큰 문제였습니다.</p>
+<p>하지만 Claude가 웹을 검색할 수 있다면, 코드베이스도 검색할 수 있지 않을까요? Claude에게 Grep 도구를 제공함으로써 파일을 직접 검색하고 스스로 컨텍스트를 구성하게 할 수 있었습니다.</p>
+<p>Claude는 더 똑똑해질수록 적절한 도구가 주어졌을 때 컨텍스트를 구성하는 능력이 점점 더 뛰어나집니다.</p>
+<p><a href="https://agentskills.io/home">Agent Skills</a>를 도입하면서 점진적 공개(progressive disclosure)라는 개념을 구체화했습니다. 이 개념은 에이전트가 탐색을 통해 관련 컨텍스트를 단계적으로 발견할 수 있게 해 줍니다.</p>
+<p>이제 Claude는 스킬 파일을 읽을 수 있고, 그 파일이 다시 다른 파일을 참조하면 모델이 그 파일들을 재귀적으로 읽을 수 있습니다. 실제로 스킬의 일반적인 용도 중 하나는 API 사용법이나 데이터베이스 쿼리 방법에 대한 지침을 제공하여 Claude의 검색 능력을 확장하는 것입니다.</p>
+<p>1년 동안 Claude는 스스로 컨텍스트를 구성하지 못하던 상태에서, 여러 단계의 파일을 중첩해서 검색하며 필요한 컨텍스트를 정확히 찾아내는 수준으로 발전했습니다.</p>
+<p>점진적 공개는 이제 도구를 추가하지 않고도 새로운 기능을 더할 수 있는 일반적인 기법이 되었습니다. 다음 섹션에서 그 이유를 설명합니다.</p>
+<h2>점진적 공개: Claude Code Guide 에이전트</h2>
+<p>현재 Claude Code에는 약 20개의 도구가 있으며, 우리 팀은 Claude가 가장 효과적으로 작동하기 위해 이 도구들이 모두 필요한지 자주 다시 검토합니다. 새 도구를 추가하는 기준은 높은데, 도구가 하나 늘어날 때마다 모델이 고려해야 할 선택지가 하나 더 늘어나기 때문입니다.</p>
+<p>예를 들어 Claude가 Claude Code 사용법을 충분히 알지 못한다는 점을 발견했습니다. MCP를 추가하는 방법이나 슬래시 명령어가 어떤 기능을 하는지 물어보면 답하지 못했습니다.</p>
+<p>이 모든 정보를 시스템 프롬프트에 넣을 수도 있었지만, 사용자가 이런 질문을 하는 경우가 드물어서 컨텍스트 부패(context rot)를 일으키고 Claude Code의 핵심 역할인 코드 작성을 방해할 수 있었습니다.</p>
+<p>대신 점진적 공개를 시도했습니다. Claude에게 필요할 때 불러와서 검색할 수 있는 문서 링크를 제공했습니다. 이 방법은 효과가 있었지만, Claude가 사용자에게 한 문장으로 알려 줄 수 있는 답을 찾기 위해 방대한 분량의 문서를 컨텍스트로 가져오는 문제가 있었습니다.</p>
+<p>그래서 Claude Code Guide를 만들었습니다. 사용자가 Claude Code 자체에 대해 질문할 때마다 Claude가 호출하는 서브에이전트입니다. 이 서브에이전트는 자신의 컨텍스트에서 문서를 검색하고, 검색 방법과 추출할 내용에 대한 상세한 지침을 따르며, 답변만 반환합니다. 그 덕분에 메인 에이전트의 컨텍스트는 깨끗하게 유지됩니다.</p>
+<p>완벽한 해결책은 아니지만(Claude가 자기 자신을 설정하는 방법을 물으면 여전히 혼란스러워할 수 있습니다), 새로운 도구를 추가하지 않고도 Claude의 행동 공간(action space)에 기능을 더할 수 있었습니다.</p>
+<h3>에이전트의 관점에서 보기는 과학이 아닌 예술</h3>
+<p>모델을 위한 도구를 설계하는 일은 과학인 만큼 예술이기도 합니다. 사용하는 모델, 에이전트의 목표, 에이전트가 동작하는 환경에 따라 크게 달라집니다.</p>
+<p>가장 좋은 조언은 무엇일까요? 자주 실험하고, 출력을 읽고, 새로운 방법을 시도하십시오. 그리고 무엇보다 에이전트의 관점에서 보려고 노력하십시오.</p>
+<p><em>지금 바로 <a href="https://claude.com/product/claude-code">Claude Code</a>를 시작해 보십시오.</em></p>
+<p><strong><em>저자 소개:</em></strong> <em>Thariq Shihipar는 Anthropic의 기술 스태프로, Claude Code를 개발하고 있습니다.</em></p></article>
+  <article class="prose lang-en" hidden lang="en"><p>One of the hardest parts about building an agent harness is constructing its tools.</p>
+<p>Claude acts completely through <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview">tool calling</a>, but there are a number of ways tools can be constructed in the Claude API with primitives like <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/bash-tool">bash</a>, <a href="https://code.claude.com/docs/en/skills">skills</a> and <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool">code execution</a>. (You can read more about programmatic tool calling on the Claude API in <a href="https://x.com/RLanceMartin/status/2027450018513490419">@RLanceMartin's new article</a>).</p>
+<p>So how do you design your agents' tools? Do you give it one general-purpose tool like bash or code execution? Or fifty specialized tools, one for each use case?</p>
+<p>To put yourself in the mind of the model, imagine being given a difficult math problem. What tools would you want in order to solve it? It would depend on your own skill set!</p>
+<p>Paper would be the minimum, but you’d be limited by manual calculations. A calculator would be better, but you would need to know how to operate the more advanced options. The fastest and most powerful option would be a computer, but you would have to know how to use it to write and execute code.</p>
+<p>This is a useful framework for designing your agent. You want to give it tools that are shaped to its own abilities. But how do you know what those abilities are? You pay attention, read its outputs, experiment. You learn to see like an agent.</p>
+<p>If you're building an agent, you'll face the same questions we did: when to add a tool, when to remove one, and how to tell the difference. Here's how we've answered them while building Claude Code, including where we got it wrong first.</p>
+<h2>IMPROVING ELICITATION WITH THE ASKUSERQUESTION TOOL</h2>
+<figure><img src="https://claude.dev/media/047bf332e6ff4962c8faee154feb4060e1f5a2b0cc73cf5235f9ce8c1d9e3890.png" alt='Diagram titled "Finding the sweet spot": a spectrum from "no structure" to "too rigid". Modified markdown output sits near "no structure" (free but messy, hard to format). An ExitPlanTool parameter sits near "too rigid" (the plan is already formed, so the questions come too late). The AskUserQuestion tool is highlighted in the middle (structured, composable, with a clear UI surface).'></figure>
+<p>When building the AskUserQuestion tool, our goal was to improve Claude’s ability to ask questions (often called elicitation).</p>
+<p>While Claude could just ask questions in plain text, we found answering those questions felt like they took an unnecessary amount of time. How could we lower this friction and increase the bandwidth of communication between the user and Claude?</p>
+<h3>Attempt 1: Editing the ExitPlanTool</h3>
+<p>The first approach we tried was adding a parameter to the ExitPlanTool to have an array of questions alongside the plan. This was the easiest fix to implement, but it confused Claude because we were simultaneously asking for a plan and a set of questions about the plan. What if the user’s answers conflicted with what the plan said? Would Claude need to call the ExitPlanTool twice? We knew this tactic wouldn’t work, so we went back to the drawing board. (You can read more about why we made an ExitPlanTool in <a href="https://x.com/trq212/status/2024574133011673516">our post on prompt caching</a>)</p>
+<h3>Attempt 2: Changing output format</h3>
+<p>Next, we tried updating Claude’s output instructions to serve a slightly modified markdown format that it could use to ask questions. For example, we could ask it to output a list of bullet point questions with alternatives in brackets. We could then parse and format that question as UI for the user.</p>
+<p>Claude could usually produce this format, but not reliably. It would append extra sentences, drop options, or abandon the structure altogether. Onto the next approach.</p>
+<h3>Attempt 3: The AskUserQuestion tool</h3>
+<figure><img src="https://claude.dev/media/155e8e285e14309b55a9f5342ffd62d3bfb45be1a66d48c2496818836cb4062a.png" alt='The AskUserQuestion tool in the Claude Code terminal: tabs for Paradigm, Theme, Snacks, Indentation and Submit, the question "Which programming paradigm do you prefer for this project?", and numbered options: Functional, Object-Oriented, Procedural, Mixed, Type something, and Chat about this.'></figure>
+<p>Finally, we landed on creating a tool that Claude could call at any point, but it was particularly prompted to do so during plan mode. When the tool triggered we would show a modal to display the questions and block the agent's loop until the user answered.</p>
+<p>This tool allowed us to prompt Claude for a structured output and it helped us ensure that Claude gave the user multiple options. It also gave users ways to compose this functionality, for example calling it in the <a href="https://platform.claude.com/docs/en/agent-sdk/overview">Agent SDK</a> or using referring to it in skills.</p>
+<p>Most importantly, Claude seemed to like calling this tool and we found its outputs worked well. After all, even the best designed tool doesn’t work if Claude doesn’t understand how to call it.</p>
+<p>Is this the final form of elicitation in Claude Code? We doubt it. As Claude gets more capable, the tools that serve it have to evolve too. The next section shows a case where a tool that once helped started getting in the way.</p>
+<h3>Updating with capabilities: tasks &amp; todos</h3>
+<figure><img src="https://claude.dev/media/6ec2a2426b22bc0a627a34ed01cf7db43d6b9ea3b67f824363f8b3511e4e52e8.png" alt='Diagram titled "From todos to tasks": on the left, a single agent with a checklist (set up project, write tests, implement feature, deploy). An arrow labeled "models improve" points to the right, where Agent A and Agent B share tasks with dependencies: Tasks 1 and 2 are done and feed Task 3, which is in progress, followed by Task 4.'></figure>
+<p>When we first launched Claude Code, we realized that the model needed a <a href="https://platform.claude.com/docs/en/agent-sdk/todo-tracking">todo list</a> to keep it on track. Todos could be written at the start and checked off as the model did work. To do this we gave Claude the TodoWrite tool, which would write or update Todos and display them to the user.</p>
+<p>But even then, we often saw Claude forgetting what it had to do. To adapt, we inserted system reminders every 5 turns that reminded Claude of its goal.</p>
+<p>As models improved, they found To-do lists limiting. Being sent reminders of the todo list made Claude think that it had to stick to the list instead of modifying it when it realized it needed to change course. We also saw Opus 4.5 also get much better at using subagents, but how could subagents coordinate on a shared todo list?</p>
+<p>Seeing this, we replaced the TodoWrite feature with <a href="https://x.com/trq212/status/2014480496013803643">the Task tool</a> . Whereas todos are focused on keeping the model on track, tasks help agents communicate with each other. Tasks could include dependencies, share updates across subagents and the model could alter and delete them.</p>
+<p>As model capabilities increase, the tools that your models once needed might now be constraining them. It’s important to <a href="https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/">constantly revisit previous assumptions</a> on what tools are needed. This is also why it's useful to stick to a small set of models to support that have a fairly similar capabilities profile.</p>
+<h2>DESIGNING A SEARCH INTERFACE</h2>
+<p>The most consequential tools we've built are the ones that let Claude find its own context.</p>
+<p>When Claude Code was first released internally, we used RAG: a vector database would pre-index the codebase, and the harness would retrieve relevant snippets and hand them to Claude before each response.. While RAG was powerful and fast, it required indexing and setup and could be fragile across a host of different environments. Most importantly, Claude was <em>given</em> this context instead of finding the context itself.</p>
+<p>But if Claude could search on the web, why couldn’t it also search your codebase? By giving Claude a Grep tool, we could let it search for files and build context itself.</p>
+<p>As Claude gets smarter, it becomes increasingly good at building its context when given the right tools.</p>
+<p>When we introduced <a href="https://agentskills.io/home">Agent Skills</a>, we formalized the idea of progressive disclosure, which allows agents to incrementally discover relevant context through exploration.</p>
+<p>Claude could now read skill files and those files could then reference other files that the model could read recursively. In fact, a common use of skills is to add more search capabilities to Claude like giving it instructions on how to use an API or query a database.</p>
+<p>Over the course of a year, Claude went from not really being able to build its own context to being able to do nested search across several layers of files to find the exact context it needed.</p>
+<p>Progressive disclosure is now a common technique we use to add new functionality without adding a tool. In the next section, we explain why.</p>
+<h2>PROGRESSIVE DISCLOSURE: THE CLAUDE CODE GUIDE AGENT</h2>
+<p>Claude Code currently has ~20 tools, and our team frequently revisits if we need all of them for Claude to be most effective. The bar to add a new tool is high, because this gives the model one more option to think about.</p>
+<p>For example, we noticed that Claude did not know enough about how to use Claude Code. If you asked it how to add a MCP or what a slash command did, it would not be able to reply.</p>
+<p>We could have put all of this information in the system prompt, but given that users rarely asked about this, it would have added context rot and interfered with Claude Code’s main job: writing code.</p>
+<p>Instead, we tried progressive disclosure: we gave Claude a link to its docs that it could load and search when needed. This worked, but Claude would pull large chunks of documentation into context to find an answer the user could have gotten in one sentence.</p>
+<p>So we built the Claude Code Guide — a subagent Claude calls whenever a user asks about Claude Code itself. The subagent does the doc-searching in its own context, follows detailed instructions on how to search and what to extract, and hands back only the answer. The main agent's context stays clean.</p>
+<p>While this isn’t a perfect solution (Claude can still get confused when you ask it about how to set itself up), we were able to add things to Claude's action space without adding a new tool.</p>
+<h3>Seeing like an agent is an art, not a science</h3>
+<p>Designing the tools for your models is as much an art as it is a science. It depends heavily on the model you're using, the goal of the agent and the environment it’s operating in.</p>
+<p>Our best advice? Experiment often, read your outputs, try new things. And most importantly, try to see like an agent.</p>
+<p><em>Get started with <a href="https://claude.com/product/claude-code">Claude Code</a> today.</em></p>
+<p><strong><em>About the author:</em></strong> <em>Thariq Shihipar is a member of technical staff at Anthropic, working on Claude Code.</em></p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>GPT-Live-1과 Codex로 LED 디스플레이에 생명 불어넣기 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">GPT-Live-1과 Codex로 LED 디스플레이에 생명 불어넣기</h1>
+    <h1 class="lang-en" hidden lang="en">Bringing my LED display to life with GPT-Live-1 and Codex</h1>
+    
+    <p class="art-sum lang-ko">Codex, GPT-Live-1, Raspberry Pi를 활용해 LED 디스플레이를 음성으로 제어하는 어시스턴트로 만든 과정을 소개합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">How I used Codex, GPT-Live-1, and a Raspberry Pi to turn an LED display into a voice-controlled assistant.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 9월 23일</dd></div>
+      <div><dt>저자</dt><dd>Sid Rampally</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/bringing-my-led-display-to-life">https://developers.openai.com/blog/bringing-my-led-display-to-life</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>룸메이트의 생일 선물로 창문 근처를 지나가는 항공편을 보여 주는 작은 LED 디스플레이를 샀습니다. 꽤 멋진 선물이었지만, 화면에 비행기가 나타나는 모습을 보다 보니 이런 디스플레이가 비행기 추적 말고도 더 많은 일을 할 수 있지 않을까 하는 생각이 계속 들었습니다. 날씨나 일정도 보여 줄 수 있지 않을까? 외출하면서 "다음 기차는 언제야?"라고 물으면 그 답을 디스플레이에 바로 띄울 수 있지 않을까?</p>
+<p>이 생각은 금방 Raspberry Pi, 128 × 64 HUB75 LED 패널, Codex, 그리고 제가 나중에 Jack이라고 부르게 된 어시스턴트가 얽힌 사이드 프로젝트로 발전했습니다. 대화는 최근 API로 출시한 전이중(full-duplex) 음성 모델인 <a href="https://openai.com/index/introducing-gpt-live-1-in-the-api/">GPT-Live-1</a>으로 동작합니다. 다른 모델이 리서치를 돕고, 렌더러가 픽셀을 처리합니다. 다만 처음부터 이렇게 잘 짜인 구조로 시작한 것은 전혀 아니었습니다. 이 글은 그 과정을 기록한 것입니다.</p>
+<h2>Codex를 활용한 HUB75 RGB LED 패널 구동</h2>
+<p>처음에는 Codex와 함께 디스플레이에 쓸모 있는 무언가를 띄울 방법부터 알아내야 했습니다. 제가 다루던 것은 128 × 64 HUB75 RGB 패널이었지만, 컨트롤러나 배선에 대해서는 아는 것이 많지 않았고, 패널이 원래 보여 주던 콘텐츠 이외의 내용을 보내려면 무엇이 필요한지도 몰랐습니다.</p>
+<p>저는 Codex에 사진을 보내며 지금 보고 있는 것이 무엇인지 설명해 달라고 요청하기 시작했습니다. Codex는 중요한 연결부를 짚어 주고, ESP32 기반 컨트롤러를 이해하도록 도와주고, HUB75 패널이 실제로 디스플레이 데이터를 어떻게 받는지 파악하게 해 주었습니다. 심지어 어느 부분이 중요한지 사진 위에 표시까지 해 주었습니다. 제 눈에는 회로 기판과 잘못 짐작할 만한 부분만 잔뜩 보였기 때문에 큰 도움이 되었습니다.</p>
+<p>기본적인 하드웨어를 이해한 뒤에는 Codex의 도움으로 컨트롤러에서 WLED-MM을 실행하고, 패널이 올바른 128 × 64 해상도로 설정되어 있는지 확인했습니다. 그때부터는 커스텀 프레임을 보내 볼 수 있었고, 이렇게 작은 디스플레이에서 실제로 어떤 모습이 보기 좋은지 실험하기 시작했습니다. 리서치와 문제 해결은 Codex가 맡았고, 저는 물리적인 연결을 담당하면서 예상과 다르게 동작할 때마다 결과를 알려 주었습니다.</p>
+<h2>Mac에서 음성 제어 LED 디스플레이 프로토타입 구축</h2>
+<p>처음 동작한 버전은 지금의 모습보다 훨씬 단순했습니다. 컨트롤러에서 WLED-MM이 실행되자, Codex는 렌더러와 커스텀 스킬(skill)을 만드는 것을 도와주었고, 저는 ChatGPT 데스크톱 앱의 Voice로 디스플레이에 무엇을 띄울지 말했습니다.</p>
+<p>그것만으로도 디스플레이가 전혀 다르게 느껴졌습니다. 날씨, 일정, 지하철 도착 정보, 금융 차트, 메시지, 카운트다운, 사진, 예술 작품, 또는 직접 만든 애니메이션 장면까지 보여 줄 수 있었고, 아이디어가 그렇게 작은 화면에서 제대로 보이지 않을 때마다 렌더러를 계속 조정했습니다.</p>
+<p>음성 상호작용은 여전히 Codex 안에서 이루어졌고, 커스텀 스킬이 벽면에 무엇을 보여 줄지를 업데이트하는 수단을 제공했습니다. 그다음에는 제 Mac의 렌더러가 레이아웃을 128 × 64 RGB 프레임으로 변환해 DDP로 로컬 네트워크를 통해 전송했고, WLED-MM이 실행 중인 ESP32 컨트롤러가 그 프레임을 패널에 출력했습니다.</p>
+<p>Codex는 이런 구성 요소를 연결하는 것 이상의 도움을 주었습니다. 128 × 64 디스플레이는 공간이 많지 않기 때문에, 텍스트, 이미지, 날씨, 일정, 지하철 도착 정보를 읽기 어려운 혼란 없이 화면에 담을 방법을 계속 고민했습니다. 제가 Codex에 무엇이 어색한지 말하면 Codex가 렌더러나 레이아웃을 조정했고, 이를 다시 시도하는 과정을 반복했습니다. 그러자 대기 화면도 실제로 켜 두고 싶은 무언가처럼 느껴지기 시작했습니다.</p>
+<p>문제는 이 모든 것이 여전히 제 Mac에 의존한다는 점이었습니다. 렌더러가 Mac에서 실행되고 음성 상호작용도 Mac에서 시작되었기 때문에, 노트북이 절전 모드로 들어가거나 제가 다른 곳으로 들고 가면 벽면 디스플레이는 제가 원하던 방식으로 쓸모가 없어졌습니다. 이상적으로는 퇴근 후 집에 돌아와서 벽에게 무언가를 보여 달라고 말하고 싶었습니다.</p>
+<h2>음성 어시스턴트와 렌더러의 Raspberry Pi 이전</h2>
+<p>저는 Codex에 노트북을 구성에서 빼고 싶다고 말했고, 계속 실행되어야 하는 부분을 Raspberry Pi로 옮기고, 코드를 비공개 저장소에 올리고, 문제가 생겨도 백업과 롤백 방법이 있도록 준비했습니다. Pi의 전원을 연결하자 Codex가 코드 실행, 로그 확인, 발생한 문제 해결을 맡았고, 저는 Pi가 무엇을 하길 원하는지 계속 설명했습니다.</p>
+<p>현재 Pi에서는 두 가지 작은 서비스가 실행되고 있습니다.</p>
+<ul>
+<li><strong>음성 서비스</strong>는 마이크, PipeWire 오디오, WebRTC 에코 제거, 호출 및 대기 동작, 끼어들기, GPT-Live-1 연결, 클라이언트 측 위임(delegation)을 처리합니다.</li>
+<li><strong>렌더러 서비스</strong>는 애니메이션이 있는 대기 화면을 계속 실행하고, 날씨와 MTA 지하철 도착 정보를 갱신하고, 정제된(sanitized) 일정 데이터를 사용하고, 장면 설명을 검증하고, 프레임을 벽면 디스플레이로 스트리밍합니다.</li>
+</ul>
+<p>Pi에 마이크와 스피커를 연결하자, 컴퓨터를 열지 않고도 방에 들어가 "Hey Jack"이라고 말하며 무언가를 요청할 수 있게 되었습니다. 호출 동작과 응답 방식을 개선하는 데 꽤 오랜 시간을 들였지만, Mac에서 벗어난 것이 노트북 데모가 아니라 계속 켜 둘 수 있는 무언가처럼 느껴지게 만든 결정적인 계기였습니다.</p>
+<h2>GPT-Live-1과 Raspberry Pi의 협업 방식</h2>
+<p>최종적으로 역할을 나눈 방식은 이렇습니다. GPT-Live-1은 제가 대화하는 상대이지, 벽면에 그림을 그리는 주체가 아닙니다. GPT-Live-1은 대화를 열어 두고, 말하는 동안에도 듣고, 제가 끼어들 수 있게 하며, 요청이 대화 자체를 넘어서는 작업을 필요로 하는 시점을 판단합니다.</p>
+<p>그런 상황이 되면 Raspberry Pi가 위임을 받아 낮은 추론 강도(reasoning effort)의 GPT-5.6 Luna를 사용해 클라이언트 측 Responses API 요청을 시작합니다. Luna는 공개 웹을 검색하고, 제 일정에 대한 읽기 전용 연결을 확인하고, Wikimedia Commons에서 재사용 가능한 이미지를 찾고, 요청에 어떤 종류의 장면이 필요한지 결정할 수 있습니다.</p>
+<p>한번은 Jack에게 벽에 사진을 띄워 달라고 요청했는데, Jack은 할 수 없다고 답했습니다. 렌더러(renderer)는 이미 이미지를 지원했지만, 음성 어시스턴트에게 이미지를 찾아 보내는 도구를 주지 않았기 때문입니다. Codex는 Wikimedia Commons와 연결해 어울리는 이미지를 검색하고 라이선스와 출처 표기를 확인하도록 도와주었습니다. 또 이미지가 패널에 맞게 표시되는 방식도 조정했습니다. Pi가 비율을 유지한 채 이미지를 128 × 64 픽셀 안에 들어가도록 크기를 조정하므로, 이미지가 화면 전체로 늘어나지 않습니다.</p>
+<p>기능을 계속 추가하는 동안에도 Codex는 각 구성 요소가 서로 뒤엉키지 않도록 도와주었습니다. Pi에서 실행되는 코드는 Luna가 사용할 수 있는 도구를 결정하고, Luna는 어떤 정보나 장면이 필요한지 판단하며, 렌더러는 장면 JSON을 검증한 뒤 정확히 128 × 64 RGB 픽셀로 변환합니다. 그다음 이 프레임을 DDP로 WLED-MM 컨트롤러에 전송하고, 컨트롤러가 HUB75 패널을 구동합니다.</p>
+<img src="https://developers.openai.com/images/blog/bringing-my-led-display-to-life/architecture.webp" alt="The user talks with GPT-Live-1 through a Raspberry Pi. The Pi sends research and tool tasks to GPT-5.6 Luna, gets results back, and sends pixels from its local renderer to the LED wall.">
+<p>초기에 발생한 버그 하나는 아주 평범한 대화에서 드러났습니다. Jack에게 뉴욕의 날씨를 물어본 뒤 "그걸 벽에 띄워 줘"라고 말하면, Jack은 "그것"이 무엇을 가리키는지 알지 못했습니다. Codex는 우리 앱이 디스플레이를 갱신하는 모델에 가장 최근의 요청만 보내고 있다는 사실을 찾아냈습니다. 그래서 전달(handoff) 방식을 바꿔 최근 대화와 이전 결과도 함께 보내도록 했습니다.</p>
+<h2>"Hey Jack"에서 LED 디스플레이의 픽셀까지</h2>
+<p>Jack에게 무언가를 찾아서 디스플레이에 띄워 달라고 요청하면, 대략 다음과 같은 일이 일어납니다.</p>
+<ol>
+<li>Raspberry Pi가 제 음성을 24 kHz PCM 오디오로 캡처하고 로컬에서 오디오 처리를 적용합니다.</li>
+<li>GPT-Live-1이 스트림을 받아 제가 요청한 내용을 이해하고, 제가 끼어들거나 내용을 덧붙일 수 있도록 대화를 열어 둡니다.</li>
+<li>요청에 리서치, 캘린더 정보, 이미지 또는 벽 업데이트가 필요하면 GPT-Live-1이 클라이언트 측 위임(delegation)을 생성하고, Pi가 Responses API를 통해 GPT-5.6 Luna에 작업을 전송합니다.</li>
+<li>Luna는 해당 요청을 위해 제가 제공한 도구를 사용합니다. 예를 들어 호스팅되는 웹 검색, 읽기 전용 캘린더 연결, 재사용 가능한 이미지 검색, 벽을 업데이트하는 도구가 있습니다.</li>
+<li>이미 요청에 맞는 날씨, 일정, 메시지 또는 카운트다운 장면이 있으면 그것을 선택하고, 미처 예상하지 못한 요청을 하면 새로운 장면을 만듭니다.</li>
+<li>로컬 렌더러가 해당 장면을 검증하고 128 × 64 RGB 프레임으로 변환한 뒤 DDP로 벽에 전송하며, 그동안 GPT-Live-1은 찾아낸 내용을 제게 알려 줍니다.</li>
+</ol>
+<p>이 구조에서 마음에 드는 점은, 경직된 음성 어시스턴트의 한 턴이 끝날 때까지 기다렸다가 다른 말을 하지 않아도 된다는 것입니다. Jack의 말을 끊고 제가 의도한 바를 다시 설명해도, 리서치와 렌더링은 백그라운드에서 계속 진행됩니다.</p>
+<p>전반적으로 이 프로젝트는 꽤 단순한 사이드 프로젝트였습니다. 저는 HUB75 패널, ESP32 컨트롤러, Raspberry Pi, 음성 모델을 다뤄 본 경험이 없었고, 디스플레이를 열어 본 순간 다른 때였다면 아마 거기서 포기했을 것입니다. 하지만 Codex가 진행하면서 필요한 것을 알아 가도록 도와주었고, 낯선 문제를 만날 때마다 그냥 물어보면 되었습니다.</p>
+<p>이와 같은 프로젝트를 해 보고 싶은데 어디서부터 시작해야 할지 모르겠다면 Codex에게 물어보십시오. 생각보다 멀리 갈 수 있다는 사실에 놀라실지도 모릅니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>For my roommate’s birthday, I’d bought him a little LED display that shows flights passing near our window. It was a pretty cool gift, but after watching planes pop up on the screen, I kept wondering whether a display like that could do more than track airplanes. Could it show the weather or my calendar? And when I was heading out, could I just ask, “When’s the next train?” and see the answer on the display?</p>
+
+<p>This quickly turned into a side project involving a Raspberry Pi, a 128 × 64 HUB75 LED panel, Codex, and an assistant I eventually started calling Jack. The conversation runs on <a href="https://openai.com/index/introducing-gpt-live-1-in-the-api/">GPT-Live-1</a>, the full-duplex voice model we recently launched in the API. Another model helps with research, and a renderer takes care of the pixels, although we definitely didn’t start with anything that well thought out. This post documents how that process went.</p>
+<h2>How Codex helped me get a HUB75 RGB LED panel working</h2>
+<p>At first, Codex and I had to figure out how to get anything useful onto the display. I was working with a 128 × 64 HUB75 RGB panel, but I didn’t know much about the controller, the wiring, or what it would take to send it something other than the content it was already showing.</p>
+<p>I started sending Codex pictures and asking it to explain what I was looking at. It helped identify the important connections, make sense of the ESP32-based controller, and work out how a HUB75 panel actually receives display data. It even marked up the pictures to show me which parts mattered, which was useful because, on my own, I mostly saw a circuit board and a lot of opportunities to guess wrong.</p>
+<p>Once we understood the basic hardware, Codex helped me get the controller running WLED-MM and confirm that the panel was configured for the right 128 × 64 resolution. From there, we could send it custom frames and start experimenting with what actually looked good on a display that small. Codex did the research and troubleshooting, while I handled the physical connections and reported back when something didn’t behave the way we expected.</p>
+<h2>Building a voice-controlled LED display prototype on my Mac</h2>
+<p>The first working version was much simpler than what we ended up with. Once the controller was running WLED-MM, Codex helped me build a renderer and a custom skill, and I used Voice in the ChatGPT desktop app to tell it what to put on the display.</p>
+<p>That was already enough to make the display feel different. It could show the weather, my calendar, subway arrivals, financial charts, messages, countdowns, photographs, artwork, or a custom animated scene, and we kept adjusting the renderer whenever an idea didn’t look right on a screen that small.</p>
+<p>The voice interaction was still happening inside Codex, and the custom skill gave it a way to update whatever the wall was supposed to show. From there, the renderer on my Mac turned the layout into 128 × 64 RGB frames and sent them over the local network using DDP, while the ESP32 controller running WLED-MM handled getting those frames onto the panel.</p>
+<p>Codex helped with more than just connecting those pieces. A 128 × 64 display doesn’t give you much room, so we kept working through how to fit text, images, weather, calendar events, and subway arrivals onto the screen without everything turning into an unreadable mess. I’d tell Codex what looked off, it would adjust the renderer or the layout, and we’d try again until the idle screen started to feel like something I actually wanted to leave up.</p>
+<p>The problem was that the whole thing still depended on my Mac. The renderer ran there, the voice interaction started there, and if my laptop went to sleep or I took it somewhere else, the wall stopped being useful in the way I wanted. Ideally, I wanted to come back to my apartment from work and ask my wall to show me something.</p>
+<h2>Moving the voice assistant and renderer to a Raspberry Pi</h2>
+<p>I told Codex I wanted to get my laptop out of the loop, so we moved the parts that needed to stay on over to a Raspberry Pi, put the code in a private repository, and made sure we had a backup and a way to roll back if we broke something. Once I had plugged in the Pi, Codex took care of getting the code running, checking the logs, and sorting out whatever went wrong while I kept describing what I wanted it to do.</p>
+<p>There are now two small services running on it:</p>
+<ul>
+<li><strong>The voice service</strong> handles the microphone, PipeWire audio, WebRTC echo cancellation, wake and sleep behavior, interruptions, the GPT-Live-1 connection, and client-side delegation.</li>
+<li><strong>The renderer service</strong> keeps the animated idle screen running, refreshes weather and MTA subway arrivals, uses sanitized calendar data, validates scene descriptions, and streams frames to the wall.</li>
+</ul>
+<p>With a microphone and speaker connected to the Pi, I could walk into the room, say “Hey Jack,” and ask for something without opening my computer. We spent a while improving the wake behavior and the way it responded, but getting it off my Mac was what made it feel less like a laptop demo and more like something we could just leave on.</p>
+<h2>How GPT-Live-1 and the Raspberry Pi work together</h2>
+<p>The way we ended up splitting the work is that GPT-Live-1 is the part I’m talking to, not the part drawing on the wall. GPT-Live-1 keeps the conversation open, listens while it speaks, lets me interrupt it, and decides when a request needs something beyond the conversation itself.</p>
+<p>When that happens, the Raspberry Pi receives the delegation and starts a client-side Responses API request using GPT-5.6 Luna with low reasoning effort. Luna can search the public web, check a read-only connection to my calendar, find reusable images from Wikimedia Commons, and decide what kind of scene the request needs.</p>
+<p>At one point, I asked Jack to put a photo on the wall, and it told me it couldn’t. The renderer already supported images, but I hadn’t given the voice assistant a tool to find and send one. Codex helped me connect it to Wikimedia Commons so it could look for a matching image and check its license and attribution. We also adjusted how images fit the panel: the Pi resized them to fit within 128 × 64 pixels while preserving their proportions, so they wouldn’t stretch across the display.</p>
+<p>As we kept adding things, Codex helped keep the pieces from getting tangled together: the code on the Pi decides which tools Luna can use, Luna figures out what information or scene is needed, and the renderer checks the scene JSON before turning it into exactly 128 × 64 RGB pixels. It then sends those frames over DDP to the WLED-MM controller, which drives the HUB75 panel.</p>
+<img src="https://developers.openai.com/images/blog/bringing-my-led-display-to-life/architecture.webp" alt="The user talks with GPT-Live-1 through a Raspberry Pi. The Pi sends research and tool tasks to GPT-5.6 Luna, gets results back, and sends pixels from its local renderer to the LED wall.">
+<p>One early bug showed up in a very ordinary conversation. I’d ask Jack for the weather in New York, then say, “Show that on the wall,” and it didn’t know what “that” meant. Codex found that our app was sending the model updating the display only the latest request. We changed the handoff to include the recent conversation and earlier results.</p>
+<h2>From “Hey Jack” to pixels on the LED display</h2>
+<p>If I ask Jack to look something up and put it on the display, this is roughly what happens:</p>
+<ol>
+<li>The Raspberry Pi captures my voice as 24 kHz PCM audio and applies local audio processing.</li>
+<li>GPT-Live-1 receives the stream, understands what I’m asking for, and keeps the conversation open so I can interrupt or add something.</li>
+<li>If the request needs research, calendar information, an image, or a wall update, GPT-Live-1 creates a client-side delegation, and the Pi sends the task to GPT-5.6 Luna through the Responses API.</li>
+<li>Luna uses the tools I exposed for that request, such as hosted web search, the read-only calendar connection, reusable-image lookup, or a tool for updating the wall.</li>
+<li>It chooses a weather, agenda, message, or countdown scene if one already fits, or creates a new scene when I ask for something we hadn’t anticipated.</li>
+<li>The local renderer validates that scene, turns it into 128 × 64 RGB frames, and sends them to the wall over DDP while GPT-Live-1 tells me what it found.</li>
+</ol>
+<p>The part I like is that I don’t have to wait for a rigid voice-assistant turn to finish before saying something else. I can interrupt Jack, clarify what I meant, and still have the research and rendering happen in the background.</p>
+<p>All in all, this was a pretty simple side project. I didn’t have experience with HUB75 panels, ESP32 controllers, Raspberry Pis, or voice models, and at another point I probably would have stopped as soon as I opened up the display. Instead, Codex helped me figure things out as I went, and whenever I ran into something unfamiliar, I could just ask.</p>
+<p>If you have a project like this and aren’t sure where to start, ask Codex. You might be surprised by how far you can get.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

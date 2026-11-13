@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>OSS 유지보수 가속화를 위한 스킬(Skills) 활용 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">OSS 유지보수 가속화를 위한 스킬(Skills) 활용</h1>
+    <h1 class="lang-en" hidden lang="en">Using skills to accelerate OSS maintenance</h1>
+    
+    <p class="art-sum lang-ko">스킬(Skills)과 GitHub Actions를 활용한 OpenAI Agents SDK 저장소의 Codex 워크플로 최적화</p>
+    <p class="art-sum lang-en" hidden lang="en">Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 3월 9일</dd></div>
+      <div><dt>저자</dt><dd>Kazuhiro Sera</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/skills-agents-sdk">https://developers.openai.com/blog/skills-agents-sdk</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>저희는 Codex를 사용해 <a href="https://developers.openai.com/api/docs/guides/agents">OpenAI Agents SDK</a> 저장소를 유지보수하는 방식을 바꾸고 있습니다. 저장소 로컬 스킬(skills), <code>AGENTS.md</code>, GitHub Actions를 활용하면 검증, 릴리스 준비, 예제 통합 테스트, PR 리뷰처럼 반복되는 엔지니어링 작업을 재현 가능한 워크플로로 만들 수 있습니다. 비교적 단순한 구성임에도 활발히 개발 중인 이 저장소들에서 개발 처리량을 높이는 데 도움이 되었습니다. 2025년 12월 1일부터 2026년 2월 28일까지 두 저장소에서 병합된 PR은 457건으로, 직전 3개월(2025년 9월 1일부터 11월 30일까지)의 316건에서 증가했습니다(Python: 182 -&gt; 226, TypeScript: 134 -&gt; 231).</p>
+<p>간단히 배경을 설명드리면, 이 SDK는 <a href="https://github.com/openai/openai-agents-python">Python</a>과 <a href="https://github.com/openai/openai-agents-js">TypeScript</a>로 제공됩니다. 에이전트 기반 애플리케이션을 만드는 데 필요한 핵심 요소를 제공하며, <a href="https://developers.openai.com/api/docs/guides/realtime">Realtime API</a>를 기반으로 여러 에이전트, 도구, 사람이 개입하는(human-in-the-loop) 제어를 갖춘 음성 에이전트를 간결하게 구축하는 방법이기도 합니다. 사용 규모도 상당합니다. 2026년 3월 6일 기준 최근 30일 동안 Python 패키지는 PyPI에서 약 1,470만 회, TypeScript 패키지는 npm에서 약 150만 회 다운로드되었습니다.</p>
+<p>구성은 단순합니다.</p>
+<ul>
+<li><a href="https://agents.md/"><code>AGENTS.md</code></a>에 정의한 저장소 정책</li>
+<li><code>.agents/skills/</code>에 둔 저장소 로컬 스킬</li>
+<li>스킬 안에 포함한 선택적 스크립트와 참고 자료</li>
+<li>같은 워크플로를 CI에서도 실행해야 할 때 사용하는 <a href="https://developers.openai.com/codex/github-action">Codex GitHub Action</a></li>
+</ul>
+<p>이 구성은 Codex에게 저장소가 어떻게 동작하는지에 대한 안정적인 컨텍스트를 제공하며, 반복적인 엔지니어링 작업의 속도와 정확도를 높여 줍니다.</p>
+<p>공개 오픈 소스 프로젝트를 유지보수하고 계시다면 <a href="https://developers.openai.com/community/codex-for-oss">Codex for
+OSS</a>를 확인해 보시기 바랍니다. 자격을 갖춘 메인테이너는 Codex가 포함된 ChatGPT Pro, API 크레딧, 그리고 조건부 Codex Security 접근 권한을 신청할 수 있습니다.</p>
+<h2>저장소 내 워크플로 관리</h2>
+<p>이 저장소들에서는 스킬을 사용해 저장소별 워크플로를 정리합니다. 스킬은 운영 지식을 담은 작은 패키지로, <code>SKILL.md</code> 매니페스트와 선택적인 <code>scripts/</code>, <code>references/</code>, <code>assets/</code>로 구성됩니다. <a href="https://developers.openai.com/codex/customization/overview#skills">Codex 커스터마이징 문서</a>에서는 이 방식이 효과적인 이유를 설명합니다. 스킬은 에이전트의 컨텍스트를 처음부터 부풀리지 않고도 더 풍부한 지침, 스크립트, 참고 자료를 담을 수 있으므로 반복 가능한 워크플로에 적합합니다.</p>
+<p>이는 스킬이 사용하는 점진적 공개(progressive disclosure) 모델과 일치합니다.</p>
+<ul>
+<li>에이전트는 먼저 <code>name</code>, <code>description</code> 같은 메타데이터를 확인합니다.</li>
+<li>스킬이 선택될 때만 <code>SKILL.md</code>를 불러옵니다.</li>
+<li>필요할 때만 참고 자료를 읽거나 스크립트를 실행합니다.</li>
+</ul>
+<p>두 SDK 저장소 모두 이러한 워크플로를 코드 가까이에 둡니다.</p>
+<ul>
+<li><a href="https://github.com/openai/openai-agents-python/tree/main/.agents/skills">openai-agents-python의 .agents/skills</a></li>
+<li><a href="https://github.com/openai/openai-agents-js/tree/main/.agents/skills">openai-agents-js의 .agents/skills</a></li>
+</ul>
+<p>Python 저장소는 더 단순한 기준 구성입니다.</p>
+<ul>
+<li><code>code-change-verification</code>은 코드나 빌드 동작이 변경될 때 필수 포매팅, 린트, 타입 검사, 테스트를 실행합니다.</li>
+<li><code>docs-sync</code>는 코드베이스를 기준으로 문서를 점검하여 누락되었거나 잘못되었거나 오래된 문서를 찾습니다.</li>
+<li><code>examples-auto-run</code>은 로그와 재실행 도우미를 갖추고 예제를 자동 모드로 실행합니다.</li>
+<li><code>final-release-review</code>는 이전 릴리스 태그와 현재 릴리스 후보를 비교하여 릴리스 준비 상태를 확인합니다.</li>
+<li><code>implementation-strategy</code>는 런타임이나 API 변경을 수정하기 전에 호환성 경계와 구현 방식을 결정합니다.</li>
+<li><code>openai-knowledge</code>는 공식 Docs MCP 워크플로를 통해 최신 OpenAI API 및 플랫폼 문서를 가져옵니다.</li>
+<li><code>pr-draft-summary</code>는 작업을 넘기는 시점에 브랜치 이름 제안, PR 제목, 설명 초안을 준비합니다.</li>
+<li><code>test-coverage-improver</code>는 커버리지를 실행해 가장 큰 공백을 찾고, 영향이 큰 테스트를 제안합니다.</li>
+</ul>
+<p>JavaScript 저장소도 전반적으로 같은 패턴을 따르며, npm 모노레포와 릴리스 프로세스를 위한 저장소 전용 스킬을 몇 가지 추가로 갖추고 있습니다.</p>
+<ul>
+<li><code>changeset-validation</code>은 changeset과 버전 상향 수준이 실제 패키지 diff와 일치하는지 확인합니다.</li>
+<li><code>integration-tests</code>는 패키지를 로컬 Verdaccio 레지스트리에 게시하고, 지원되는 런타임 전반에서 설치 및 실행 동작을 검증합니다.</li>
+<li><code>pnpm-upgrade</code>는 pnpm 툴체인과 CI 고정 버전을 함께 조율하여 업데이트합니다.</li>
+</ul>
+<p>정확한 목록보다 중요한 것은 패턴입니다. 각 스킬에는 좁은 범위의 계약, 명확한 트리거, 구체적인 산출물이 있습니다.</p>
+<p>가장 유용한 스킬 중 일부는 강제 게이트(gate)가 아닙니다. <code>docs-sync</code>와 <code>test-coverage-improver</code>는 보고를 우선하는 워크플로입니다. 현재 diff나 커버리지 산출물을 살펴보고, 중요한 항목의 우선순위를 정한 뒤, 수정하기 전에 승인을 요청합니다. Python 저장소에서 <code>docs-sync</code>는 생성된 참조 문서의 기준 출처로 소스의 docstring과 주석을 취급하며, 생성된 결과물을 수작업으로 고치지 않습니다. JavaScript 전용 스킬인 <code>pnpm-upgrade</code>도 좁은 범위의 유지보수 워크플로를 보여 주는 좋은 예입니다. 광범위한 검색 후 일괄 치환에 의존하지 않고, 로컬 pnpm 버전, <code>packageManager</code>, 워크플로에 고정된 버전을 함께 업데이트합니다.</p>
+<h2>워크플로 필수화</h2>
+<p>저장소가 적절한 시점에 스킬 사용을 요구하면 스킬은 더욱 유용해집니다. 이때 필요한 것이 <code>AGENTS.md</code>입니다.</p>
+<p><a href="https://developers.openai.com/codex/agent-configuration/agents-md#layer-project-instructions">AGENTS.md 가이드</a>는 이 파일을 코드베이스와 함께 이동하며 에이전트가 작업을 시작하기 전에 적용되는 저장소 수준의 지침으로 설명합니다. 또한 파일을 작게 유지하도록 권장합니다. Agents SDK 저장소에서는 Codex가 매번 따라야 하는 규칙을 이 공간에 담고, 가치가 가장 높은 규칙을 맨 위에 배치합니다.</p>
+<p>실제로 두 저장소는 모두 스킬 사용을 의무화하는 짧은 if/then 규칙을 사용합니다. 런타임이나 API를 변경하기 전에 먼저 <code>$implementation-strategy</code>를 호출하여 호환성 경계와 구현 접근 방식을 결정합니다. 변경 사항이 SDK 코드, 테스트, 예제 또는 빌드 동작에 영향을 주는 경우에는 <code>$code-change-verification</code>을 호출합니다. JavaScript 패키지 변경이 릴리스 메타데이터에 영향을 주는 경우에는 <code>$changeset-validation</code>을 호출합니다. 작업이 OpenAI API 또는 플랫폼 연동과 관련된 경우에는 <code>$openai-knowledge</code>를 호출합니다. 작업을 마치고 인계할 준비가 되면 <code>$pr-draft-summary</code>를 호출합니다.</p>
+<p>이 구조는 <a href="https://agents.md/">agents.md</a>의 권장 사항과도 일치합니다. 프로젝트 개요, 빌드 및 테스트 명령어, 코드 스타일, 테스트 가이드, 보안 고려 사항, 그 밖의 저장소별 규칙을 한곳에 모아 두는 방식입니다. Agents SDK 저장소들도 이 형태를 따르지만, 일상 업무에서 가장 중요한 운영상의 트리거를 맨 앞에 배치합니다. 간략하게 정리하면 다음과 같습니다.</p>
+<pre data-lang="md"><code># AGENTS.md
+
+## Project overview
+
+- Core SDK code lives under `src/agents/` or `packages/*/src/`.
+- Tests live under `tests/` or `packages/*/test/`.
+- Sample apps and integration surfaces live under `examples/`.
+
+## Mandatory skill usage
+
+- Use `$implementation-strategy` before editing runtime or API changes that may affect compatibility boundaries.
+- Run `$code-change-verification` when runtime code, tests, examples, or build/test behavior changes.
+- Use `$openai-knowledge` for OpenAI API or platform work.
+- Use `$pr-draft-summary` when substantial code work is ready for review.
+
+## Build and test commands
+
+- Python: `make format`, `make lint`, `make typecheck`, `make tests`
+- TypeScript: `pnpm i`, `pnpm build`, `pnpm -r build-check`, `pnpm lint`, `pnpm test`
+
+## Compatibility rules
+
+- Preserve positional compatibility for public constructors and dataclass fields.</code></pre>
+<p>실제 파일에는 이 기본 틀 위에 저장소별 세부 내용이 추가됩니다. 예를 들어 JavaScript 저장소의 <code>$changeset-validation</code>이나, 두 파일에 모두 있는 더 상세한 런타임, 문서, 릴리스 가이드가 이에 해당합니다. 전체 예시가 필요하시면 <a href="https://github.com/openai/openai-agents-python/blob/main/AGENTS.md">openai-agents-python의 AGENTS.md</a>와 <a href="https://github.com/openai/openai-agents-js/blob/main/AGENTS.md">openai-agents-js의 AGENTS.md</a>를 참고하십시오.</p>
+<p><code>AGENTS.md</code>는 스킬 트리거만을 위한 파일이 아닙니다. Python 저장소는 공개 API 호환성 규칙도 이 파일에 기록해 두었습니다. 내보내는(exported) 생성자 매개변수와 데이터클래스 필드의 위치별 의미를 유지하고, 새로운 선택적 항목은 가능하면 맨 끝에 추가하며, 순서 변경이 불가피하면 호환성 테스트를 추가한다는 규칙입니다. 이 또한 좋은 패턴입니다. 릴리스에 중요한 호환성 규칙을 스킬 트리거와 같은 곳에 두는 방식입니다.</p>
+<h3>검증 규칙</h3>
+<p>명확한 예시 중 하나가 <code>$code-change-verification</code>입니다.</p>
+<p>두 저장소에서 이 규칙은 "항상 긴 검증 절차를 실행하라"가 아닙니다. "런타임 코드, 테스트, 예제 또는 빌드/테스트 동작이 변경되었을 때 실행하고, 통과하기 전에는 작업을 완료로 표시하지 말라"는 규칙입니다.</p>
+<p>조건부라는 점 덕분에 문서만 수정하는 작업은 가볍게 유지됩니다. 의무라는 점 덕분에 SDK 코드 변경은 저장소의 표준 검증 단계를 반드시 거치게 됩니다.</p>
+<p>실제 검증 절차는 스킬 자체에 정의되어 있습니다.</p>
+<p>Python 저장소에서는 다음을 요구합니다.</p>
+<pre data-lang="bash"><code>make format
+make lint
+make typecheck
+make tests</code></pre>
+<p>JavaScript 저장소에서는 스킬이 다음 순서를 정확히 지킬 것을 요구합니다.</p>
+<pre data-lang="bash"><code>pnpm i
+pnpm build
+pnpm -r build-check
+pnpm -r -F "@openai/*" dist:check
+pnpm lint
+pnpm test</code></pre>
+<p>스킬은 저장소가 정의하는 "검증 완료"의 기준을 담고 있고, <code>AGENTS.md</code>는 그 기준을 강제할 수 있게 만듭니다.</p>
+<h3>Changeset 검증</h3>
+<p>JavaScript 저장소에는 패키지 변경에 대한 의무 단계가 하나 더 있습니다. <a href="https://github.com/changesets/changesets">Changesets</a>를 기반으로 하는 <code>$changeset-validation</code>입니다.</p>
+<p><code>packages/</code> 아래의 무언가가 바뀌거나 <code>.changeset/</code>이 바뀌면, 모델은 테스트를 실행하는 것 이상의 일을 해야 합니다. 올바른 changeset을 생성하거나 업데이트하고, 버전 증가 수준(bump level)을 검증하며, changeset이 실제 diff와 일치하는지 확인해야 합니다.</p>
+<p>이 스킬은 파일이 존재하는지만 확인하지 않습니다. Codex에게 git diff를 판단하도록 요청하며, 검증 규칙을 공유 프롬프트에 두어 로컬 실행과 GitHub Actions가 동일한 로직을 사용하도록 합니다. 또한 다음과 같은 저장소별 정책도 담고 있습니다.</p>
+<ul>
+<li>이미 브랜치용 changeset이 있다면 새로 만들지 않고 기존 changeset을 사용합니다.</li>
+<li>요약은 Conventional Commit 스타일의 한 줄로 작성하여 커밋 제목으로도 쓸 수 있게 합니다.</li>
+<li>1.0 이전에는 일반적인 기능 작업에 메이저 버전 증가를 피하고, 프리뷰 전용으로 명시된 추가 사항은 기존 동작을 바꾸지 않는 한 패치 변경으로 취급합니다.</li>
+<li>필요한 버전 증가 수준을 실제 패키지 변경 사항과 대조하여 검증합니다.</li>
+</ul>
+<p>그 결과 Codex는 작업이 끝났다고 말하기 전에, 자신이 만든 릴리스 메타데이터를 직접 검증할 책임을 지게 됩니다.</p>
+<h3>최신 문서 사용</h3>
+<p>두 저장소는 작업이 OpenAI API 또는 플랫폼 연동과 관련될 때 <code>$openai-knowledge</code>도 필수로 요구합니다.</p>
+<p>이 스킬은 공식 <a href="https://developers.openai.com/learn/docs-mcp">OpenAI Docs MCP</a>를 얇게 감싼 래퍼입니다. 모델이 기억에 의존해 답하게 두는 대신, Codex가 OpenAI Developer Documentation MCP 서버를 사용하여 Responses API, 도구, 스트리밍, Realtime, MCP 등의 최신 문서를 조회하도록 지시합니다.</p>
+<p>로컬 Codex 환경에 MCP 서버가 아직 구성되어 있지 않다면, 스킬은 메인테이너에게 <a href="https://developers.openai.com/learn/docs-mcp#quickstart">Docs MCP 퀵스타트</a>와 <a href="https://developers.openai.com/mcp">공식 MCP 서버 엔드포인트</a>를 안내합니다.</p>
+<h3>PR 인계 준비</h3>
+<p>실질적인 작업이 끝나면 두 저장소 모두 <code>$pr-draft-summary</code>를 사용합니다.</p>
+<p>이 스킬은 작업이 사실상 완료되었거나 리뷰 준비가 되었고, 변경 사항이 의미 있는 코드, 테스트, 예제, 동작에 영향을 주는 문서, 또는 빌드/테스트 구성을 건드렸을 때만 트리거됩니다. 이후 브랜치 이름, 작업 트리 상태, 변경된 파일, diff 통계, 최근 커밋을 자동으로 수집하여 다음을 생성합니다.</p>
+<ul>
+<li>브랜치 이름 제안</li>
+<li>PR 제목</li>
+<li>PR 설명 초안</li>
+</ul>
+<p>출력 형식은 의도적으로 엄격합니다. 일반적인 결과는 다음과 같습니다.</p>
+<pre data-lang="md"><code># Pull Request Draft
+
+## Branch name suggestion
+
+git checkout -b fix/tracing-lazy-init-fork-safety
+
+## Title
+
+fix: #2489 lazily initialize tracing globals to avoid import-time fork hazards
+
+## Description
+
+This pull request fixes import-time tracing side effects that could break fork-based process models by moving tracing bootstrap to lazy, first-use initialization.
+
+It updates tracing setup so initialization happens once on first access while preserving the existing public tracing APIs.
+
+It also adds regression tests for import-time behavior, one-time bootstrap, and custom provider handling.
+
+This pull request resolves #2489.</code></pre>
+<p>모델이 자신의 작업을 검증하고 요약하는 것을 신뢰할 수 있게 되면, PR 초안 작성을 맡기는 것은 자연스러운 마지막 단계입니다. 인계 형식을 일관되게 유지하고, 코딩 작업이 끝난 뒤의 반복적인 글쓰기를 줄여 줍니다.</p>
+<h2>더 나은 설명 작성</h2>
+<p>스킬의 <code>SKILL.md</code> 프론트매터에 있는 <code>description</code> 필드는 라우팅 계약(routing contract)의 일부입니다.</p>
+<p>이는 문체의 문제가 아니라 구조의 문제입니다. <a href="https://agentskills.io/specification">Agent Skills specification</a>은 <code>name</code>과 <code>description</code>을 <code>SKILL.md</code> frontmatter의 필수 필드로 규정하고 있으며, 점진적 공개(progressive disclosure) 모델에 따르면 시작 시점에 모든 스킬에 대해 로드되는 것은 이 필드들입니다. <code>SKILL.md</code> 본문 전체와 <code>scripts/</code>, <code>references/</code>, <code>assets/</code>는 해당 스킬이 실제로 활성화되는 시점에야 로드됩니다.</p>
+<p><a href="https://developers.openai.com/codex/build-skills">Codex skills docs</a>와 <a href="https://developers.openai.com/codex/customization/overview#skills">customization docs</a>는 Codex 측면에서 같은 동작을 설명합니다. Codex는 탐색을 위해 각 스킬의 메타데이터만 가지고 시작하고, 스킬을 선택할 때만 <code>SKILL.md</code>를 로드하며, 필요할 때만 참조 문서를 읽거나 스크립트를 실행합니다. <a href="https://developers.openai.com/cookbook/examples/skills_in_api/#what-is-a-skill">Skills in OpenAI API cookbook</a>은 호스티드 셸(hosted shell) 측면에서도 이를 똑같이 명시합니다. OpenAI는 먼저 각 스킬의 <code>name</code>, <code>description</code>, 경로를 읽고, 모델은 이 정보를 바탕으로 전체 <code>SKILL.md</code>를 읽을 시점을 결정합니다. <a href="https://developers.openai.com/cookbook/examples/skills_in_api/#skillmd-frontmatter">SKILL.md frontmatter 섹션</a>에서는 같은 요점을 더 직접적으로 짚습니다. <code>name</code>과 <code>description</code>은 탐색과 라우팅(routing)에 중요합니다.</p>
+<p>Agents SDK 저장소에서는 이 때문에 <code>description</code>이 Codex가 스킬의 나머지 부분을 읽기 전에 사용하는 주요 라우팅 신호 중 하나가 됩니다.</p>
+<p><code>code-change-verification</code>의 구체적인 예시를 살펴보겠습니다.</p>
+<p>지나치게 모호한 예:</p>
+<pre data-lang="yaml"><code>description: Run the mandatory verification stack in the OpenAI Agents JS monorepo.</code></pre>
+<p>더 나은 예(실제 description):</p>
+<pre data-lang="yaml"><code>description: Run the mandatory verification stack when changes affect runtime code, tests, or build/test behavior in the OpenAI Agents JS monorepo.</code></pre>
+<p>짧은 버전은 스킬이 무엇을 하는지는 이미 Codex에 알려 주지만, 스킬이 언제 적용되는지, 어떤 종류의 변경이 스킬을 트리거해야 하는지, 검사가 선택 사항인지는 여전히 알려 주지 않습니다. 더 구체적인 버전은 이 세 가지를 모두 모델에 알려 줍니다.</p>
+<p><code>pr-draft-summary</code>에서도 같은 패턴이 나타납니다.</p>
+<p>지나치게 모호한 예:</p>
+<pre data-lang="yaml"><code>description: Create a PR title and draft description for a pull request.</code></pre>
+<p>더 나은 예(실제 description):</p>
+<pre data-lang="yaml"><code>description: Create a PR title and draft description after substantive code changes are finished. Trigger when wrapping up a moderate-or-larger change (runtime code, tests, build config, docs with behavior impact) and you need the PR-ready summary block with change summary plus PR draft text.</code></pre>
+<p>이번에도 실제 description은 라우팅 메타데이터입니다. 이 description은 Codex에 다음을 알려 줍니다.</p>
+<ul>
+<li>작업 종료 시점에 사용하는 스킬이라는 점</li>
+<li>모든 대화 턴이 아니라 실질적인 변경에 사용한다는 점</li>
+<li>출력이 단순한 산문 요약이 아니라 PR에 바로 쓸 수 있는 블록이라는 점</li>
+</ul>
+<p>이 저장소들에서 얻은 실용적인 교훈 하나는 <code>description</code>에 시간을 들이라는 것입니다. 라우팅이 불안정하게 느껴진다면 코드를 더 추가하기 전에 메타데이터부터 고치십시오.</p>
+<h2>스크립트에 기계적 작업 맡기기</h2>
+<p>그다음 고민할 것은 어떤 작업을 모델에 두고, 어떤 작업을 스크립트로 내릴 것인가입니다.</p>
+<p>신뢰할 수 있는 분담 기준은 다음과 같습니다.</p>
+<ul>
+<li>해석, 비교, 보고는 모델이 담당합니다.</li>
+<li>결정적(deterministic)이고 반복되는 셸 작업은 <code>scripts/</code>에 둡니다.</li>
+</ul>
+<p>이는 공개된 가이드와도 일치합니다. <a href="https://developers.openai.com/codex/customization/overview#skills">Codex customization docs</a>는 스킬을 반복 가능한 워크플로에 대해 더 풍부한 지침, 스크립트, 참조 문서를 Codex에 제공하면서도 처음부터 컨텍스트를 부풀리지 않는 방법으로 설명합니다. 이는 모델 우선 구조와 잘 맞습니다. 컨텍스트에 따라 달라지는 작업은 Codex가 처리하게 하고, 결정적인 작업은 필요할 때만 스크립트를 불러오는 방식입니다. <a href="https://developers.openai.com/cookbook/examples/skills_in_api/#operational-best-practices">Skills in OpenAI API cookbook</a>은 스킬 스크립트를 작은 CLI처럼 설계할 것도 권장합니다. 즉 명령줄에서 실행되고, 결정적인 stdout을 출력하며, 사용법이나 오류 메시지와 함께 확실하게 실패하고, 필요하면 알려진 파일 경로에 출력을 기록하는 스크립트입니다.</p>
+<p>Agents SDK 저장소에서는 모델의 지능이 실제로 유용한 곳에 모델을 사용하려고 합니다. 예를 들면 다음과 같습니다.</p>
+<ul>
+<li>소스 코드를 읽고 의도된 동작을 추론하기</li>
+<li>로그를 의도된 동작과 비교하기</li>
+<li>릴리스 diff에 실제 호환성 위험이 있는지 판단하기</li>
+<li>메인테이너가 바로 조치할 수 있는 설명 작성하기</li>
+</ul>
+<p>그리고 스크립트는 이런 작업을 둘러싼 기계적인 부분을 처리합니다. 예를 들면 다음과 같습니다.</p>
+<ul>
+<li>저장소에서 요구하는 검증 명령을 정해진 순서로 실행하기</li>
+<li>예제 실행을 시작하고, 예제별 로그를 수집하며, 실패한 예제에 대한 재실행 파일을 작성하기</li>
+<li>릴리스 준비 상태 검토 전에 이전 릴리스 태그를 가져오기</li>
+<li><code>start</code>, <code>stop</code>, <code>status</code>, <code>logs</code>, <code>tail</code>, <code>collect</code>, <code>rerun</code> 같은 헬퍼 명령을 제공하여 같은 워크플로를 반복해서 쉽게 실행할 수 있게 하기</li>
+</ul>
+<p>모델이 매번 같은 셸 절차를 다시 찾아내야 한다면, 대체로 그 절차를 스크립트로 만들어야 한다는 신호입니다. 작업이 컨텍스트, 트레이드오프, 설명에 달려 있다면 그 부분은 모델에 남겨 두어야 합니다.</p>
+<h2>통합 테스트 자동화</h2>
+<p>두 저장소 모두에서 가장 유용한 워크플로 영역 중 하나는 통합 테스트 자동화입니다. 여기에는 서로 관련된 두 계층이 있습니다. 하나는 두 저장소 모두에서 저장소 내부 예제를 자동으로 검증하는 것이고, 다른 하나는 JavaScript 저장소에서 배포된 패키지가 사용자가 실제로 사용하는 방식대로 설치해도 여전히 동작하는지 별도로 검증하는 것입니다.</p>
+<p>이 구성을 도입하기 전에는 예제 검증이 부분적으로 수동이었습니다. 예제를 실행할 수는 있었지만, 마지막 단계는 로그를 눈으로 확인하거나 출력이 올바르게 보이는지 직접 살펴보고 판단하는 데 의존하는 경우가 많았습니다. 예제가 하나라면 감당할 만합니다. 그러나 계속 커지는 SDK 저장소 전체로 확장하기에는 적합하지 않습니다.</p>
+<p>첫 번째 계층은 <code>examples-auto-run</code>이지만, 스킬은 러너(runner) 이후에 만들어졌습니다. 예제 검증을 자동화하려면 먼저 두 저장소 모두에서 비대화형(non-interactive) 예제 실행을 위한 기반을 구축해야 했습니다. 이는 프롬프트나 승인이 필요한 예제를 포함하여 예제 스크립트를 자동 모드로 실행할 수 있게 만드는 것을 의미했습니다.</p>
+<p>이 기반 작업에는 다음이 포함되었습니다.</p>
+<ul>
+<li>일반적인 대화형 프롬프트에 자동으로 응답</li>
+<li>러너가 지원하는 범위에서 HITL, MCP, <code>apply_patch</code>, 셸 동작을 자동으로 승인</li>
+<li>추가 런타임 설정이 필요한 실시간 예제나 Next.js 앱 예제처럼 아직 자동화에 적합하지 않은 예제는 자동 건너뛰기 목록(auto-skip list)으로 관리</li>
+<li>예제를 실행할 때마다 구조화된 로그를 기록</li>
+<li>실패한 예제만 다시 실행할 수 있도록 재실행 파일을 생성</li>
+</ul>
+<p>이러한 기반이 마련된 뒤에는 이 워크플로를 스킬(skill)로 정리해, 재사용하고 쉽게 호출할 수 있도록 했습니다. Python 저장소에서 <code>examples-auto-run</code>은 <code>uv run examples/run_examples.py --auto-mode --write-rerun --main-log ... --logs-dir ...</code>를 감싸는 스킬입니다. JavaScript 저장소에서는 빌드 검사를 먼저 수행한 다음, 예제별 로그 기록과 재실행 기능을 갖춘 자동 모드로 <code>pnpm examples:start-all</code>을 실행합니다.</p>
+<p>검증 품질을 높이기 위해 러너는 예제를 실행하고, 그 stdout과 stderr를 예제별 로그에 보존하는 역할을 맡습니다. 그다음 스킬이 Codex에게 이 로그를 하나씩 살펴보면서 소스 코드와 비교하게 합니다.</p>
+<ul>
+<li>예제의 소스 코드와 주석을 읽습니다.</li>
+<li>의도된 흐름을 추론합니다.</li>
+<li>해당하는 로그를 엽니다.</li>
+<li>의도된 동작과 실제 stdout, stderr를 비교합니다.</li>
+<li>샘플 하나만이 아니라 성공한 모든 예제에 대해 이 과정을 수행합니다.</li>
+</ul>
+<p>이 방식은 정확성을 스크립트 수준의 고정된 단언(assertion)으로 코드화하려는 방식보다 더 정확하고 유연합니다. 종료 코드가 성공이라는 사실도 유용하지만, 실제 API와 통신하거나 도구를 사용하거나 구조화된 출력을 생성하는 예제에는 충분하지 않습니다. 실제 출력을 먼저 기록한 다음 소스 코드와 꼼꼼히 대조하면, 각 예제를 본래 의도에 맞게 검증할 수 있습니다.</p>
+<p>JavaScript 저장소에는 두 번째 계층으로 별도의 <code>integration-tests</code> 스킬이 있습니다. 이 워크플로는 소스 예제를 그 자리에서 실행하는 데 그치지 않습니다. 패키지를 로컬 Verdaccio 레지스트리에 게시하고, Node.js, Bun, Deno, Cloudflare Workers, Vite React 앱 등 여러 환경에서 설치와 실행을 테스트합니다. 이를 통해 다른 종류의 문제를 잡아낼 수 있습니다. 확인하는 것은 "저장소에서 예제가 실행되는가?"가 아니라 "게시, 설치, 런타임 통합을 거친 뒤에도 패키지가 여전히 올바르게 동작하는가?"입니다.</p>
+<p>이 워크플로들을 종합하면 스킬, 스크립트, 모델의 판단을 결합하는 것이 왜 유용한지 알 수 있습니다. 스크립트는 실행을 반복 가능하게 만들고, 증거를 수집하며, 수작업으로 확인하기 번거로운 설치 경로까지 다룹니다. 그러면 Codex는 그 증거를 활용해 단순한 스크립트 기반의 통과/실패 검사보다 더 세심하게 비교합니다.</p>
+<h2>릴리스 검사 추가</h2>
+<p>릴리스 준비에서도 이 패턴이 도움이 됩니다.</p>
+<p>두 저장소의 릴리스 검토 워크플로는 이전 릴리스 태그를 찾고, 이를 최신 <code>main</code>과 비교(diff)한 다음, Codex에게 그 diff에서 다음 항목을 점검하게 하는 것으로 시작합니다.</p>
+<ul>
+<li>공개 API와 사용자에게 노출되는 SDK 동작에서 발생하는 하위 호환성 문제</li>
+<li>기대 동작의 사소한 변화를 포함한 회귀</li>
+<li>마이그레이션 안내나 릴리스 노트 갱신이 필요한 변경인데 이것이 누락된 경우</li>
+</ul>
+<p>스킬은 이러한 결과를 바탕으로 릴리스 준비 상태를 종합적으로 판단합니다.</p>
+<p>구체적인 예로 <a href="https://github.com/openai/openai-agents-python/pull/2480">openai/openai-agents-python#2480</a>이 있습니다. 이 사례에서 릴리스 검토는 전반적으로 통과(green) 판정을 유지하면서도, Python 3.9 지원 중단과 그에 따라 필요한 릴리스 노트 후속 조치를 짚어냈습니다.</p>
+<pre data-lang="md"><code>Release readiness review (excerpt)
+
+Release call:
+🟢 GREEN LIGHT TO SHIP. Minor-version bump includes expected breaking change
+(Python 3.9 drop) with no concrete regressions found.
+
+Scope summary:
+
+- 38 files changed (+1450/-789); key areas touched: `src/agents/tool.py`,
+  `src/agents/extensions/`, `src/agents/realtime/`, `tests/`,
+  `pyproject.toml`, `uv.lock`.
+
+Python 3.9 support removed
+
+- Risk: 🟡 MODERATE. Users pinned to Python 3.9 will be unable to install the
+  0.9.0 release.
+- Evidence: `pyproject.toml` now sets `requires-python = "&gt;=3.10"` and drops
+  the Python 3.9 classifier; CI skip logic for 3.9 was removed.
+- Action: Ensure release notes clearly call out the Python 3.9 drop and that
+  packaging metadata remains `&gt;=3.10`.</code></pre>
+<p>이 스킬은 게이트 판단을 내리는 방식도 정의합니다. 검토는 "릴리스해도 안전함"이라는 전제에서 시작하며, diff에서 실제 문제의 구체적인 증거가 확인될 때만 차단 판정으로 바꿉니다. 모든 차단 판정에는 구체적인 차단 해제 체크리스트가 반드시 함께 제시되어야 합니다. 덕분에 결과물을 훨씬 쉽게 활용할 수 있습니다. 통과 결과는 diff에서 릴리스를 막을 문제가 발견되지 않았다는 뜻이고, 차단 결과는 명확한 다음 단계가 있는 실제 문제가 있다는 뜻입니다.</p>
+<p>이는 막연하게 "릴리스를 검토해 주세요"라고 요청하는 것보다 더 유용합니다. 모델이 구체적인 diff를 근거로 추론하고, 그 결과를 운영 관점에서 설명하도록 강제하기 때문입니다. 릴리스가 안전하다면 그렇게 말하고, 그렇지 않다면 정확한 증거와 필요한 후속 조치를 짚어 줍니다.</p>
+<h2>CI에서 워크플로 실행</h2>
+<p>스킬이 로컬에서 유용하다고 확인되면, <a href="https://developers.openai.com/codex/github-action">Codex GitHub Action</a>을 사용해 같은 워크플로를 CI에서 쉽게 자동화할 수 있습니다. 로컬 워크플로가 이미 안정적일 때 가장 효과적입니다. 지침을 디버깅하고, 스크립트를 다듬고, 실제 엣지 케이스를 찾는 단계가 바로 수동으로 사용하는 단계이기 때문입니다.</p>
+<p>공개 저장소에서는 트리거 설계가 스킬만큼 중요합니다. <a href="https://developers.openai.com/codex/github-action#security-checklist">GitHub Action 보안 체크리스트</a>는 다음을 권장합니다. 워크플로를 시작할 수 있는 사용자를 제한하고, 신뢰할 수 있는 이벤트나 명시적인 승인을 우선하며, PR, 커밋, 이슈, 댓글에서 가져오는 프롬프트 입력을 정제하고, <code>drop-sudo</code>나 권한 없는 사용자로 <code>OPENAI_API_KEY</code>를 보호하며, Codex를 작업(job)의 마지막 단계로 실행하는 것입니다.</p>
+<p>쓰기 권한이 있는 워크플로가 신뢰할 수 없는 공개 입력을 받는다면, 위험은 대개 트리거 설계, 입력 처리, 그리고 스킬을 둘러싼 런타임 권한에 있습니다.</p>
+<h2>PR 리뷰에서 Codex 활용</h2>
+<p>스킬은 이 저장소들의 생산성을 높이는 요소 중 하나입니다. <a href="https://developers.openai.com/codex/third-party/github">Codex GitHub PR 자동 리뷰</a>가 또 다른 요소입니다.</p>
+<p>Codex GitHub PR 자동 리뷰를 사용할 수 있게 된 이후, Codex는 이 저장소들의 대부분의 코드 변경에서 유용한 리뷰어 역할을 해 왔습니다. 우리는 Codex를 특별한 경우에만 쓰는 도구가 아니라 리뷰의 일반적인 일부로 사용합니다.</p>
+<p>단순한 프로그램 버그, 회귀, 누락된 테스트에 대해서는 Codex를 필수 리뷰 경로로 삼아도 실무에서 충분히 안전합니다. Codex는 같은 정확성 패턴을 반복해서 일관되게 확인하며, 작은 수정과 일상적인 개선에서 발생하던 주요 병목을 없애 주었습니다.</p>
+<p>동료 리뷰는 여전히 중요하지만, 그 대상은 이제 다른 종류의 변경입니다.</p>
+<p>주된 질문이 "이 코드가 올바른가?"가 아니라 "유효한 여러 선택지 중 무엇을 고르고, 어떻게 배포할 것인가?"일 때는 여전히 사람의 리뷰가 필수입니다. 다음과 같은 경우가 여기에 해당합니다.</p>
+<ul>
+<li>합리적인 설계가 여러 가지 있어 메인테이너가 명시적으로 선택해야 하는 API 또는 아키텍처 변경</li>
+<li>제품에 대한 기대, 하위 호환성 약속, 롤아웃 정책에 영향을 주는 동작 변경</li>
+<li>사용자와 기여자에게 무엇이 가장 명확할지 정하는 일이 핵심인 네이밍, 마이그레이션, 릴리스 커뮤니케이션 결정</li>
+<li>작업 범위 설정, 순서 결정, 지금 배포할 것과 나중에 배포할 것의 구분처럼 메인테이너 또는 팀 간의 합의가 필요한 변경</li>
+</ul>
+<p>이런 경우에도 Codex는 유용하게 기여할 수 있지만, 사람이 결정을 내리고 직접 논의할 때 더 좋은 결과를 얻을 수 있습니다.</p>
+<p><code>AGENTS.md</code>에는 이러한 역할 분담도 담을 수 있습니다. 저장소가 정확성 리뷰에서 무엇이 중요한지 Codex에 알려 주면, Codex는 그 지침을 일관되게 적용할 수 있습니다.</p>
+<p>이는 처리량 향상에도 크게 기여했습니다. 반복적인 리뷰와 검증 작업은 위험도가 낮은 모든 변경마다 부족한 리뷰어의 시간을 기다릴 필요가 없어졌고, 메인테이너는 자신의 판단이 가장 중요한 높은 맥락의 리뷰에 집중할 수 있습니다. 이러한 변화 덕분에 백로그에 쌓인 버그와 작은 기능 개선을 훨씬 빠르게 처리할 수 있었습니다.</p>
+<h2>맺음말</h2>
+<p>OpenAI Agents SDK 저장소에서 스킬(skills)은 저장소의 일상적인 작업 환경에 포함될 때 가장 잘 작동합니다.</p>
+<p><code>AGENTS.md</code>는 어떤 워크플로가 필수인지 Codex에 알려 줍니다. <code>description</code>은 언제 해당 워크플로로 진입할지 알려 줍니다. <code>scripts/</code>는 결정적인 부분을 처리하고, 모델은 맥락이 필요한 부분을 처리합니다. 그리고 워크플로가 로컬에서 안정적으로 동작하면 <a href="https://developers.openai.com/codex/github-action">Codex GitHub Action</a>을 통해 같은 프로세스를 CI로 확장할 수 있습니다.</p>
+<p>그 결과 이 저장소들의 일상적인 엔지니어링 작업이 더 명시적이고 더 신뢰할 수 있게 되었습니다. 또한 검증, 릴리스 리뷰, PR 인계가 이제 동일한 반복 가능한 프로세스를 따르기 때문에 작은 개선 사항을 더 빠르게 배포하기도 쉬워졌습니다.</p>
+<h2>참고 자료</h2>
+<ul>
+<li><a href="https://github.com/openai/openai-agents-python">OpenAI Agents SDK for Python</a></li>
+<li><a href="https://github.com/openai/openai-agents-js">OpenAI Agents SDK for JS</a></li>
+<li><a href="https://developers.openai.com/codex/customization/overview#skills">Skills in Codex</a></li>
+<li><a href="https://developers.openai.com/codex/agent-configuration/agents-md">Custom instructions with AGENTS.md</a></li>
+<li><a href="https://developers.openai.com/codex/github-action">Codex GitHub Action</a></li>
+<li><a href="https://developers.openai.com/codex/third-party/github">Use Codex in GitHub</a></li>
+<li><a href="https://developers.openai.com/cookbook/examples/skills_in_api">Skills in OpenAI API cookbook</a></li>
+<li><a href="https://agentskills.io/specification">Agent Skills specification</a></li>
+<li><a href="https://developers.openai.com/cookbook/examples/skills_in_api/#operational-best-practices">Skills in OpenAI API: operational best practices</a></li>
+</ul></article>
+  <article class="prose lang-en" hidden lang="en"><p>We use Codex to change how we maintain the <a href="https://developers.openai.com/api/docs/guides/agents">OpenAI Agents SDK</a> repos. Repo-local skills, <code>AGENTS.md</code>, and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows. Even with a fairly simple setup, this has helped us increase development throughput in these active repos. Between December 1, 2025 and February 28, 2026, the two repos merged 457 PRs, up from 316 in the previous three months from September 1, 2025 through November 30, 2025 (Python: 182 -&gt; 226, TypeScript: 134 -&gt; 231).</p>
+<p>For quick background, the SDK is available in <a href="https://github.com/openai/openai-agents-python">Python</a> and <a href="https://github.com/openai/openai-agents-js">TypeScript</a>. It provides the core pieces for building agentic applications and is also a concise way to build voice agents on top of the <a href="https://developers.openai.com/api/docs/guides/realtime">Realtime API</a> with multiple agents, tools, and human-in-the-loop controls. It is used at significant scale: in recent 30-day windows as of March 6, 2026, the Python package saw about 14.7 million downloads on PyPI, and the TypeScript package saw about 1.5 million downloads on npm.</p>
+<p>The setup is simple:</p>
+<ul>
+<li>repository policy in <a href="https://agents.md/"><code>AGENTS.md</code></a></li>
+<li>repo-local skills in <code>.agents/skills/</code></li>
+<li>optional scripts and references inside those skills</li>
+<li><a href="https://developers.openai.com/codex/github-action">Codex GitHub Action</a> when the same workflow should run in CI</li>
+</ul>
+<p>This setup gives Codex stable context about how the repository works, which improves the speed and accuracy of recurring engineering work.</p>
+<p>If you maintain a public open-source project, see <a href="https://developers.openai.com/community/codex-for-oss">Codex for
+OSS</a>. Eligible maintainers can apply for ChatGPT Pro
+with Codex, API credits, and conditional access to Codex Security.</p>
+<h2>Keep workflows in the repo</h2>
+<p>In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a <code>SKILL.md</code> manifest, plus optional <code>scripts/</code>, <code>references/</code>, and <code>assets/</code>. The <a href="https://developers.openai.com/codex/customization/overview#skills">Codex customization docs</a> describe why this works well: skills are a good fit for repeatable workflows because they can carry richer instructions, scripts, and references without bloating the agent’s context up front.</p>
+<p>This matches the progressive-disclosure model used by skills:</p>
+<ul>
+<li>it sees metadata such as <code>name</code> and <code>description</code> first</li>
+<li>it loads <code>SKILL.md</code> only when the skill is selected</li>
+<li>it reads references or runs scripts only when needed</li>
+</ul>
+<p>Both SDK repos keep these workflows close to the code:</p>
+<ul>
+<li><a href="https://github.com/openai/openai-agents-python/tree/main/.agents/skills">.agents/skills in openai-agents-python</a></li>
+<li><a href="https://github.com/openai/openai-agents-js/tree/main/.agents/skills">.agents/skills in openai-agents-js</a></li>
+</ul>
+<p>The Python repo is the simpler baseline:</p>
+<ul>
+<li><code>code-change-verification</code> runs the required formatting, lint, type-checking, and test stack when code or build behavior changes.</li>
+<li><code>docs-sync</code> audits the docs against the codebase and finds missing, incorrect, or outdated documentation.</li>
+<li><code>examples-auto-run</code> runs examples in auto mode with logs and rerun helpers.</li>
+<li><code>final-release-review</code> compares the previous release tag with the current release candidate and checks release readiness.</li>
+<li><code>implementation-strategy</code> decides the compatibility boundary and implementation approach before editing runtime or API changes.</li>
+<li><code>openai-knowledge</code> pulls current OpenAI API and platform docs through the official Docs MCP workflow.</li>
+<li><code>pr-draft-summary</code> prepares the branch name suggestion, PR title, and draft description at handoff time.</li>
+<li><code>test-coverage-improver</code> runs coverage, finds the biggest gaps, and proposes high-impact tests.</li>
+</ul>
+<p>The JavaScript repo follows the same general pattern, then adds a few repo-specific skills for its npm monorepo and release process:</p>
+<ul>
+<li><code>changeset-validation</code> checks that changesets and bump levels actually match the package diff.</li>
+<li><code>integration-tests</code> publishes packages to a local Verdaccio registry and verifies install-and-run behavior across supported runtimes.</li>
+<li><code>pnpm-upgrade</code> updates the pnpm toolchain and CI pins in a coordinated way.</li>
+</ul>
+<p>What matters more than the exact list is the pattern. Each skill has a narrow contract, a clear trigger, and a concrete output.</p>
+<p>Some of the most useful skills are not hard gates. <code>docs-sync</code> and <code>test-coverage-improver</code> are report-first workflows: they inspect the current diff or coverage artifacts, prioritize what matters, and ask for approval before making edits. In the Python repo, <code>docs-sync</code> also treats source docstrings and comments as the source of truth for generated reference docs instead of patching generated output by hand. The JavaScript-only <code>pnpm-upgrade</code> skill is another good example of a narrow maintenance workflow: it updates the local pnpm version, <code>packageManager</code>, and workflow pins together instead of falling back to broad search-and-replace.</p>
+<h2>Make workflows mandatory</h2>
+<p>Skills become more useful when the repository requires them at the right time. That is where <code>AGENTS.md</code> comes in.</p>
+<p>The <a href="https://developers.openai.com/codex/agent-configuration/agents-md#layer-project-instructions">AGENTS.md guide</a> describes these files as repository-level instructions that travel with the codebase and apply before the agent starts work. It also recommends keeping them small. In the Agents SDK repos, we use that space for the rules Codex should follow every time, and we put the highest-value ones near the top.</p>
+<p>In practice, both repos use short if/then rules for mandatory skill usage. Before editing runtime or API changes, call <code>$implementation-strategy</code> to decide the compatibility boundary and implementation approach first. If the change affects SDK code, tests, examples, or build behavior, call <code>$code-change-verification</code>. If a JavaScript package change affects release metadata, call <code>$changeset-validation</code>. If the work touches OpenAI API or platform integrations, call <code>$openai-knowledge</code>. When the work is finished and ready to hand off, call <code>$pr-draft-summary</code>.</p>
+<p>That structure also lines up with the <a href="https://agents.md/">agents.md</a> recommendations: keep the project overview, build and test commands, code style, testing guidance, security considerations, and other repo-specific rules in one place. The Agents SDK repos follow that shape, but they lead with the operational triggers that matter most in day-to-day work. A compact version looks like this:</p>
+<pre data-lang="md"><code># AGENTS.md
+
+## Project overview
+
+- Core SDK code lives under `src/agents/` or `packages/*/src/`.
+- Tests live under `tests/` or `packages/*/test/`.
+- Sample apps and integration surfaces live under `examples/`.
+
+## Mandatory skill usage
+
+- Use `$implementation-strategy` before editing runtime or API changes that may affect compatibility boundaries.
+- Run `$code-change-verification` when runtime code, tests, examples, or build/test behavior changes.
+- Use `$openai-knowledge` for OpenAI API or platform work.
+- Use `$pr-draft-summary` when substantial code work is ready for review.
+
+## Build and test commands
+
+- Python: `make format`, `make lint`, `make typecheck`, `make tests`
+- TypeScript: `pnpm i`, `pnpm build`, `pnpm -r build-check`, `pnpm lint`, `pnpm test`
+
+## Compatibility rules
+
+- Preserve positional compatibility for public constructors and dataclass fields.</code></pre>
+<p>The real files then add repo-specific details on top of that baseline, such as <code>$changeset-validation</code> in the JavaScript repo and the more detailed runtime, docs, and release guidance in both files. If you want full examples, see <a href="https://github.com/openai/openai-agents-python/blob/main/AGENTS.md">AGENTS.md in openai-agents-python</a> and <a href="https://github.com/openai/openai-agents-js/blob/main/AGENTS.md">AGENTS.md in openai-agents-js</a>.</p>
+<p><code>AGENTS.md</code> is not only for skill triggers. The Python repo also records a public API compatibility rule there: preserve the positional meaning of exported constructor parameters and dataclass fields, append new optional ones at the end when possible, and add compatibility tests if reordering is unavoidable. That is another good pattern: keep release-critical compatibility rules in the same place as the skill triggers.</p>
+<h3>Verification rules</h3>
+<p>One clear example is <code>$code-change-verification</code>.</p>
+<p>In both repos, the rule is not “always run a long validation stack.” The rule is “run it when runtime code, tests, examples, or build/test behavior changed, and do not mark the work complete until it passes.”</p>
+<p>The conditional part keeps docs-only work lightweight. The mandatory part ensures that SDK code changes go through the repository’s standard verification steps.</p>
+<p>The actual verification stacks are encoded in the skills themselves.</p>
+<p>In the Python repo, it requires:</p>
+<pre data-lang="bash"><code>make format
+make lint
+make typecheck
+make tests</code></pre>
+<p>In the JavaScript repo, the skill requires this exact order:</p>
+<pre data-lang="bash"><code>pnpm i
+pnpm build
+pnpm -r build-check
+pnpm -r -F "@openai/*" dist:check
+pnpm lint
+pnpm test</code></pre>
+<p>The skill encodes the repository’s definition of “verified,” and <code>AGENTS.md</code> makes that definition enforceable.</p>
+<h3>Changeset validation</h3>
+<p>The JavaScript repo has one more mandatory step for package changes: <code>$changeset-validation</code>, built around <a href="https://github.com/changesets/changesets">Changesets</a>.</p>
+<p>When anything under <code>packages/</code> changes, or when <code>.changeset/</code> changes, the model has to do more than just run tests. It has to create or update the right changeset, validate the bump level, and confirm that the changeset actually matches the diff.</p>
+<p>This skill does more than check that a file exists. It asks Codex to judge the git diff, and it keeps the validation rules in a shared prompt so local runs and GitHub Actions use the same logic. It also encodes repo-specific policy, such as:</p>
+<ul>
+<li>use the existing branch changeset instead of creating another one when one already exists</li>
+<li>keep the summary to one line in Conventional Commit style so it can double as a commit title</li>
+<li>before 1.0, avoid major bumps for normal feature work, and treat explicitly labeled preview-only additions as patch changes if they do not change existing behavior</li>
+<li>validate the required bump level against the actual package changes</li>
+</ul>
+<p>That makes Codex responsible for validating the release metadata it creates before it can say the work is done.</p>
+<h3>Use current docs</h3>
+<p>Both repos also require <code>$openai-knowledge</code> when work touches OpenAI API or platform integrations.</p>
+<p>That skill is a thin wrapper around the official <a href="https://developers.openai.com/learn/docs-mcp">OpenAI Docs MCP</a>. Instead of letting the model answer from memory, it tells Codex to use the OpenAI Developer Documentation MCP server to look up the current docs for surfaces such as the Responses API, tools, streaming, Realtime, and MCP.</p>
+<p>If the MCP server is not already configured in the local Codex environment, the skill points maintainers to the <a href="https://developers.openai.com/learn/docs-mcp#quickstart">Docs MCP quickstart</a> and the <a href="https://developers.openai.com/mcp">official MCP server endpoint</a>.</p>
+<h3>Prepare the PR handoff</h3>
+<p>At the end of substantive work, both repos use <code>$pr-draft-summary</code>.</p>
+<p>That skill triggers only when the task is effectively finished or ready for review and the change touched meaningful code, tests, examples, docs with behavior impact, or build/test configuration. It then collects the branch name, working tree status, changed files, diff stats, and recent commits automatically, and produces:</p>
+<ul>
+<li>a branch name suggestion</li>
+<li>a PR title</li>
+<li>a draft PR description</li>
+</ul>
+<p>The output format is intentionally rigid. A typical result looks like this:</p>
+<pre data-lang="md"><code># Pull Request Draft
+
+## Branch name suggestion
+
+git checkout -b fix/tracing-lazy-init-fork-safety
+
+## Title
+
+fix: #2489 lazily initialize tracing globals to avoid import-time fork hazards
+
+## Description
+
+This pull request fixes import-time tracing side effects that could break fork-based process models by moving tracing bootstrap to lazy, first-use initialization.
+
+It updates tracing setup so initialization happens once on first access while preserving the existing public tracing APIs.
+
+It also adds regression tests for import-time behavior, one-time bootstrap, and custom provider handling.
+
+This pull request resolves #2489.</code></pre>
+<p>Once you trust the model to validate and summarize its own work, asking it to produce the PR draft is a natural last step. It keeps the handoff consistent and reduces repetitive writing after the coding work is already complete.</p>
+<h2>Write better descriptions</h2>
+<p>The <code>description</code> field in a skill’s <code>SKILL.md</code> frontmatter is part of the routing contract.</p>
+<p>This is structural, not stylistic. The <a href="https://agentskills.io/specification">Agent Skills specification</a> makes <code>name</code> and <code>description</code> the required <code>SKILL.md</code> frontmatter fields, and its progressive-disclosure model says those fields are what get loaded at startup for all skills. The full <code>SKILL.md</code> body and any <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> are loaded only later, when the skill is actually activated.</p>
+<p>The <a href="https://developers.openai.com/codex/build-skills">Codex skills docs</a> and <a href="https://developers.openai.com/codex/customization/overview#skills">customization docs</a> describe the same behavior from the Codex side: Codex starts with each skill’s metadata for discovery, loads <code>SKILL.md</code> only when it chooses the skill, and reads references or runs scripts only when needed. The <a href="https://developers.openai.com/cookbook/examples/skills_in_api/#what-is-a-skill">Skills in OpenAI API cookbook</a> describes the hosted-shell side just as explicitly: OpenAI reads each skill’s <code>name</code>, <code>description</code>, and path first, and the model uses that information to decide when to read the full <code>SKILL.md</code>. Its <a href="https://developers.openai.com/cookbook/examples/skills_in_api/#skillmd-frontmatter">SKILL.md frontmatter section</a> makes the same point more directly: <code>name</code> and <code>description</code> are important for discovery and routing.</p>
+<p>In the Agents SDK repos, that makes <code>description</code> one of the main routing signals before Codex has read the rest of the skill.</p>
+<p>Here is a concrete example from <code>code-change-verification</code>.</p>
+<p>Too vague:</p>
+<pre data-lang="yaml"><code>description: Run the mandatory verification stack in the OpenAI Agents JS monorepo.</code></pre>
+<p>Better (the actual description):</p>
+<pre data-lang="yaml"><code>description: Run the mandatory verification stack when changes affect runtime code, tests, or build/test behavior in the OpenAI Agents JS monorepo.</code></pre>
+<p>The shorter version already tells Codex what the skill does, but it still does not say when the skill applies, what kinds of changes should trigger it, or whether the checks are optional. The more specific version tells the model all three.</p>
+<p>The same pattern shows up in <code>pr-draft-summary</code>.</p>
+<p>Too vague:</p>
+<pre data-lang="yaml"><code>description: Create a PR title and draft description for a pull request.</code></pre>
+<p>Better (the actual description):</p>
+<pre data-lang="yaml"><code>description: Create a PR title and draft description after substantive code changes are finished. Trigger when wrapping up a moderate-or-larger change (runtime code, tests, build config, docs with behavior impact) and you need the PR-ready summary block with change summary plus PR draft text.</code></pre>
+<p>Again, the real description is routing metadata. It tells Codex:</p>
+<ul>
+<li>this is an end-of-task skill</li>
+<li>it is for substantive changes, not every chat turn</li>
+<li>the output is a PR-ready block, not just a prose summary</li>
+</ul>
+<p>One practical lesson from these repos is to spend time on <code>description</code>. If routing feels unreliable, fix the metadata before you add more code.</p>
+<h2>Put mechanics in scripts</h2>
+<p>After that, the next question is what belongs in the model and what should be pushed down into a script.</p>
+<p>A reliable split is:</p>
+<ul>
+<li>interpretation, comparison, and reporting stay with the model</li>
+<li>deterministic, repeated shell work goes in <code>scripts/</code></li>
+</ul>
+<p>This matches the public guidance. The <a href="https://developers.openai.com/codex/customization/overview#skills">Codex customization docs</a> describe skills as a way to give Codex richer instructions, scripts, and references for repeatable workflows without bloating context up front. That fits a model-first setup: let Codex handle the context-dependent parts of the job, and bring in scripts for the deterministic parts only when needed. The <a href="https://developers.openai.com/cookbook/examples/skills_in_api/#operational-best-practices">Skills in OpenAI API cookbook</a> also recommends designing skill scripts like tiny CLIs: scripts that run from the command line, print deterministic stdout, fail loudly with usage or error messages, and write outputs to known file paths when needed.</p>
+<p>In the Agents SDK repos, we try to use the model where its intelligence is actually useful, for example:</p>
+<ul>
+<li>reading source code to infer intended behavior</li>
+<li>comparing logs with that intended behavior</li>
+<li>deciding whether a release diff contains a real compatibility risk</li>
+<li>producing an explanation that a maintainer can act on</li>
+</ul>
+<p>Scripts then handle the mechanics around that work, for example:</p>
+<ul>
+<li>running the repository’s required verification commands in a fixed order</li>
+<li>starting example runs, collecting per-example logs, and writing rerun files for failures</li>
+<li>fetching the previous release tag before a release-readiness review</li>
+<li>exposing helper commands such as <code>start</code>, <code>stop</code>, <code>status</code>, <code>logs</code>, <code>tail</code>, <code>collect</code>, and <code>rerun</code> so the same workflow is easy to run repeatedly</li>
+</ul>
+<p>If the model has to rediscover the same shell recipe every time, that is usually a sign that the recipe should be a script. If the task depends on context, tradeoffs, or explanation, that part should stay with the model.</p>
+<h2>Automate integration tests</h2>
+<p>One of the most useful workflow areas in both repos is automated integration testing. There are two related layers here: validating in-repo examples automatically in both repos, and, in the JavaScript repo, separately validating that published packages still work when installed the way users consume them.</p>
+<p>Before this setup, validating examples was partly manual. You could run the examples, but the last mile often depended on visually checking logs or deciding by inspection whether the output looked right. That is manageable for one example. It does not scale well across a growing SDK repository.</p>
+<p>The first layer is <code>examples-auto-run</code>, but the skill came after the runner. To automate example validation at all, we first had to build the underlying support for non-interactive example execution in both repos. That meant making it possible to run example scripts in an auto mode, including examples that normally involve prompts or approvals.</p>
+<p>That groundwork included:</p>
+<ul>
+<li>auto-answering common interactive prompts</li>
+<li>auto-approving HITL, MCP, <code>apply_patch</code>, and shell actions where the runner supports them</li>
+<li>keeping examples that are still not suitable for automation on an auto-skip list, such as realtime or Next.js app examples that need extra runtime setup</li>
+<li>writing structured logs for each example run</li>
+<li>generating rerun files so failures can be retried without rerunning everything</li>
+</ul>
+<p>Once that foundation was in place, we organized it as a skill so the workflow became reusable and easy to invoke. In the Python repo, <code>examples-auto-run</code> wraps <code>uv run examples/run_examples.py --auto-mode --write-rerun --main-log ... --logs-dir ...</code>. In the JavaScript repo, it wraps the build checks and then runs <code>pnpm examples:start-all</code> in auto mode with per-example logging and rerun support.</p>
+<p>To improve validation quality, the runner’s job is to execute the examples and preserve their stdout and stderr in per-example logs. The skill then has Codex go through those logs one by one and compare them with the source code:</p>
+<ul>
+<li>read the example source and comments</li>
+<li>infer the intended flow</li>
+<li>open the matching log</li>
+<li>compare intended behavior with actual stdout and stderr</li>
+<li>do that for every successful example, not just one sample</li>
+</ul>
+<p>This is more accurate and more flexible than trying to encode correctness as a fixed script-level assertion. A successful exit code is useful, but it is not enough for examples that talk to real APIs, use tools, or produce structured output. By recording the actual output first and then checking it carefully against the source code, we can validate each example according to its real intent.</p>
+<p>In the JavaScript repo, there is then a second layer: the separate <code>integration-tests</code> skill. That workflow goes beyond running source examples in-place. It publishes the packages to a local Verdaccio registry and tests installing and running them in multiple environments, including Node.js, Bun, Deno, Cloudflare Workers, and a Vite React app. This catches a different class of problems: not “does the example run in the repo?” but “does the package still behave correctly after publish, install, and runtime integration?”</p>
+<p>Taken together, these workflows show why it is useful to combine skills, scripts, and model judgment. The scripts make the runs repeatable, capture the evidence, and cover installation paths that are tedious to check by hand. Codex then uses that evidence to do a more careful comparison than a simple scripted pass/fail check.</p>
+<h2>Add release checks</h2>
+<p>Release preparation is another area where this pattern helps.</p>
+<p>The release-review workflow in both repos starts by finding the previous release tag, diffing it against the latest <code>main</code>, and then asking Codex to inspect that diff for:</p>
+<ul>
+<li>backward compatibility issues in public APIs and user-facing SDK behavior</li>
+<li>regressions, including smaller changes in expected behavior</li>
+<li>missing migration notes or release-note updates for changes that need them</li>
+</ul>
+<p>Based on those findings, the skill makes an overall release-readiness call.</p>
+<p>A concrete example is <a href="https://github.com/openai/openai-agents-python/pull/2480">openai/openai-agents-python#2480</a>, where the release review stays green overall while still calling out the Python 3.9 drop and the release-note follow-up it requires:</p>
+<pre data-lang="md"><code>Release readiness review (excerpt)
+
+Release call:
+🟢 GREEN LIGHT TO SHIP. Minor-version bump includes expected breaking change
+(Python 3.9 drop) with no concrete regressions found.
+
+Scope summary:
+
+- 38 files changed (+1450/-789); key areas touched: `src/agents/tool.py`,
+  `src/agents/extensions/`, `src/agents/realtime/`, `tests/`,
+  `pyproject.toml`, `uv.lock`.
+
+Python 3.9 support removed
+
+- Risk: 🟡 MODERATE. Users pinned to Python 3.9 will be unable to install the
+  0.9.0 release.
+- Evidence: `pyproject.toml` now sets `requires-python = "&gt;=3.10"` and drops
+  the Python 3.9 classifier; CI skip logic for 3.9 was removed.
+- Action: Ensure release notes clearly call out the Python 3.9 drop and that
+  packaging metadata remains `&gt;=3.10`.</code></pre>
+<p>The skill also defines how the gate decision is made. The review starts from “safe to release” and switches to a blocked call only when the diff shows concrete evidence of a real problem. Every blocked call must come with a specific unblock checklist. That makes the output much easier to use: a green result means no release-blocking issue was found in the diff, and a blocked result means there is a real issue with a clear next step.</p>
+<p>This is more useful than a generic “please review the release.” It forces the model to reason over a concrete diff and explain the result in operational terms. If the release is safe, say so. If it is not, point at the exact evidence and the exact follow-up needed.</p>
+<h2>Run workflows in CI</h2>
+<p>Once a skill is useful locally, <a href="https://developers.openai.com/codex/github-action">Codex GitHub Action</a> makes it easy to automate the same workflow in CI. That works best when the local workflow is already stable, because manual use is where you debug the instructions, refine the scripts, and find the real edge cases.</p>
+<p>For public repositories, the trigger design matters as much as the skill. The <a href="https://developers.openai.com/codex/github-action#security-checklist">GitHub Action security checklist</a> recommends limiting who can start the workflow, preferring trusted events or explicit approvals, sanitizing prompt inputs from PRs, commits, issues, or comments, keeping <code>OPENAI_API_KEY</code> protected with <code>drop-sudo</code> or an unprivileged user, and running Codex as the last step in the job.</p>
+<p>If a workflow is write-capable and takes untrusted public input, the risk is usually in the trigger design, input handling, and runtime privileges around the skill.</p>
+<h2>Use Codex in PR review</h2>
+<p>Skills are one part of the productivity story in these repos. <a href="https://developers.openai.com/codex/third-party/github">Codex GitHub PR auto review</a> is another.</p>
+<p>Since Codex GitHub PR auto review became available, Codex has been a useful reviewer across most code changes in these repos. We use it as a regular part of review, not as a special-case tool.</p>
+<p>For straightforward program bugs, regressions, and missing tests, relying on Codex as the required review path is now safe enough in practice. It is consistent at checking the same correctness patterns over and over, and it has removed a major bottleneck for small fixes and routine improvements.</p>
+<p>Peer review is still important, but for a different class of changes.</p>
+<p>Human review is still essential when the main question is not “is this code correct?” but “which of several valid options should we choose, and how should we ship it?” That includes:</p>
+<ul>
+<li>API or architecture changes where there are multiple reasonable designs and maintainers need to make an explicit choice</li>
+<li>behavior changes that affect product expectations, backward-compatibility promises, or rollout policy</li>
+<li>naming, migration, and release-communication decisions where the hard part is choosing what will be clearest for users and contributors</li>
+<li>changes that require alignment across maintainers or teams, such as scoping work, sequencing it, or deciding what should ship now versus later</li>
+</ul>
+<p>Codex can still contribute usefully in all of those cases, but they still benefit from a human decision-maker and direct discussion.</p>
+<p><code>AGENTS.md</code> can also encode that split: the repo can tell Codex what counts as important for correctness review, and Codex can apply that guidance consistently.</p>
+<p>This has also been a significant contributor to throughput. Repetitive review and validation work no longer waits on scarce reviewer time for every low-risk change, while maintainers can stay focused on higher-context review where their judgment matters most. That shift has helped us move through backlog bugs and smaller feature improvements much faster.</p>
+<h2>Final thoughts</h2>
+<p>In the OpenAI Agents SDK repos, skills work best when they are part of the repository’s normal working setup.</p>
+<p><code>AGENTS.md</code> tells Codex which workflows are required. <code>description</code> tells it when to route into those workflows. <code>scripts/</code> handles the deterministic parts. The model handles the contextual parts. And once a workflow is solid locally, <a href="https://developers.openai.com/codex/github-action">Codex GitHub Action</a> can carry the same process into CI.</p>
+<p>That has made everyday engineering work in these repos more explicit and more reliable. It has also made it easier to ship small improvements faster, because verification, release review, and PR handoff now follow the same repeatable process.</p>
+<h2>Resources</h2>
+<ul>
+<li><a href="https://github.com/openai/openai-agents-python">OpenAI Agents SDK for Python</a></li>
+<li><a href="https://github.com/openai/openai-agents-js">OpenAI Agents SDK for JS</a></li>
+<li><a href="https://developers.openai.com/codex/customization/overview#skills">Skills in Codex</a></li>
+<li><a href="https://developers.openai.com/codex/agent-configuration/agents-md">Custom instructions with AGENTS.md</a></li>
+<li><a href="https://developers.openai.com/codex/github-action">Codex GitHub Action</a></li>
+<li><a href="https://developers.openai.com/codex/third-party/github">Use Codex in GitHub</a></li>
+<li><a href="https://developers.openai.com/cookbook/examples/skills_in_api">Skills in OpenAI API cookbook</a></li>
+<li><a href="https://agentskills.io/specification">Agent Skills specification</a></li>
+<li><a href="https://developers.openai.com/cookbook/examples/skills_in_api/#operational-best-practices">Skills in OpenAI API: operational best practices</a></li>
+</ul></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

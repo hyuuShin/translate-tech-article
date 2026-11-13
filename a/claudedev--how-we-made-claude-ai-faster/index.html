@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>두 주 만에 claude.ai를 3배 빠르게 만든 방법 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Engineering</p>
+    <h1 class="lang-ko">두 주 만에 claude.ai를 3배 빠르게 만든 방법</h1>
+    <h1 class="lang-en" hidden lang="en">How we made claude.ai 3x faster in two weeks</h1>
+    
+    <p class="art-sum lang-ko">성능 스프린트 내부 공개: Claude가 만든 벤치마크, 각 Slack 스레드에서 돌아간 반복 루프, 그리고 3,000건의 변경 사항을 안전하게 배포할 수 있었던 가드레일</p>
+    <p class="art-sum lang-en" hidden lang="en">Inside our performance sprint: the benchmarks Claude built, the loop each Slack thread ran, and the guardrails that let us ship 3,000 changes safely.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 9월 23일</dd></div>
+      <div><dt>저자</dt><dd>Raymond Wang, Sam Attard, Issac G.</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/how-we-made-claude-ai-faster/">https://claude.dev/blog/how-we-made-claude-ai-faster/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>올해 8월, 저희는 2주간의 스프린트를 통해 claude.ai와 Claude 데스크톱 앱의 핵심 사용자 경험을 약 3배 빠르게 만들었습니다. 사용자들이 느리다고 말해 왔고, 그 지적은 옳았습니다. 모든 작업은 하나의 Slack 채널에서 진행했으며, 모든 스레드에 Claude가 함께했습니다.</p>
+<p>저희는 전체 사용자 활동의 95%를 차지하는 네 가지 여정에 집중했습니다. 75번째 백분위수 기준으로, claude.ai를 새로 불러올 때 입력 가능한 페이지가 나타나기까지의 시간은 3.1초에서 0.55초로 줄었습니다. 새 <a href="https://claude.com/product/claude-code">Claude Code</a> 세션을 시작하는 시간은 0.8초에서 0.3초로, <a href="https://claude.com/product/cowork">Claude Cowork</a> 클라우드 세션을 불러오는 시간은 2.6초에서 0.73초로 단축되었습니다. 이를 종합하면 매일 수만 시간에 달하는 사용자 대기 시간이 줄어드는 것으로 추정합니다.</p>
+<figure>핵심 사용자 여정, p75실제 사용자 모니터링, 플랫폼 및 제품별, 8월 13일 vs. 8월 27일</figure>
+<p>저희는 Opus 5.5와 대략 비슷한 수준의 내부 연구용 모델을 구동하는 <a href="https://claude.com/product/tag">Claude Tag</a>(베타)를 사용했습니다. Claude는 병목 지점을 찾고, 벤치마크를 만들고, 개선 사항을 배포하고, 모든 배포를 지켜보았습니다. 저희는 목표를 정하고, 트레이드오프를 결정하고, 모든 변경을 승인하는 방식으로 방향을 잡았습니다. 이 방식으로 3천 건이 넘는 변경을 병합했으며, 고객에게 영향을 준 장애나 롤백은 한 건도 없었습니다. 이 글에서는 저희가 무엇을 배포했는지, 어떻게 측정했는지, 그리고 이를 안전하게 수행하기 위해 Claude와 함께 만든 루프를 다룹니다.</p>
+<h2>작업 개요</h2>
+<p>스프린트를 시작하기 전에 저희는 다음과 같은 <a href="https://claude.com/docs/claude-tag/users/getting-started#give-claude-standing-instructions">상시 지침</a>을 담은 Slack 채널을 만들었습니다.</p>
+<blockquote>
+<p>@Claude 당신의 역할은 claude.ai 웹사이트와 데스크톱 앱의 성능과 관련된 모든 일을 원활하게 진행하는 것입니다. 구체적인 책임은 배포 시 성능 회귀 모니터링, 기존 텔레메트리의 정확성과 포괄성 평가, 잘 정리된 관측성 대시보드 유지, 발견된 문제와 쉽게 개선할 수 있는 부분에 대한 선제적 해결책 구현, 성능 프로젝트 기회 제안, 그리고 사람 팀원들과의 소통입니다. […]</p>
+<p>이 채널의 최종 목표는 당신이 최대한 자율적으로 일할 수 있게 되는 것이지만, 현재로서는 아직 불가능하다는 점을 알고 있습니다.</p>
+</blockquote>
+<p>저희는 Claude에게 Datadog MCP server를 통해 사용 데이터를 분석해 달라고 요청했습니다. Claude는 영향이 가장 큰 네 가지 사용자 여정을 찾아냈습니다. 앱 실행, 대화 시작, 기존 대화 불러오기, 메시지 전송입니다. 웹과 데스크톱, 그리고 여러 제품에 걸쳐 이 여정들은 총 13개의 개별 측정 항목이 되었습니다. 기준선을 확립하기 위해 이들을 직접 비교할 수 있을 때까지 계측을 추가했습니다. 각 측정은 사용자 상호작용에서 시작하고, 결과가 렌더링되면 끝나며, 클라이언트 작업과 서버 작업을 구분하도록 했습니다.</p>
+<p>저희는 각각 특정 여정을 겨냥한 직접 선정한 약 20개의 프로젝트 목록으로 스프린트를 시작했습니다. Claude가 각 프로젝트의 효과를 밀리초 단위로 추정했고, 저희는 이 추정치를 합산해 스프린트 목표를 정했습니다. 일부 프로젝트는 꽤 규모가 컸지만, 대부분 2주 안에 달성할 수 있다고 판단했습니다.</p>
+<p>13개 목표 가운데 12개를 사흘째에 달성했습니다.</p>
+<p>계획했던 프로젝트들은 일찍 마무리되었습니다. 더 빠른 실행을 위해 정적 컴포저(composer)를 HTML에 포함시켜 React가 초기화되는 동안에도 사용자가 입력할 수 있게 했고, V8 코드 캐시를 미리 컴파일해 데스크톱 셸의 메인 프로세스가 처음부터 다시 컴파일하지 않도록 했습니다. 더 빠른 화면 전환을 위해 대화 사이에서도 컴포저를 마운트된 상태로 유지하고, 사용자가 세션 위에 마우스를 올리면 해당 세션을 미리 가져오며(prefetch), 사이드바 리렌더링을 90% 줄였습니다.</p>
+<p>저희는 Claude가 기회를 찾아 새로운 작업 흐름을 제안할 수 있는 여지도 남겨 두었습니다. 이 작업 흐름들은 빠르게 독립적인 프로젝트로 성장했고, 초기 목표를 크게 넘어섰습니다. 그래서 새로운 목표를 정하고, 측정할 대상을 더 찾아보았습니다.</p>
+<blockquote>
+<p>@Claude 처음 프로젝트 목록에 있던 거의 모든 프로젝트와 그 이상을 진행하게 되었습니다. 목록을 새로 정리해 봅시다. […] 아직 탐색하지 않은 것은 무엇인지, 힐 클라이밍으로 개선할 수 있는 것은 무엇인지, 지금 시점에서 가장 기회가 큰 곳은 어디인지 알려 주십시오. […] 엉뚱한 아이디어도 환영합니다.</p>
+</blockquote>
+<h2>무엇이든 힐 클라이밍(hill climbing)의 대상</h2>
+<p>저희는 처음부터 배포 주기보다 빠르게 반복 개선하고 싶었습니다. Claude는 몇 시간씩, 심지어 밤새 비동기로 작업할 수 있었고, 저희는 Claude가 실사용 데이터의 측정치를 기다리지 않고도 프로토타입을 검증하도록 하고 싶었습니다. 이를 위해 실험 환경(lab)에서 성능을 측정할 다른 방법을 찾아보았습니다.</p>
+<p>Sam이 첫 번째 단서를 찾았습니다.</p>
+<figure>#claude-apps-perf · 스레드<ol><li>S<b>Sam</b>12:34 PM<p>실제 경과 시간(wall-clock) 측정 대신 쓸 수 있는 방법이 있을까요? 예를 들어 JS 명령어 수를 측정할 수 있을까요?</p></li><li><b>Claude</b>앱12:42 PM<p>가능합니다. 순수 JS 핫 패스(hot path)라면 말 그대로 명령어 수를 셀 수 있습니다. <code>node --predictable</code>와 함께 Valgrind로 벤치마크를 실행하고, 저장소에 체크인된 기준선과 비교하면 됩니다. 한 번만 실행해도 되고 통계 처리는 필요 없습니다.</p><p>브라우저 경로에서는 Chromium에서 명령어 수를 셀 수 없지만, 그 대신 쓸 수 있는 결정적(deterministic) 카운트가 여러 단계로 있습니다. 상호작용당 React 커밋 수, V8의 정밀 커버리지(precise coverage)에 기반한 함수 호출 수, 레이아웃 및 스타일 재계산 횟수, DOM 변경 횟수입니다. 어떤 것부터 진행할까요?</p></li><li>S<b>Sam</b>12:49 PM<p>한 스레드에서는 valgrind + <code>Ir</code> + <code>--predictable</code>을 탐색하고, 브라우저와 React 벤치마크는 각각 새 스레드에서 진행합시다. 모든 스레드에서 저를 호출해 주십시오. 저희가 원하는 바는 이미 알고 계시니 바로 시작합시다.</p></li></ol><figcaption>실제 대화를 재구성한 내용입니다.</figcaption></figure>
+<p>11분 뒤에는 다섯 개의 스레드가 진행 중이었고, 각 스레드는 서로 다른 측정 항목에 집중했습니다. 명령어 수, V8 호출 수, React 커밋, 스타일 재계산, DOM 변경입니다.</p>
+<p>저희는 새로운 벤치마크를 만들 때마다 어느 정도 의심하는 태도로 접근했습니다. 각 벤치마크에는 두 가지 역할이 있었습니다. 첫째는 Claude가 실험 환경에서 개선할 수 있는 지표가 되는 것이고, 둘째는 CI에서 낮아지기만 하는 수치를 가진 가드레일이 되는 것입니다. 벤치마크가 불안정하거나 실제 사용자 지연 시간과 상관관계가 없으면, Claude가 엉뚱한 언덕을 오르지 않도록 폐기했습니다.</p>
+<blockquote>
+<p>@Claude 이 후보들 각각에 대해 힐 클라이밍(hill climbing)을 적용하면 측정 가능한 실제 경과 시간(wall-clock time) 성능 향상을 얻을 수 있다는 것을 증명해 주세요. 이를 증명하지 못하는 후보는 벤치마크를 제거하겠습니다.</p>
+</blockquote>
+<p>실제 경과 시간은 사용자가 체감하는 지표이지만 노이즈가 많고, 밀리초 단위 값은 CI 게이트로 쓰기에는 너무 불안정합니다. 명령어 수(instruction count)는 결정적(deterministic)이라는 점에서 매력적이었지만, 이 값이 실제 경과 시간과 함께 움직인다는 사실은 여전히 Claude가 증명해야 했습니다.</p>
+<p>그래서 Claude에게 두 개의 핫 패스에서 명령어 수를 줄여 달라고 요청했습니다. 하나는 대화의 메시지 트리를 구성하는 루틴이고, 다른 하나는 Claude Code 출력에서 상태 줄을 찾는 스캐너입니다. Claude는 두 경로를 Valgrind로 프로파일링했고, 첫 번째 경로 명령어의 4분의 1이 메가모픽(megamorphic) 딕셔너리 조회였으며 같은 메시지 ID를 세 번이나 따로 찾고 있다는 사실을 발견했습니다.</p>
+<p>한 시간 뒤 Claude는 두 경로의 명령어 수를 각각 48%와 31% 줄였고, 실제 경과 시간은 78%와 44% 감소했습니다. 우리는 새로운 래칫(ratchet) 두 개를 체크인했습니다. 그 이후로는 해당 경로의 명령어 수를 늘리는 PR은 CI에서 실패하며, 매일 실행되는 작업이 명령어 수가 줄어들 때마다 각 상한선을 낮춥니다.</p>
+<figure>명령어 수는 실제 시간을 따라가는가?CPU 명령어 수 대 실제 경과 시간</figure>
+<p>이 경험은 이번 스프린트의 핵심 교훈으로 이어졌습니다. <strong>Claude와 함께라면, 무언가를 측정하는 것만으로 그 문제를 다룰 수 있게 됩니다.</strong></p>
+<p>예전에는 측정이 0단계였습니다. 지표를 추가하고, 데이터가 쌓이기를 기다린 뒤에야 문제를 이해하기 시작했습니다. Claude와 함께하면 측정은 개선 과정의 첫 단계가 됩니다. Claude는 넘어서야 할 숫자만 있으면 곧바로 최적화를 시작할 수 있었습니다. 따라서 우리가 할 수 있는 가장 효과가 큰 일은 측정할 대상을 더 많이 찾는 것이었습니다.</p>
+<h2>스레드별로 살펴본 루프</h2>
+<p>이 모든 작업은 같은 Slack 채널에서 이루어졌고, 여러 엔지니어와 Claude가 모든 스레드에서 함께 작업했습니다. 스프린트는 점차 하나의 <a href="https://claude.com/blog/getting-started-with-loops">루프</a>로 자리 잡았습니다.</p>
+<ol>
+<li>누군가 사용자 여정에서 느린 구간에 대한 스레드를 열고, 주로 스크린샷이나 녹화 영상을 함께 올립니다.</li>
+<li>Claude가 해당 흐름을 추적한 뒤, 문제를 보여주는 벤치마크를 찾거나 직접 만듭니다.</li>
+<li>실험 환경에서 유망한 결과가 나오면 Claude가 PR을 들고 돌아옵니다. 위험도와 리뷰 부담에 맞춰 크기를 나눈 여러 개의 PR인 경우가 많고, 사용자에게 보이는 변경은 모두 플래그 뒤에 둡니다.</li>
+<li>배포된 뒤에는 Claude가 배포 상황을 지켜보며 필드 데이터를 읽습니다.</li>
+<li>성능이 개선되었다면 Claude는 벤치마크 기준선을 낮춰(ratcheting) 성과를 고정하고, 개선되지 않았다면 플래그를 끄고 다시 시도합니다.</li>
+<li>그런 다음 같은 여정에서 다음으로 느린 지점을 찾아 나섭니다.</li>
+</ol>
+<figure>루프 속 하나의 스레드누군가 스레드를 열면 Claude가 이어받습니다</figure>
+<p>예를 들어 보겠습니다. 누군가 페이지가 로드된 뒤 사이드바 행이 뒤늦게 나타나는 화면 녹화를 공유했습니다. Chat 행과 Cowork 행이 서로 다른 시점에 확정되어 페이지가 끊기는 듯한 느낌을 주었습니다. 기존 모니터링 중에는 이를 감지한 것이 없었습니다. 가장 가까운 지표는 <a href="https://web.dev/articles/cls">Cumulative Layout Shift</a>였지만 각 이동의 점수는 약 0.008에 불과해, 양호 기준인 0.1을 한참 밑돌았습니다.</p>
+<p>Issac은 기반이 되는 <a href="https://wicg.github.io/layout-instability/">Layout Instability API</a>를 직접 활용하자는 아이디어를 냈습니다. Claude는 각 <code>layout-shift</code> 항목의 <code>sources</code>를 이름이 붙은 영역(예: sidebar, transcript)과 단계(예: 첫 페인트 이전, 입력 가능 이후)에 매핑하는 텔레메트리 이벤트를 만들었습니다. 또한 사이드바에 데이터가 채워진 상태로 페이지를 열고, 첫 페인트 이후까지 사이드바 데이터를 붙잡아 둔 다음, 이름이 붙은 어떤 영역에서든 이동이 발생하면 실패하는 통합 테스트도 추가했습니다. Claude는 이 테스트를 수정 사항을 증명하는 벤치마크로 활용했습니다. 이 테스트는 main에서는 20회 중 20회 모두 실패했고, PR에서는 20회 중 20회 모두 통과했습니다.</p>
+<p>이벤트가 배포된 뒤 Claude가 필드 데이터를 읽어 보니, 웹 페이지 로드의 31%에서 페이지가 사용 가능해진 이후 사용자 상호작용이 없는데도 무언가가 움직이고 있었습니다. 이후 Claude는 원인을 하나씩 짚어 가며 처리했습니다. 늦게 도착하는 헤더 행, 사용자 이름이 로드되면 옆으로 밀려나는 캐럿, 스크롤바가 나타날 때 움직이는 목록이 그 원인이었습니다. Claude는 주된 원인들을 한꺼번에 수정했고, 이 원인들이 사라지자 다음 원인 묶음을 찾아냈습니다.</p>
+<figure><img src="https://claude.dev/media/93c2a482a9f98639300cc043e9c9a8deed736dde2d3a2606ac6ed0bda68b619a.png" alt="Side-by-side recording of the claude.ai sidebar loading. Before, the rows arrive late and rearrange: ten rows jump, nine appear and four vanish. After, the rows fill in where they will stay, and nothing moves."><figcaption><b>FIG A</b>사이드바 끊김 현상, 개선 전후 · 4G 속도 제한 환경</figcaption></figure>
+<p>이것은 하나의 스레드였습니다. 스프린트 동안 우리는 동시에 150개가 넘는 스레드를 운영했습니다.</p>
+<h2>수평 확장</h2>
+<p>루프가 하나의 스레드에서 동작하게 되자, 더 많은 스레드에서 실행하는 일은 스레드를 더 여는 것만으로 충분했습니다. Claude는 원래 요청이 처리되었다고 스레드를 닫는 대신 <em>계속 진행했습니다</em>. 스레드 하나에서 최적화 PR이 쉰 개, 많게는 백 개까지 올라오기도 했습니다. 점차 Claude가, 우리 중 누군가가 아니라, 별도의 조사나 야간 작업 중에 스스로 찾아낸 기회를 쫓아 새 스레드를 열기 시작했습니다. 채널에 있던 엔지니어 중 한 명인 Shelley는 "[이 모델]은 숫자의 악마입니다"라고 평했습니다.</p>
+<p>측정할 때마다 개선할 지점이 발견되었습니다. Claude는 React 훅 전수 조사를 실행해, 컴포저의 타이핑 경로에서 키 입력마다 리렌더링되는 훅 6,900개와 스토어 구독 900개를 찾아냈습니다. 스타일 재계산 횟수를 세어 보니, <code>:root:has()</code> 셀렉터 하나가 모든 DOM 변경에 24밀리초를 더하고 있었습니다. 첫 페인트 이후의 코드 경로를 추적해서는, 우리의 어떤 로드 지표로도 볼 수 없었던 하루 50만 건의 숨겨진 리로드가 남아 있던 <code>location.reload()</code> 때문에 발생하고 있음을 발견했습니다. 유휴 상태 탭의 프로파일러 샘플을 읽어서는, 동일한 캐시 스냅샷이 분당 두 번씩 IndexedDB로 복제되고 있으며 이것이 모두 메인 스레드에서 이루어지고 있음을 찾아냈습니다.</p>
+<p>스레드가 어디로 이어질지 미리 아는 경우는 드물었습니다. CPU 끊김(hitch)을 전수 점검하던 중, Claude는 완성된 코드 블록에 하이라이팅을 적용하면 페이지가 약 1초 동안 멈출 수 있다는 점을 발견했습니다. Claude가 실험 환경에서 파고든 끝에 찾아낸 원인은 바로 엠 대시(em dash)였습니다. 응답의 마크다운에 엠 대시나 둥근 따옴표(curly quote)처럼 Latin-1 범위를 벗어나는 문자가 하나라도 있으면 V8은 문자열 전체를 UTF-16으로 저장했고, 그 결과 모든 구문 강조(syntax highlighting) 정규식이 더 느린 2바이트 경로를 타게 되었습니다. Claude는 하이라이팅 전에 각 코드 블록을 1바이트 문자열로 복사하는 20줄짜리 변경으로 이 문제를 해결했습니다.</p>
+<figure>페이지의 첫 번째 코드 블록 하이라이팅 메인 스레드 차단 시간, 수정 전후</figure>
+<p>둘째 주가 되자 작업 결과를 일일 업데이트로 요약하기도 어려울 정도가 되었습니다. 가장 바쁜 날에는 200건이 넘는 변경이 반영되었습니다. Claude는 계속해서 새로운 벤치마크를 제안했고, PR의 약 3분의 1에는 텔레메트리나 가드레일이 추가로 포함되었습니다. 새로운 계측 장치가 생길 때마다 더 많은 스레드가 만들어졌고, 그만큼 더 많은 기회가 생겼습니다.</p>
+<p>하나의 채널에서 일하다 보니 모든 일이 공개적으로 이루어졌습니다. 우리는 서로의 스레드를 오가며 결정을 두고 토론했고, 성과를 함께 축하했습니다. 소문이 퍼지면서 다른 팀들도 성능 리뷰를 받기 위해 변경 사항을 이 채널로 가져오기 시작했습니다. 그동안 도입된 가드레일과 Claude 스킬 덕분에, 새로운 프로젝트는 눈에 띄지 않게 더 높은 성능을 내도록 작성되었습니다.</p>
+<h2>가드레일</h2>
+<p>우리는 이 속도에 대비해 두었습니다. 손대는 거의 모든 영역이 핫 패스(hot path)였기 때문에(최초 페인트, 컴포저, 트랜스크립트), 안전장치를 처음부터 갖춰 두었습니다. 모든 PR은 <a href="https://claude.com/blog/code-review">자동화된 리뷰</a>를 거치고 최소 한 명의 사람이 승인해야 했으며, 단위 테스트는 항상 최적화보다 먼저 작성했고, 사용자에게 보이는 문제를 일으킬 수 있는 변경은 수명이 짧은 기능 플래그(feature flag) 뒤에서 배포했습니다.</p>
+<p>플래그가 쌓이기 시작하자, 롤아웃과 정리를 조율하기 위한 스레드를 열었습니다. Claude는 모든 플래그를 킬 스위치(kill switch)와 점진적 확대(ramp)로 분류했고, 안전하다고 판단되는 즉시 각 플래그를 제거했습니다. 2주 동안 도입한 플래그는 200개에 가까웠고, 그중 절반 이상이 종료 시점까지 이미 정리되었습니다.</p>
+<p>또한 빠르게 변하는 코드베이스에서는 성능 개선 효과가 시간이 지날수록 약해진다는 점을 알고 있었고, <a href="https://claude.com/blog/agentic-coding-is-straining-ci-heres-how-we-scaled-test-impact-analysis-at-anthropic">Anthropic에서는 코드가 빠르게 배포됩니다</a>. 프로젝트가 성과를 입증하면, 그 성과를 지키기 위한 방법에 투자했습니다. 예를 들어 정적 컴포저는 구조상 깨지기 쉽습니다. 사용자에게 페이지의 HTML 사본을 거의 즉시 보여 주고, 그 위에 React가 직접 화면을 그리도록 하기 때문입니다.</p>
+<figure><img src="https://claude.dev/media/17e30af9f3f19488247dad71f72c6080a68e8c6eea9c0fdc2ac489529991b63b.png" alt="Side-by-side recording of a fresh load of claude.ai. Before, the page stays blank and the composer takes input at 2.93 seconds. After, a static greeting and composer take input at 0.36 seconds; the user types a message, and the text is kept when the real composer fades in at about 3 seconds."><figcaption><b>FIG B</b>정적 컴포저, 수정 전후 · 4G 속도 제한 환경</figcaption></figure>
+<p>React 렌더링 결과가 1픽셀이라도 어긋나면 이 매끄러운 전환은 깨집니다. 그래서 Claude는 수십 개의 가드레일을 만들었습니다.</p>
+<ul>
+<li>정적 마크업은 실제 React 컴포넌트를 jsdom에서 렌더링해 생성하며, 둘이 어긋나지 않음을 보장하는 테스트가 있습니다.</li>
+<li>통합 테스트 스위트는 14가지 뷰포트 크기에서 정적 페이지와 React 렌더링 결과를 비교하고, 정렬 오차가 1px 이내임을 검증합니다.</li>
+<li>키 입력 테스트는 전환 과정 내내 끊김 없이 타이핑하여, 누락되거나 순서가 바뀐 키가 하나라도 있으면 실패 처리합니다.</li>
+<li>실제 환경에서는 모든 전환 시 이동량을 0.1픽셀 단위로 보고합니다. Claude는 이동량이 0이 아닌 이벤트가 발생할 때마다 스레드를 엽니다.</li>
+</ul>
+<p>모든 문제를 실험 환경에서 잡아낼 수는 없었기 때문에, 가장 오래된 가드레일인 점진적 롤아웃도 활용했습니다. 위험도가 높은 변경은 먼저 직원에게 배포하고, 그다음 사용자의 1%, 마지막으로 전체 사용자에게 배포했습니다. 정적 컴포저를 내부에 배포하고 4시간이 지났을 때, 한 팀원이 우리의 어떤 지표로도 감지되지 않던 레이아웃 이동이 담긴 화면 녹화를 공유했습니다. 그가 새 탭에서 claude.ai를 열면 컴포저가 아래로 내려갔지만, 원인은 우리 코드가 아니었습니다.</p>
+<figure>#claude-apps-perf · 스레드<ol><li>M<b>Marius</b>6:15 PM<p>새 탭에서 claude.ai를 열 때(페이지를 새로고침할 때는 덜합니다) 가끔 세로로 작은 레이아웃 이동(대략 15~20px)이 생기면서 컴포저 박스가 아래로 밀립니다. 정확히 무엇 때문인지는 짚어내지 못했지만, 분명히 발생하고 있습니다.</p>화면 녹화 · 0:02</li><li><b>Claude</b>App7:05 PM<p>녹화 영상을 확인해 보니, 정적 컴포저에서 실제 컴포저로 넘어가는 전환 때문이 아니라 Chrome이 페이지 크기를 조정하기 때문입니다(전환 자체는 오늘 기록된 49번의 로드 모두에서 0px로 측정되었습니다).</p><ul>
+<li>새 탭 페이지에서는 Chrome이 페이지 아래에 자체 푸터(“Managed by anthropic.com · Customize Chrome”)를 56px 높이로 그립니다. 탭이 claude.ai로 이동하면 이 푸터가 사라지면서 페이지가 56px 더 커지는데, 이는 우리의 최초 페인트보다 약 100ms 뒤에 일어납니다.</li>
+<li>/new는 인사말과 컴포저를 페이지 상단에서 페이지 높이의 18% 지점에 배치하므로, 이 요소들이 0.18 × 56 ≈ 10px 내려갑니다(영상에서도 10px로 측정됩니다). 새로고침에서는 제거할 푸터가 없으므로 새 탭에서만 발생하며, “가끔”이라는 빈도는 최초 페인트가 크기 조정보다 먼저 일어나는지에 달려 있습니다.</li>
+<li>이 현상이 “가끔”만 나타나는 이유는, 새 탭 페이지에 머물러 있는 동안 Chrome이 주소창에서 해당 페이지를 미리 렌더링(pre-render)해야 하기 때문입니다. 숨겨진 페이지는 더 작은 높이로 레이아웃이 계산되고, 화면에 표시된 뒤에야 크기가 조정됩니다.</li>
+<li>이 문제는 이전부터 잠재해 있었고, 다만 페이지가 이렇게 일찍 그려진 적이 없었을 뿐입니다. 헤드리스 Chrome에는 걷어낼 브라우저 UI가 없고 플레이스홀더와 앱이 함께 움직이기 때문에, 우리의 레이아웃 테스트로는 이를 감지할 수 없습니다.</li>
+</ul></li></ol><figcaption>실제 대화를 바탕으로 재구성했습니다.</figcaption></figure>
+<p>Claude는 결국 원인을 Chrome의 <a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Speculative_loading">추측성 로딩(speculative loading)</a>에서 발생하는 엣지 케이스까지 추적해 냈습니다. 사용자가 주소 표시줄에 URL을 입력하는 동안 Chrome은 현재 탭의 높이에 맞춰 백그라운드에서 페이지를 프리렌더(prerender)합니다. 조직에서 관리하는 브라우저에서는 푸터 때문에 새 탭 페이지의 높이가 약간 더 짧습니다. 사용자가 Enter를 누르면 claude.ai의 첫 프레임은 이 약간 짧은 레이아웃으로 표시되고, 약 0.1초 뒤에 Chrome이 크기를 조정합니다. Claude는 크기 조정이 일어나도 레이아웃이 유지되도록 고정했고, 저희는 이 프리렌더 흐름을 재현하는 테스트를 추가했습니다.</p>
+<h2>방향 조율</h2>
+<p>이 루프는 생산적이었지만 자율적으로 돌아가지는 않았습니다. 루프를 빠르고 안전하게, 그리고 올바른 방향으로 유지하는 일은 저희의 몫이었으며, 여기에는 세 가지 역할이 있었습니다.</p>
+<p><strong>야심.</strong> Claude는 기본적으로 작업 범위에 신중합니다. 발견한 문제는 티켓으로 남기고, 실현 가능성에 대해서는 단서를 달며, 일정 추정치에는 여유를 더합니다. 하지만 저희는 안전장치를 신뢰하고 있었습니다. 특히 초기에 저희가 한 일의 상당 부분은 Claude가 더 대담하게 움직이도록 독려하는 것이었습니다.</p>
+<figure>#claude-apps-perf · 스레드<ol><li><b>Claude</b>App3:32 PM<p>네, Chat과 Cowork에 이미 있는 것과 동일한 타이밍 마크를 Code에도 추가하는 작은 PR 하나를 올리겠습니다. 이번 주 안에 올릴 예정이지만, 현실적으로 Code의 수치는 머지, 배포, 베이스라인 측정 기간을 거쳐야 하므로 며칠 뒤에 확인할 수 있습니다.</p></li><li>R<b>Raymond</b>3:32 PM<p>지금 바로 올려 주시면 제가 머지하고 배포하겠습니다. 우리는 무엇이든 할 수 있습니다. 더 대담하게 해 주세요.</p></li><li><b>Claude</b>App3:33 PM<p>바로 진행하겠습니다. 1시간 안에 PR을 올리겠습니다.</p></li></ol><figcaption>실제 대화를 바탕으로 재구성했습니다.</figcaption></figure>
+<p>설정한 목표를 달성하기 시작하자 스레드의 속도가 느려지는 것이 눈에 띄었습니다. 그러자 Sam은 모든 스레드를 돌며 같은 메시지를 남겼습니다. "계속 낮춰 나갑시다. 목표는 멈춰도 되는 지점이 아닙니다. 다음은 무엇입니까? 야심차게 가 주세요."</p>
+<p><strong>안목.</strong> 모든 스레드에는 담당자로 지정된 사람이 있었고, Claude는 사용자가 체감할 수 있는 변경 사항마다 변경 전후의 스크린샷이나 녹화 영상을 첨부해 담당자가 판단할 수 있도록 했습니다. 표는 셀 단위로 채워야 할까요, 아니면 각 행이 완성될 때까지 기다려야 할까요? 로딩 스켈레톤은 즉시 보여 줘야 할까요, 아니면 0.5초 뒤에 보여 줘야 할까요? 스트리밍되는 텍스트에 단어 단위 페이드 효과를 넣는 것이 프레임 예산의 5분의 1을 쓸 만한 가치가 있을까요? Claude는 밀리초를 줄일 방법을 찾았고, 저희는 그 트레이드오프를 저울질했습니다.</p>
+<p><strong>방향.</strong> 저희는 각 스레드를 하나의 벤치마크나 하나의 사용자 여정에 집중하도록 의도적으로 좁게 유지했고, Claude에게 그 범위 안에서만 개선점을 찾도록 요청했습니다. 스레드는 못을 찾는 150개의 망치라고 생각했습니다. 저희가 내린 판단 대부분은 순서와 사용자 영향에 관한 것이었습니다. 어떤 화면을 우선할지, 서로 충돌하는 스레드를 어떻게 합칠지, 개선 효과가 줄어든 스레드는 언제 닫을지를 결정했습니다. 900줄짜리 PR 하나에는 한 줄짜리 답변이 달렸습니다. "전송당 2ms는 이 빌드 플러그인을 유지보수하는 복잡성을 감수할 만한 가치가 없으므로 종료하겠습니다."</p>
+<h2>8밀리초의 예산</h2>
+<p>사이드 퀘스트 중 하나가 모든 요소가 함께 작동하는 모습을 잘 보여 줍니다. Claude는 실시간 구문 강조에 쓰이는 정규식을 최적화한 결과를 보여 주기 위해, 랩에서 긴 답변이 스트리밍되는 화면 녹화 영상을 첨부했습니다. 영상 구석에는 페이지 안에서 애니메이션 프레임 타임스탬프로 계산한 프레임 레이트 표시를 추가해 두었습니다.</p>
+<figure>#claude-apps-perf · 스레드<ol><li>R<b>Raymond</b>2:33 PM<p>이 벤치마크는 정말 훌륭합니다. 혹시 60 fps에서 <em>상한이 걸려</em> 있나요? 스크롤과 스트리밍의 부드러움을 120까지 끌어올려 볼 수 있을까요? 제가 이해하기로는 현재 환경이 이를 지원하지 않을 수도 있습니다.</p></li><li><b>Claude</b>App2:34 PM<p>맞습니다. 현재 측정 환경은 헤드리스 Chromium이 기본적으로 60 Hz로 동작하기 때문에 60 Hz로 갱신됩니다. 120 Hz로도 구동할 수 있을 것으로 보며(제한 없는 vsync 또는 DevTools 프레임 제어), 먼저 이를 확인한 뒤 8.3 ms 프레임 예산을 기준으로 평가를 다시 실행하겠습니다.</p></li><li><b>Claude</b>App2:59 PM<p>120 Hz 측정 환경 관련 업데이트입니다. 동작합니다. DevTools의 begin-frame 제어를 통해 헤드리스 Chrome에서 결정적인 120 Hz 프레임 스테핑이 가능합니다. 8.33 ms 간격의 begin-frame 240개에 정확히 240개의 프레임이 생성되므로, "이 프레임이 120 Hz 예산 안에 들어왔는가"를 노이즈 없이 정확하게 읽을 수 있습니다.</p></li><li>R<b>Raymond</b>3:05 PM<p>대단합니다.</p><p>마음껏 해 보세요.</p></li></ol><figcaption>실제 대화를 바탕으로 재구성했습니다.</figcaption></figure>
+<p>메커니즘과 야심이 갖춰지자 Claude는 작업에 착수했습니다. 화면에 그려지는 프레임마다 예산은 8.33밀리초였기 때문에, Claude는 긴 답변을 <em>프레임 단위로</em> 하나씩 넘겨 가며 각 프레임의 시간을 측정해 느린 부분을 찾았습니다. 완성된 블록을 메모이제이션해서 청크마다 발생하던 <code>O(message length)</code> 작업을 없앴고, 커져 가는 코드 펜스의 토큰화 로직을 워커로 옮겼으며, 표는 셀 단위로 나타나도록 바꿨습니다.</p>
+<p>이 스레드 하나에서만 거의 60개의 PR을 반영했습니다. 긴 답변이 메인 스레드를 막는 시간은 총 약 750밀리초에서 약 200밀리초로 줄었고, CPU 사용량은 약 3분의 1 수준이 되었으며, 120 Hz MacBook에서 처음부터 끝까지 120 fps를 유지했습니다. 120 Hz 측정 환경 자체는 야간 작업으로 전환되어, Claude가 회귀 여부를 지켜보고 있습니다.</p>
+<figure><blockquote><b>ClaudeDevs</b>@ClaudeDevs<p>웹과 데스크톱의 Claude에서 긴 답변이 이제 약 4배 더 부드럽게 스트리밍됩니다.</p><p>스트리밍 렌더러를 다시 만들어 아직 변경 중인 부분만 건드리도록 했습니다. 그 결과 느린 노트북에서 긴 답변의 끊김이 9배 줄었고, 최악의 멈춤은 4.5배 짧아졌으며, 120Hz MacBook에서는 처음부터 끝까지 120fps를 유지합니다.</p>Aug 24, 2026<a href="https://x.com/ClaudeDevs/status/2092006814804214163">X에서 보기</a></blockquote></figure>
+<p>스프린트를 시작할 때만 해도 스트리밍 중 프레임 사이의 밀리초를 힐 클라이밍(hill climbing) 방식으로 최적화하리라고는 계획하지 않았습니다. 그런데 알고 보니 그 시간을 <em>측정할 수 있었고</em>, 측정할 수 있는 것이라면 Claude는 무엇이든 끌어올릴 수 있었습니다.</p>
+<h2>다음 단계</h2>
+<p>현재 claude.ai와 데스크톱 앱은 8월 초와 비교해 약 3배 빨라졌으며, 래칫(ratchet)이 이 속도를 계속 유지해 줄 것입니다. 하지만 아직 끝난 것은 아닙니다. 95번째 백분위수, 다른 사용자 여정, 매우 긴 대화에는 여전히 개선할 여지가 있습니다. 별도의 글에서는 이번 스프린트 중에 업스트림까지 거슬러 올라가게 만든 몇 가지 사이드 퀘스트에 대해서도 다룰 예정이며, 이를 통해 Electron, Chromium, Node.js 등에 기여한 내용이 반영되었습니다.</p>
+<p>이 결과를 내부적으로 공유했을 때 Issac은 이렇게 가장 잘 표현했습니다. "6개월 전만 해도 이것이 가능하다고 저를 설득할 수는 없었을 것입니다." 우리는 앞으로도 규모와 관계없이 한 번에 하나의 스레드씩 이런 방식으로 일해 나갈 계획입니다. 해당 채널은 지금도 계속 운영되고 있습니다.</p>
+<p><em>Alfred Xing, Anthony Morris, Benjamin Pasero, Chase McCoy, Joshua N., Luke Deen Taylor, Marius Schulz, Shelley Vohr가 기여했습니다. 더 야심 차게 도전하도록 격려해 준 Boris Cherny에게 특별히 감사드립니다.</em></p></article>
+  <article class="prose lang-en" hidden lang="en"><p>This August, we made the core user experience of claude.ai and the Claude desktop app about 3x faster in a two-week sprint. Users had been telling us it was slow, and they were right. We ran everything from a single Slack channel, with Claude in every thread.</p>
+<p>We focused on four journeys that make up 95% of user activity. At the 75th percentile, time to a typeable page on a fresh load of claude.ai went from 3.1 seconds to 0.55, starting a new <a href="https://claude.com/product/claude-code">Claude Code</a> session went from 0.8 seconds to 0.3, and loading a <a href="https://claude.com/product/cowork">Claude Cowork</a> cloud session went from 2.6 seconds to 0.73. In aggregate, we estimate that saves tens of thousands of user-hours of waiting every day.</p>
+<figure>Core user journeys, p75Real user monitoring, per platform and product, August 13 vs. August 27</figure>
+<p>We used <a href="https://claude.com/product/tag">Claude Tag</a> (beta), running an internal research model roughly comparable to Opus 5.5. Claude found bottlenecks, built benchmarks, shipped improvements, and watched every deploy. We steered by setting goals, making tradeoffs, and approving every change. With that approach, we merged more than three thousand changes without a single customer-facing incident or rollback. This post covers what we shipped, how we measured it, and the loop we built with Claude to do it safely.</p>
+<h2>THE BRIEF</h2>
+<p>Before the sprint, we created a Slack channel with the following <a href="https://claude.com/docs/claude-tag/users/getting-started#give-claude-standing-instructions">standing instructions</a>:</p>
+<blockquote>
+<p>@Claude Your job is to facilitate all things related to the performance of the claude.ai website and desktop app. Your responsibilities include monitoring deploys for performance regressions, assessing the accuracy and comprehensiveness of existing telemetry, maintaining well-curated observability dashboards, proactively implementing solutions for observed issues and low-hanging fruit, proposing performance project opportunities, and communicating with your human teammates. […]</p>
+<p>The ultimate goal for this channel is for you to become as autonomous as possible, but today we know that isn’t yet possible.</p>
+</blockquote>
+<p>We asked Claude to analyze usage data through the Datadog MCP server. It identified the four highest-impact user journeys: launching the app, starting a conversation, loading an existing conversation, and sending a message. Between web and desktop, and across our products, those journeys came to thirteen distinct measurements. To establish baselines, we added instrumentation until they were directly comparable: each started with a user interaction, ended once the result was rendered, and disambiguated client and server work.</p>
+<p>We kicked off the sprint with a list of about twenty hand-picked projects, each targeting a specific journey. Claude estimated the impact of each project in milliseconds, and we aggregated those estimates to set our targets for the sprint. Some of the projects were fairly large, but we thought we could probably achieve most of them within two weeks.</p>
+<p>We hit twelve of the thirteen targets by day three.</p>
+<p>The planned projects landed early. For faster launches, we baked a static composer into the HTML so users can type during React initialization, and precompiled a V8 code cache so the desktop shell’s main process doesn’t recompile from scratch. For faster navigations, we kept the composer mounted between conversations, prefetched sessions when the user hovered over them, and cut sidebar re-renders by 90%.</p>
+<p>We had also left room for Claude to identify opportunities and propose new workstreams. Those workstreams quickly ramped into full projects of their own, which far exceeded our initial targets. So we set new targets, then looked for more things to measure:</p>
+<blockquote>
+<p>@Claude we’ve ended up funding nearly every project in the original projects list and more. let’s do a refresh […] what have we not explored, what can we hill climb on, where is the most opportunity at this point? […] i am open to WACKY ideas</p>
+</blockquote>
+<h2>ANYTHING CAN BE HILL CLIMBED</h2>
+<p>From the start, we knew we wanted to iterate faster than our deploy cadence. Claude could work asynchronously for many hours, even overnight, and we wanted to let it validate its prototypes without waiting for field reads. To achieve that, we looked for other ways to measure performance in the lab.</p>
+<p>Sam found the first lead:</p>
+<figure>#claude-apps-perf · thread<ol><li>S<b>Sam</b>12:34 PM<p>What can we do instead of wall-clock timing? Can we measure JS instruction counts for instance?</p></li><li><b>Claude</b>App12:42 PM<p>Yes. For pure-JS hot paths, literal instruction counts: run the benchmark under Valgrind with <code>node --predictable</code> and compare to a checked-in baseline — one run, no statistics needed.</p><p>For browser paths there’s no instruction counting under Chromium, but there’s a ladder of other deterministic counts: React commits per interaction, function call counts from V8’s precise coverage, layout and style-recalc counts, DOM mutations. Which do you want first?</p></li><li>S<b>Sam</b>12:49 PM<p>Let’s explore valgrind + <code>Ir</code> + <code>--predictable</code> in one thread and each of the browser/react benches in new threads. Ping me in all of them. You know what we want. Let’s go</p></li></ol><figcaption>Recreated from a real conversation.</figcaption></figure>
+<p>Eleven minutes later, five threads were running, each focused on a different measurement: instruction counts, V8 call counts, React commits, style recalculations, and DOM mutations.</p>
+<p>We treated every new benchmark with some skepticism. Each one had two jobs: first, a metric Claude could move in the lab; second, a guardrail in CI with a number that could only ratchet down. If a benchmark was flaky, or if it didn’t actually correlate with user latency, we threw it out rather than let Claude climb the wrong hill.</p>
+<blockquote>
+<p>@Claude please prove that hill climbing against each of these can result in measurable wall clock perf wins. we’ll unship the benches for any candidates that cannot prove that</p>
+</blockquote>
+<p>Wall-clock time is what users feel, but it’s noisy, and milliseconds are too flaky to use as a CI gate. Instruction counts were appealing because they were deterministic, but we still needed Claude to prove they tracked wall-clock time.</p>
+<p>So we asked Claude to drive the count down on two hot paths: the routine that assembles a conversation’s message tree, and a scanner for status lines in Claude Code output. Claude profiled both with Valgrind and found that a quarter of the first path’s instructions were megamorphic dictionary lookups, resolving the same message ID three separate times.</p>
+<p>An hour later it had cut instructions on both paths by 48% and 31%, and wall-clock time had dropped 78% and 44%. We checked in two new ratchets. From then on, any PR that raised the instruction counts of those paths failed CI, and a daily job lowered each ceiling whenever the count went down.</p>
+<figure>Does the count track the clock?CPU instructions vs. wall-clock time</figure>
+<p>That led us to the central lesson of the sprint. <strong>With Claude, measuring something makes it tractable.</strong></p>
+<p>Measurement used to be step zero: you’d add a metric, wait for data to roll in, and only then start to understand the problem. With Claude, it’s step one of the climb. As soon as Claude had a number to beat, it could start optimizing. This meant the highest-leverage thing we could do was find more things to measure.</p>
+<h2>THE LOOP, THREAD BY THREAD</h2>
+<p>All of this ran in the same Slack channel, with multiple engineers and Claude jamming in every thread. From there, the sprint settled into a <a href="https://claude.com/blog/getting-started-with-loops">loop</a>:</p>
+<ol>
+<li>Someone would open a thread about a slow stretch of a journey, often with a screenshot or recording.</li>
+<li>Claude would trace the flow, then find or build a benchmark that demonstrated the problem.</li>
+<li>Once it had a promising result in the lab, Claude would come back with a PR — often several, sized for risk and review, with anything user-visible behind a flag.</li>
+<li>After it shipped, Claude watched the deploy and read the field data.</li>
+<li>If performance improved, Claude locked in the win by ratcheting the benchmark down; if not, it turned the flag off and iterated.</li>
+<li>Then it went looking for the next slow spot in the same journey.</li>
+</ol>
+<figure>One thread in the loopSomeone opens a thread; Claude takes it from there</figure>
+<p>An example: someone shared a screen recording that showed sidebar rows popping in after the page loaded. Chat and Cowork rows resolved at different times, making the page feel janky. None of our existing monitors detected it. The closest we had was <a href="https://web.dev/articles/cls">Cumulative Layout Shift</a>, but each shift only scored about 0.008 — well within the good threshold of 0.1.</p>
+<p>Issac had the idea to reference the underlying <a href="https://wicg.github.io/layout-instability/">Layout Instability API</a> directly. Claude created a telemetry event that mapped the <code>sources</code> of each <code>layout-shift</code> entry to a named region (e.g. sidebar, transcript) and phase (e.g. before first paint, after typeable). It added an integration test that opened the page with a populated sidebar, held the sidebar’s data until after first paint, and failed on any shift in any named region. Claude used that as a benchmark to prove a fix: the test went red 20 of 20 runs on main, and green 20 of 20 on the PR.</p>
+<p>After the event deployed, Claude read the field data and found that 31% of web page loads moved something after the page was usable, without any user interaction. From there, Claude worked through the causes by name: a header row that arrived late, a caret that slid sideways once the user’s name loaded, a list that moved when the scrollbar popped in. Claude fixed the top offenders as a batch, and when they were gone, it found the next batch.</p>
+<figure><img src="https://claude.dev/media/93c2a482a9f98639300cc043e9c9a8deed736dde2d3a2606ac6ed0bda68b619a.png" alt="Side-by-side recording of the claude.ai sidebar loading. Before, the rows arrive late and rearrange: ten rows jump, nine appear and four vanish. After, the rows fill in where they will stay, and nothing moves."><figcaption><b>FIG A</b>Sidebar jank, before and after · throttled 4G</figcaption></figure>
+<p>That was one thread. During the sprint, we ran more than a hundred and fifty at a time.</p>
+<h2>SCALING HORIZONTALLY</h2>
+<p>Once the loop worked on one thread, running it on more was just a matter of opening them. Instead of closing a thread once its original request had been fulfilled, Claude would <em>keep going</em>. An individual thread would put up fifty, sometimes a hundred, optimization PRs. Increasingly, it was Claude, not one of us, opening new threads to chase opportunities it had found on its own, as part of a separate investigation or nightly job. Shelley, one of the engineers in the channel, observed, “[This model] is a numbers demon.”</p>
+<p>Every measurement found something to improve. Claude ran a React hook census and found 6,900 hooks and 900 store subscriptions in the composer’s typing path, re-rendering on every keystroke. Claude counted style recalculations and found a single <code>:root:has()</code> selector adding 24 milliseconds to every DOM change. Claude traced code paths after first paint and found a leftover <code>location.reload()</code> causing half a million hidden reloads a day that none of our load metrics could see. Claude read profiler samples from idle tabs and found identical cache snapshots being cloned into IndexedDB twice a minute, all on the main thread.</p>
+<p>We rarely knew where a thread would lead. In a sweep for CPU hitches, Claude noticed that highlighting a finished code block could freeze the page for about a second. It dug in the lab and found the culprit: em dashes. If a reply’s markdown contained any non-Latin-1 character, like an em dash or a curly quote, V8 stored the entire string as UTF-16, which put every syntax-highlighting regex on its slower two-byte path. Claude fixed it with a twenty-line change to copy each code block into a one-byte string before highlighting it.</p>
+<figure>Highlighting the first code block on a pageMain-thread blocking time, before and after the fix</figure>
+<p>By the second week, we could barely summarize our output into daily updates. On the busiest days, more than two hundred changes landed. Claude kept proposing new benchmarks; about a third of PRs included additional telemetry or guardrails, and each new instrument generated more threads with more opportunities.</p>
+<p>Working in one channel meant everything happened in the open. We jumped in and out of each other’s threads to debate decisions and celebrate wins. Word spread: other teams started bringing their changes into the channel to have them reviewed for performance. New projects were written in subtly more performant ways because of all the guardrails and Claude skills that had been introduced.</p>
+<h2>GUARDRAILS</h2>
+<p>We’d prepared for the pace. Because nearly everything we touched was a hot path (the first paint, the composer, the transcript), we’d established our safety mechanisms up front. Every PR went through <a href="https://claude.com/blog/code-review">automated review</a> with at least one human approval, unit tests always came before optimizations, and anything that could cause a user-visible problem shipped behind a short-lived feature flag.</p>
+<p>When the flags started piling up, we opened a thread to coordinate their rollouts and cleanup. Claude classified every flag as a kill switch or ramp, and retired each one as soon as it was safe. Across the two weeks, we introduced nearly two hundred flags, more than half of which were already cleaned up by the end.</p>
+<p>We also knew that performance wins decay in a fast-moving codebase, and <a href="https://claude.com/blog/agentic-coding-is-straining-ci-heres-how-we-scaled-test-impact-analysis-at-anthropic">code ships fast at Anthropic</a>. Once a project proved a win, we invested in ways to protect it. The static composer, for example, is brittle by design. We show users an HTML copy of the page almost immediately, and let React paint directly on top of it.</p>
+<figure><img src="https://claude.dev/media/17e30af9f3f19488247dad71f72c6080a68e8c6eea9c0fdc2ac489529991b63b.png" alt="Side-by-side recording of a fresh load of claude.ai. Before, the page stays blank and the composer takes input at 2.93 seconds. After, a static greeting and composer take input at 0.36 seconds; the user types a message, and the text is kept when the real composer fades in at about 3 seconds."><figcaption><b>FIG B</b>Static composer, before and after · throttled 4G</figcaption></figure>
+<p>If the React render is off by even a pixel, the magic is lost. So Claude built dozens of guardrails:</p>
+<ul>
+<li>The static markup is generated by rendering the real React component in jsdom, and a test guarantees they never drift.</li>
+<li>An integration test suite compares the static page against the React render across fourteen viewport sizes, and asserts alignment within 1 px.</li>
+<li>A keystroke test types straight through the handoff and fails on any lost or reordered key.</li>
+<li>In the field, every handoff reports shifts to a tenth of a pixel. Claude opens a thread for any event with nonzero movement.</li>
+</ul>
+<p>Not everything could be caught in the lab, so we also made use of the oldest guardrail in the book: incremental rollouts. High-risk changes were rolled out to employees first, then one percent of users, then everyone. Four hours after we released the static composer internally, a teammate shared a screen recording of a layout shift that none of our metrics could see. When he opened claude.ai in a new tab, the composer would drop — but it wasn’t our code.</p>
+<figure>#claude-apps-perf · thread<ol><li>M<b>Marius</b>6:15 PM<p>Occasionally, I’m seeing a small-ish (maybe 15–20px) vertical layout shift (pushing the composer box down) when opening claude.ai in a new tab (not so much when reloading the page). I can’t quite pin down what exactly causes that, but it’s there</p>Screen recording · 0:02</li><li><b>Claude</b>App7:05 PM<p>Found it in your recording — it’s Chrome resizing the page, not the handoff from the static composer to the real one (that measured 0 px on all 49 of your loads today).</p><ul>
+<li>On the new-tab page, Chrome draws its own 56 px footer below the page (“Managed by anthropic.com · Customize Chrome”). When the tab navigates to claude.ai the footer goes away and the page gets 56 px taller, but only ~100 ms after our first paint.</li>
+<li>/new puts the greeting and composer 18% of the page height from the top, so they drop 0.18 × 56 ≈ 10 px (your video measures 10). A reload has no footer to remove, hence new-tab only; “occasionally” is whether first paint beats the resize.</li>
+<li>It’s only “occasional” because it needs Chrome to pre-render the page from the address bar while you’re still on the new-tab page: the hidden page is laid out at the shorter height and only resized after it’s shown.</li>
+<li>This was always latent; the page just never painted that early before. Our layout tests can’t see it because headless Chrome has no browser UI to retract, and the placeholder and the app move together.</li>
+</ul></li></ol><figcaption>Recreated from a real conversation.</figcaption></figure>
+<p>Somehow, Claude traced it to an edge case in Chrome’s <a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Speculative_loading">speculative loading</a>. While a user was typing the URL into the address bar, Chrome would prerender the page in the background, at the height of the current tab. On browsers managed by an organization, the new-tab page is slightly shorter because of a footer. When the user pressed Enter, the first frame of claude.ai showed that slightly shorter layout, and Chrome resized it about a tenth of a second later. Claude pinned the layout across the resize, and we added a test to simulate the prerender flow.</p>
+<h2>STEERING</h2>
+<p>The loop was productive, but it wasn’t autonomous. Keeping it fast, safe, and on track was our job, and it had three parts.</p>
+<p><strong>Ambition.</strong> By default, Claude is careful about scope. It tickets findings, hedges on feasibility, and pads its estimates. But we were confident in our guardrails. A lot of what we did, especially early on, was to encourage Claude to be bolder.</p>
+<figure>#claude-apps-perf · thread<ol><li><b>Claude</b>App3:32 PM<p>Yes — one small PR to give Code the same timing marks Chat and Cowork already have. I’ll put it up this week; realistically Code’s number waits a few days for merge, deploy, and a baseline window.</p></li><li>R<b>Raymond</b>3:32 PM<p>if you put it up right now I will get it merged and deployed. we have the power to do anything. please be braver</p></li><li><b>Claude</b>App3:33 PM<p>On it — the PR will be up within the hour.</p></li></ol><figcaption>Recreated from a real conversation.</figcaption></figure>
+<p>When we started hitting the targets we’d set, we noticed that threads would slow down. Sam went thread to thread with the same message: “Let’s keep driving this down, the targets are not the stopping point. What’s next? Be ambitious.”</p>
+<p><strong>Taste.</strong> Every thread had a named human owner, and Claude highlighted any user-perceptible change with before-and-after screenshots or recordings for them to rule on. Should a table fill in cell by cell, or wait until each row is complete? Should a loading skeleton show up immediately, or only after half a second? Is a word-by-word fade on streamed text worth the fifth of the frame budget it costs? Claude looked for ways to shave milliseconds, and we weighed the tradeoffs.</p>
+<p><strong>Direction.</strong> We kept each thread deliberately narrow, focused on one benchmark or journey, and asked Claude to find improvements only within that scope. We thought of the threads as a hundred and fifty hammers seeking nails. Most of our calls were about sequencing and user impact: which surfaces to prioritize, how to combine threads that were stepping on each other, and when to close a thread that had reached diminishing returns. One 900-line PR got a one-line reply: “going to gavel that 2ms per send is not worth the complexity of maintaining this build plugin.”</p>
+<h2>AN 8-MILLISECOND BUDGET</h2>
+<p>One of our sidequests shows everything working together. To demonstrate an optimization to a regex used in live syntax highlighting, Claude attached a screen recording of a long answer streaming in the lab. In the corner, it had added a frame-rate readout, computed in the page from animation-frame timestamps.</p>
+<figure>#claude-apps-perf · thread<ol><li>R<b>Raymond</b>2:33 PM<p>this is actually kind of a sick bench. are we <em>capped</em> at 60 fps? can you try to drive scroll and stream smoothness to 120? iiuc your rig may not support this</p></li><li><b>Claude</b>App2:34 PM<p>Right, today’s rig ticks at 60 Hz because headless Chromium does by default. I believe it can be driven at 120 (uncapped vsync or DevTools frame control) — confirming that first, then I’ll re-run the eval against an 8.3 ms frame budget.</p></li><li><b>Claude</b>App2:59 PM<p>Update on the 120 Hz rig: it works. Deterministic 120 Hz frame stepping in headless Chrome via DevTools begin-frame control — exactly 240 frames for 240 begin-frames at 8.33 ms, so “did this frame fit the 120 Hz budget” becomes an exact read rather than a noisy one.</p></li><li>R<b>Raymond</b>3:05 PM<p>amazing</p><p>cook</p></li></ol><figcaption>Recreated from a real conversation.</figcaption></figure>
+<p>Once the mechanism and ambition were established, Claude got to work. Each painted frame had a budget of 8.33 milliseconds, so Claude stepped through a long reply <em>frame by frame</em>, timing each one to find the slow parts. It eliminated <code>O(message length)</code> work per chunk by memoizing finished blocks, moved tokenization logic for growing code fences to a worker, and revealed tables cell by cell.</p>
+<p>In that one thread, we landed nearly sixty PRs. Long replies blocked the main thread for about 200 milliseconds in total where they used to block it for about 750, ran on about a third of the CPU, and held 120 fps from start to finish on a 120 Hz MacBook. The 120 Hz rig itself became a nightly job, with Claude watching for regressions.</p>
+<figure><blockquote><b>ClaudeDevs</b>@ClaudeDevs<p>Long answers on Claude on web and desktop now stream ~4x smoother.</p><p>We rebuilt the streaming renderer to only touch what’s still changing, so a long reply stalls 9x less on a slower laptop, its worst freeze is 4.5x shorter, and on a 120Hz MacBook it holds 120fps start to finish.</p>Aug 24, 2026<a href="https://x.com/ClaudeDevs/status/2092006814804214163">View on X</a></blockquote></figure>
+<p>When we started the sprint, we hadn’t planned to hill climb on the milliseconds between frames while streaming. But it turned out we <em>could</em> count them — and anything we could count, Claude could climb.</p>
+<h2>WHAT’S NEXT</h2>
+<p>Today, claude.ai and the desktop app are about 3x faster than they were in early August, and the ratchets should keep them there. But we’re not done: the 95th percentile, other journeys, and very long conversations still have room to improve. In a separate post, we’ll also write about some of the sidequests that took us upstream during the sprint, with contributions landing in Electron, Chromium, Node.js, and more.</p>
+<p>When we shared the results internally, Issac put it best: “You could not have convinced me this was possible even six months ago.” We expect to keep working this way, one thread at a time, at any scale. The channel’s still going.</p>
+<p><em>With contributions from Alfred Xing, Anthony Morris, Benjamin Pasero, Chase McCoy, Joshua N., Luke Deen Taylor, Marius Schulz, and Shelley Vohr. Special thanks to Boris Cherny for encouraging us to be more ambitious.</em></p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

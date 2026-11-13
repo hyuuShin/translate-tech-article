@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Opus 5.5에서 작업당 발생하는 비용 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Playbooks</p>
+    <h1 class="lang-ko">Opus 5.5에서 작업당 발생하는 비용</h1>
+    <h1 class="lang-en" hidden lang="en">What a task costs on Opus 5.5</h1>
+    
+    <p class="art-sum lang-ko">토큰 단가가 같아도 작업당 비용은 크게 달라질 수 있습니다. Opus 5.5에서 Claude Code 작업에 어느 정도의 비용이 드는지, 그리고 어떤 설정이 청구 금액에 영향을 주는지 알아봅니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">The same token price can cost very different amounts per task. Learn what Claude Code tasks cost on Opus 5.5 and which settings change the bill.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 9월 25일</dd></div>
+      <div><dt>저자</dt><dd>Addy Osmani</dd></div>
+      <div><dt>분량</dt><dd>21분</dd></div>
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/what-a-task-costs-on-opus-5-5/">https://claude.dev/blog/what-a-task-costs-on-opus-5-5/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><h2>작업 비용과 재시도 비용</h2>
+<p>처음부터 수백만 개의 토큰을 사려고 하는 사람은 없습니다. 기능을 만들거나, 마이그레이션을 끝내거나, 작업을 실행하려는 것입니다. 토큰 수는 모델이 그 목표에 도달하는 데 필요했던 만큼일 뿐입니다.</p>
+<p>토큰당 비용이 같은 두 모델도 같은 작업에서 비용이 크게 다를 수 있습니다. 한 모델은 코드를 한 번 읽고 끝냅니다. 다른 모델은 코드를 읽고, 수정을 시도하고, 다시 읽습니다. 이 단계 하나하나가 턴(turn)이며, 매 턴마다 지금까지의 대화 전체를 다시 전송합니다. 따라서 턴이 더 많이 필요한 모델은 가격이 같아도 비용이 더 많이 듭니다.</p>
+<p>이 글을 다 읽고 나면 자신의 작업에 대해 다음 세 가지 질문에 답할 수 있어야 합니다.</p>
+<ul>
+<li>내가 자주 하는 작업은 Opus 5.5에서 비용이 얼마나 드는가?</li>
+<li>어떤 설정이 그 비용을 바꾸며, 얼마나 바꾸는가?</li>
+<li>내 세션 사용량은 어떻게 확인하는가?</li>
+</ul>
+<p>먼저 공유하고 싶은 트레이드오프는, 토큰을 덜 쓰는 모든 방법이 작업을 끝내지 못하는 비용으로 이어질 수도 있다는 점입니다. effort를 낮추거나, 더 작은 모델을 쓰거나, 컨텍스트를 줄이면 토큰은 분명히 절약됩니다. 하지만 재시도 비용은 그 절감액보다 큽니다. 이 글은 각 트레이드오프에 가격을 매겨 보려고 합니다.</p>
+<p>이 글의 일부 수치는 정가(list price)이고, 일부는 정가를 바탕으로 만든 예시입니다. 그림은 인터랙티브이므로 읽으면서 입력값을 바꿔 보시기 바랍니다. 이 예시들은 최선의 추정치이므로 반드시 공식 문서와 직접 계산한 값을 함께 확인하십시오.</p>
+<h2>작업 하나의 비용</h2>
+<p><a href="https://claude.com/product/claude-code">Claude Code</a>에서 작업은 하나의 루프입니다. 모델은 대화를 읽고, 도구를 호출하고, 결과를 읽은 뒤, 작업이 끝날 때까지 다시 처음으로 돌아갑니다. 루프를 한 바퀴 도는 것이 요청 한 번입니다. 루프의 비용은 네 가지 요소로 결정됩니다.</p>
+<p><strong>턴.</strong> 매 턴마다 지금까지의 대화를 다시 전송합니다. 턴이 적을수록 처리하는 입력이 줄어듭니다.</p>
+<p><strong>캐시 읽기.</strong> 한 턴이 다시 전송하는 내용의 대부분은 모델이 이전 턴에서 이미 본 텍스트입니다. 이 부분은 캐시 읽기로 청구되며, 입력 가격의 아주 작은 일부만 부과됩니다.</p>
+<p><strong>출력 토큰 유형.</strong> 가장 비싼 토큰으로, 입력 가격의 5배입니다. <a href="https://platform.claude.com/docs/en/build-with-claude/extended-thinking">사고(thinking)</a>는 출력으로 청구되므로, 답에 이르는 과정에서 추론을 덜 하는 모델이 비용이 더 적게 듭니다.</p>
+<p><strong>모델.</strong> 모델마다 가격이 다르며 가격 페이지에 나와 있습니다. 따라서 어떤 모델을 고르느냐가 모든 토큰의 가격을 결정합니다.</p>
+<p>이 글의 예시는 Opus 5.5 API 정가를 사용합니다. 입력 토큰 100만 개당 $4, 출력 토큰 100만 개당 $20, 캐시 읽기 100만 개당 $0.20입니다. 아래의 계산기와 마찬가지로, 예시에서는 캐시된 입력은 읽기 가격으로, 나머지는 모두 입력 가격으로 청구하며 캐시 쓰기는 제외합니다. 토큰 수는 예시입니다.</p>
+<h3>턴(turn)</h3>
+<p>어떤 작업이 20K 토큰의 컨텍스트로 시작해, 모델이 파일과 도구 결과를 읽으면서 120K까지 커진다고 가정해 보겠습니다. 40턴이면 한 턴이 평균 약 70K 토큰을 전송합니다. 대화가 120K를 넘은 적이 없는데도 작업 전체의 입력 토큰은 약 2.8M이 됩니다. 90%를 캐시에서 읽는다면 입력 비용은 약 $1.62입니다. 같은 작업을 25턴에 끝내면 처리하는 토큰은 약 1.75M이고 입력 비용은 약 $1.02입니다.</p>
+<p>한 턴은 그 턴이 추가하는 토큰보다 더 많은 비용이 듭니다. 그 이전의 모든 내용을 다시 전송하기 때문입니다. 따라서 가장 저렴한 턴은 필요하지 않은 턴입니다.</p>
+<p>턴을 줄일 수 있는 한 가지 습관은 모델에게 <a href="https://claude.com/resources/articles/building-verification-loops-in-claude-code-with-skills">작업 결과를 스스로 확인할 방법</a>을 주는 것입니다. 예를 들면 실행할 테스트, 빌드, 엔드포인트를 호출하는 스크립트 같은 것입니다. 자신의 작업을 직접 확인할 수 있는 모델은 실수를 더 일찍 발견합니다.</p>
+<p>필요한 정보를 한 번에 모으고 도구 호출을 일괄 처리하는 모델은 재전송 비용도 더 적게 지불합니다.</p>
+<h3>캐시 읽기(cache read)</h3>
+<p>같은 2.8M 입력 토큰이라도 캐시에서 읽는 것이 하나도 없다면 $11.20이 듭니다. 캐시 적중률이 90%이면 $1.62, 96%이면 약 $0.99입니다. 입력 비용을 이만큼 크게 움직이는 설정은 달리 없습니다. 안정적인 세션은 스스로 높은 적중률을 유지합니다. 캐시가 깨지지 않도록 피해야 할 행동은 이 글 뒷부분에서 다룹니다.</p>
+<h3>출력 토큰</h3>
+<p>Opus 5.5에서 출력 토큰 하나의 비용은 캐시 읽기의 100배입니다. 일반적인 작업의 출력 토큰 60K는 $1.20으로, 캐시에서 6M 토큰을 읽는 것과 같은 비용입니다. 출력에는 사고가 포함됩니다. Claude Code가 요약만 보여 주더라도 그 전부에 대해 비용을 지불합니다. 모델이 얼마나 생각하는지를 주로 바꾸는 effort가 청구 금액을 이렇게 크게 움직이는 이유입니다.</p>
+<h3>모델</h3>
+<p>캐시 읽기가 더 저렴한 모델은 주로 긴 세션에 도움이 됩니다. 출력이 더 저렴한 모델은 주로 추론이 많이 필요한 작업에 도움이 됩니다.</p>
+<h2>Opus 5.5의 변경 사항</h2>
+<p>변경된 것은 두 가지입니다. 가격, 그리고 모델이 하는 작업의 양입니다.</p>
+<p><strong>모든 가격 항목이 낮아졌습니다.</strong> 입력 토큰과 출력 토큰은 Opus 5보다 20% 저렴합니다. 캐시 읽기는 60% 저렴합니다. 입력 가격이 내려가고 읽기 요율도 함께 내려가, 입력 가격의 10분의 1에서 20분의 1이 되었습니다. 그림 A는 두 모델의 100만 토큰당 가격을 비교한 것입니다. 이 가격은 API 정가입니다. Pro, Max, Team 플랜에서는 캐시된 컨텍스트를 포함해 Opus 5.5의 더 낮은 가격이 사용 한도에 반영되므로, Opus 5보다 약 25% 더 오래 쓸 수 있습니다. 캐시 읽기의 추가 인하는 API 가격에만 해당하는 변경입니다.</p>
+<p>별도로, Pro, Max, Team, 좌석 기반 Enterprise 플랜의 5시간 한도가 상향되었고, 자격이 되는 구독자에게는 원하는 시점에 사용할 수 있는 한도 초기화 기회가 제공됩니다. 이 기능은 웹 또는 Claude Desktop의 Settings &gt; Usage에서 확인할 수 있으며, 터미널의 Claude Code에는 없습니다. 초기화는 Claude Code를 포함한 계정 전체에 적용됩니다.</p>
+<figure><img src="https://claude.dev/media/b05e27f1d72e92adffee8d13608665be2af86db6133408b498199bc0f13e62d2.png" alt="Bar chart of API list prices per million tokens, Opus 5 against Opus 5.5: input $5.00 and $4.00, output $25.00 and $20.00, cache reads $0.50 and $0.20, which is 20%, 20% and 60% lower."><figcaption><b>그림 A</b> 100만 토큰당 API 정가</figcaption></figure>
+<p>API 키를 사용할 때는 캐시 읽기 가격 인하가 Claude Code에 가장 큰 영향을 줍니다. 긴 에이전트(agent) 세션은 입력 비용의 대부분을 캐시 읽기에 씁니다. 아래 그림 B에서 가격을 산정한 세션에서는 캐시 항목이 $1.00에서 $0.40으로 내려가며, 이는 청구서에서 가장 큰 감소폭입니다.</p>
+<p>절감 폭은 작업의 성격에 따라 달라집니다. 대부분 캐시 읽기로 이루어진 세션에서는 입력 비용을 최대 60%까지 절감할 수 있습니다. 캐시가 없고 답변이 긴 짧은 질문은 출력 비용이 대부분을 차지하므로 최대 20%까지 절감할 수 있습니다. Claude Code 작업 대부분은 이 둘 사이에 있습니다. 아래 계산기에서 사용자의 작업이 어디에 해당하는지 확인할 수 있습니다.</p>
+<p>Opus 5.5의 실행 비용이 Opus 5보다 40% 낮다는 이야기를 들어 보셨을 수도 있습니다. 이는 기본 설정에서 토큰 단위로 과금되는 일반적인 워크로드를 기준으로 한 추정치입니다. 가격 인하에 더해 Opus 5.5가 기본값인 medium에서 작업당 토큰을 더 적게 사용한다고 가정한 값이므로, 토큰 하나의 가격이 40% 내려간다는 뜻은 아닙니다. 토큰 가격은 Fig A에 나와 있고, 가격 변경만의 효과는 Fig B에서 확인할 수 있습니다.</p>
+<p>Opus 5.5는 답변하기 전에 항상 생각하기 때문에 한 번의 답변에 더 많은 토큰을 사용할 수 있습니다. Opus 5.5에서 더 많은 일을 처리할 수 있을 것으로 기대하지만 작업마다 차이가 있으므로, 사용자의 작업에서 직접 측정해 보시기 바랍니다. Fig C는 두 모델의 작업당 비용을 비교합니다. 이 부분은 가격보다 사용자의 작업 내용에 훨씬 크게 좌우됩니다.</p>
+<p>범위가 명확한 작업에서는 두 모델이 거의 같은 턴 수로 작업을 끝내므로, 가격 인하 효과만 얻게 됩니다. 반면 모델이 잘못된 아이디어에 여러 턴을 쓸 수 있는 개방형 작업에서는 차이가 가장 크게 벌어질 것으로 예상합니다. 모든 코드베이스에 들어맞는 단일 수치는 없으므로 직접 측정해 보십시오(마지막 섹션 참고).</p>
+<p><strong>긴 작업은 보고로 마무리됩니다.</strong> Opus 5.5는 긴 작업을 끝낼 때 무엇을 변경했는지, 무엇을 발견했는지, 사용자에게 무엇이 필요한지를 정리해 알려 줍니다. 무슨 일이 있었는지 확인할 수 있으면 세션을 다시 실행하는 횟수가 줄어들기 때문에 비용 절감에도 도움이 됩니다.</p>
+<h2>동일 작업 나란히 비교</h2>
+<p>Fig B는 같은 토큰 수로 하나의 세션을 두 모델에서 각각 계산한 결과입니다. 따라서 차이는 가격 변경에서만 발생합니다. 모델을 전환하면서 비교해 보십시오. 토큰 수는 설명을 위한 예시입니다.</p>
+<figure>$3.50Opus 5 API 정가 기준<ul><li><i></i>캐시에서 읽기 2.0M$1.00</li><li><i></i>신규 입력(fresh input) 200K$1.00</li><li><i></i>출력 60K$1.50</li><li>합계, Opus 5$3.50</li></ul><figcaption><b>FIG B</b>두 모델에서 토큰 수가 같은 예시 세션이므로, 가격 변경의 효과만 보여 줍니다.</figcaption></figure>
+<p>이 명세서에는 /usage가 세션별로 보여 주는 세 개의 항목이 있습니다. 캐시 읽기는 2M으로 토큰 수가 가장 많은 항목입니다. 출력은 토큰 수는 가장 적지만 비용은 가장 큽니다. 신규 입력은 그 중간에 있으며, 각 파일을 처음 읽을 때와 새로운 도구 결과가 들어올 때의 입력을 포함합니다.</p>
+<p>Fig B는 두 모델에 같은 토큰 수를 적용하므로 가격 변경의 효과만 보여 줍니다. 실제 세션에서는 Opus 5.5가 토큰을 더 많이 또는 더 적게 사용할 수 있습니다. 이 방식으로 계산하면 세션 비용은 약 31% 낮아집니다.</p>
+<p>실제로 기록된 실행에서는 두 번째 효과, 즉 모델이 수행하는 작업량의 변화가 더해집니다. 처음에 잘못 시작한 작업에서는 차이가 더 벌어질 것으로 예상합니다.</p>
+<h3>직접 수치 입력해 보기</h3>
+<p>사용자의 작업 하나가 사용하는 값을 설정하거나 프리셋에서 시작해 보십시오. 프리셋은 어디까지나 설명을 위한 예시이므로, 직접 계산해 보시기를 권합니다. 캐시된 입력은 캐시 읽기 가격으로, 신규 입력은 입력 가격으로 과금되므로 캐시 슬라이더를 통해 차이의 얼마만큼이 캐시 읽기에서 비롯되는지 확인할 수 있습니다.</p>
+<p>실제 세션의 값으로 슬라이더를 채우려면 작업이 끝날 때 /usage를 실행하십시오. Session 블록에 입력, 출력, 캐시 수치가 표시됩니다. 마지막 슬라이더는 Opus 5.5가 사용자의 작업에서 얼마나 적은 작업량으로 처리하는지에 대한 가정입니다. 가격 변경의 효과만 보려면 0%로 두십시오. 사용자의 작업을 기준으로 값을 정하려면 같은 작업을 Opus 5와 Opus 5.5에서 각각 실행한 뒤 턴 수와 출력 토큰을 비교하십시오. 직접 측정하기에서 방법을 단계별로 안내하며, 세션 읽는 법에서 /usage에서 무엇을 확인해야 하는지 설명합니다.</p>
+<figure>입력 토큰2.2M캐시 여부와 관계없이 모든 턴에서 모델에 전송된 전체 내용입니다.캐시에서 읽은 비율91%출력 토큰60K사고(thinking)를 포함하며, 사고는 출력으로 과금됩니다.하루 작업 수10Opus 5.5의 토큰 변화량(사용자 가정)0%가격 효과만 보려면 0%로 두십시오. Opus 5.5는 Opus 5보다 토큰을 더 많이 또는 더 적게 사용할 수 있으므로, 사용자의 작업에서 직접 측정해 보십시오.Opus 5, 이 토큰 기준<b>$3.50</b>월 $770Opus 5.5, 이 토큰 기준<b>$2.40</b>월 $528API 정가 기준 변화<b>−31%</b>가격 효과만으로 월 $242 절감Opus 5, 이 토큰 기준: $3.50. Opus 5.5, 이 토큰 기준: $2.40. API 정가 기준 변화: −31%, 가격 효과만으로 월 $242 절감.<figcaption><b>FIG C</b>한 달은 근무일 22일 기준입니다. API 정가 기준이며, Pro, Max, Team 플랜에서는 이 금액이 청구되지 않습니다. 배치 할인이나 볼륨 할인은 적용하지 않았고 캐시 쓰기는 포함하지 않았습니다(<a href="https://claude.dev/blog/what-a-task-costs-on-opus-5-5/#caching-and-compaction">캐싱</a> 참고).</figcaption></figure>
+<h2>세션 효율을 극대화하는 팁</h2>
+<p>Opus 5.5는 가격이 낮아져 토큰당 비용이 줄어듭니다. 사용하는 토큰의 양은 세션을 운영하는 방식에 따라 결정되며, 다음 방법이 도움이 됩니다.</p>
+<h3>모델을 바꾸기 전에 effort 높이기</h3>
+<p>effort(추론 강도)는 모델이 매 턴마다 생각, 작성하는 텍스트, 도구 호출에 토큰을 얼마나 쓸지에 대한 전반적인 성향을 정합니다. effort가 낮으면 도구 호출 횟수가 줄고 호출 내용도 짧아집니다. Opus 5.5에는 low, medium, high, xhigh의 네 단계가 있으며, 단일 세션에서만 쓸 수 있는 max가 추가로 있습니다. 아래에서 단계를 선택하면 언제 사용하는지와 이를 설정하는 명령어를 확인할 수 있습니다.</p>
+<figure>Medium: 범위가 명확한 일상 작업용일상적이고 범위가 분명한 작업에 적합합니다. 턴당 생각을 high보다 적게 하므로 턴마다 비용이 적게 듭니다.작업의 범위가 명확하다면 여기서 시작하십시오.<ul><li><code>/effort medium</code></li><li><code>/effort status</code></li><li><code>/model</code></li><li><code>/usage</code></li></ul><figcaption><b>FIG D</b>단계는 턴당 생각이 가장 적은 수준부터 가장 많은 수준 순으로 이어집니다.</figcaption></figure>
+<p>Claude Code는 모델마다 기본 단계를 설정하며, /effort status로 현재 설정을 확인할 수 있습니다. 범위가 명확한 일상 작업에는 <strong>medium</strong>을 사용해 보십시오. medium으로 진행이 막히면 <strong>high</strong>를 시도하십시오. high는 턴당 medium보다 많은 비용이 들지만, 더 큰 모델로 옮기는 것보다는 적게 듭니다. 이름 변경이나 여러 파일에 이미 알려진 패턴을 적용하는 것과 같은 기계적인 작업에는 <strong>low</strong>를 사용하십시오.</p>
+<p>Opus 5.5에서 기본값은 medium이며, Opus 5의 기본값인 high보다 한 단계 낮습니다. 레벨이 같아도 모델마다 사고량이 같지는 않습니다. 같은 레벨에서 Opus 5.5는 Opus 5보다 턴마다 더 많이 사고하며, xhigh와 max에서 그 차이가 가장 큽니다. 따라서 Opus 5에서 선택했던 레벨을 그대로 가져오지 마십시오. medium에서 시작하고, xhigh와 max는 성능 향상을 직접 측정한 작업에만 사용하십시오.</p>
+<p>effort 비용은 대략 다음과 같이 가늠할 수 있습니다. 예를 들어 high가 작업 전체에서 사고 토큰을 20K 추가한다고 하면, Opus 5.5에서는 $0.40입니다. 캐시된 컨텍스트가 100K이고 출력 토큰이 총 10K인 10턴짜리 재시도 루프도 비용이 거의 같습니다. 따라서 재시도를 한 번이라도 줄여 주는 작업에서는 high가 그 비용을 상쇄합니다. 반면 medium으로도 처음부터 끝낼 수 있었던 작업에서는 낭비입니다.</p>
+<h4>medium에서 한 계층만 수정하는 경우</h4>
+<p>effort를 높여야 한다는 가장 분명한 신호는 수정이 한 계층에서 멈추는 경우입니다.</p>
+<p>API 핸들러에서 필드 이름을 바꾸는 경우를 예로 들어 보겠습니다. medium에서는 모델이 핸들러를 수정하고 핸들러의 테스트도 통과하지만, 클라이언트는 여전히 이전 필드를 보냅니다. 모델은 요청받은 일을 한 것입니다. 다만 두 번째 호출 지점을 찾을 만큼 멀리 읽지 않았을 뿐입니다. high에서는 코드를 작성하기 전에 더 많은 턴을 들여 호출 지점을 읽고, 두 계층을 한 번에 수정합니다.</p>
+<p>검증 수단으로도 같은 버그를 잡을 수 있습니다. 모델이 클라이언트를 거치는 테스트를 실행할 수 있다면, medium에서도 이전 필드는 작성된 바로 그 턴에 해당 테스트에서 실패합니다. 따라서 effort를 높이기 전에, 모델이 자신의 작업을 검증할 방법이 있는지 먼저 확인하십시오. 테스트 실행은 한 턴과 그 출력만큼의 비용이 듭니다. 반면 effort를 높이면 모든 턴에 사고가 추가됩니다.</p>
+<p>effort 레벨을 올리고 검증 수단을 추가해도 해결되지 않는다면, 더 큰 모델로 전환하십시오.</p>
+<h4>세션 도중 effort 변경</h4>
+<p>Claude Code에서는 /effort 뒤에 레벨을 붙여 실행합니다. 예를 들어 /effort high와 같이 사용합니다. /effort status는 현재 레벨을 출력합니다. 작업 도중에도 변경할 수 있으며, 새 레벨은 다음 요청부터 적용됩니다.</p>
+<p>API 키나 Claude 구독으로 Opus 5.5를 사용하는 경우, effort를 변경해도 캐시가 유지됩니다. 어려운 단계 하나에 대해서만 레벨을 높였다가 다시 낮춰도 대화를 다시 쓰지 않아도 됩니다. Amazon Bedrock, Google Cloud의 Agent Platform 또는 Claude apps 게이트웨이에서는 effort를 변경하면 여전히 캐시된 대화가 삭제되고, 다음 요청에서 대화 전체에 대해 캐시 쓰기 요금을 지불합니다. Opus 5.5에서는 사고가 항상 켜져 있으므로 변경할 사고 설정은 없습니다.</p>
+<h3>작업에 맞는 모델 선택</h3>
+<p>모델 선택은 세션 내 모든 토큰의 단가를 결정하므로, effort보다 비용에 미치는 영향이 큽니다. 영향 범위도 더 넓습니다. 메인 모델을 상속하는 모든 서브에이전트(subagent)는 그 가격도 함께 상속하기 때문입니다. 대부분의 날에는 세 가지 모델이 필요합니다. 조회용 소형 모델, 가까이서 감독하며 진행하는 작업용 Opus 5.5, 가장 어려운 작업용 대형 모델입니다.</p>
+<figure><img src="https://claude.dev/media/f08757b9a91bce794fda0b6e3cd0deacede7783ce9db0097a67a47606e6900a4.png" alt="Three models in order of cost, with bars that show order of cost only: Haiku or Sonnet for lookups and subagents, Opus 5.5 as the daily driver, and Fable 5.1 for the hardest work, each with the kinds of work it suits."></figure>
+<h4>일상 작업용 기본 모델, Opus 5.5</h4>
+<p>직접 감독하는 작업에는 Opus 5.5를 사용하십시오. 여러 파일에 걸친 기능 개발, 디버깅, 후속 수정을 동반하는 코드 리뷰가 그 예입니다. 모델의 동작을 직접 읽고 벗어날 때 개입하므로 루프가 짧게 유지됩니다.</p>
+<h4>Fable 5.1로 상향</h4>
+<p><strong>토큰 가격보다 결과가 더 중요할 때는 Fable 5.1로 올리십시오.</strong> 예를 들어 감독하지 않을 장시간 실행, 코드베이스에 참고할 기존 패턴이 없는 문제, 많은 서브에이전트를 조율해야 하는 대규모 변경이 해당합니다. 세 번째 실패까지 기다리지 마십시오. xhigh의 Opus 5.5가 같은 문제에서 두 번 막히면 전환하고, 문제가 해결되면 다시 돌아오십시오. 대화형 작업에는 지연 시간이 짧고 비용이 낮은 Opus 5.5가 더 적합합니다.</p>
+<p>Fable 5.1의 정가는 입력 토큰 100만 개당 $10, 출력 토큰 100만 개당 $50로, Opus 5.5 가격의 2.5배입니다. 캐시 읽기는 100만 개당 $0.25로 Opus 5.5 요율의 1.25배에 불과한데, 입력 가격의 0.025배로 청구되기 때문입니다. 따라서 가격 차이는 캐시 비중이 큰 장시간 실행에서 가장 작고, 출력을 많이 생성하는 작업에서 가장 큽니다.</p>
+<p>전환은 작업이 자연스럽게 끊기는 지점에서 하십시오. 캐시는 이전 모델에 속하므로, 새 모델의 첫 턴에서는 대화 전체에 대해 쓰기 요금을 지불하게 됩니다. 이 턴의 부담을 줄이려면 먼저 /compact를 실행하거나, 짧은 계획서를 작성해 새 세션을 시작하십시오. 전환하려면 별칭이나 모델 이름과 함께 <a href="https://code.claude.com/docs/en/model-config">/model</a>을 실행합니다. /model은 선택한 모델을 새 세션의 기본값으로도 저장하므로, 어려운 부분이 끝나면 다시 되돌리십시오.</p>
+<h4>조회 작업을 위한 하향</h4>
+<p><strong>코드 작성이 아닌 조회 작업에는 Sonnet이나 Haiku로 내리십시오.</strong> 검색과 요약을 수행하는 서브에이전트, 로그와 테스트 출력 읽기, "이것이 어디에 정의되어 있는가" 같은 질문이 해당합니다. 여러 파일에 걸친 기계적인 수정에는 Opus 5.5를 유지하고 effort를 low로 설정하십시오. 그러면 수정 작업은 나머지 코드를 작성하는 모델에 그대로 두면서 턴당 비용은 낮출 수 있습니다.</p>
+<p><a href="https://code.claude.com/docs/en/sub-agents">서브에이전트</a>를 더 작은 모델에서 실행하려면 정의에 model: haiku 또는 model: sonnet을 설정하십시오. 모든 서브에이전트를 하나의 모델에서 실행하려면 CLAUDE_CODE_SUBAGENT_MODEL 환경 변수를 설정하십시오. 서브에이전트 정의에 지정된 모델은 이 변수보다 우선합니다. 모델 설정이 없는 서브에이전트는 이 변수가 설정되어 있지 않은 한 메인 모델에서 실행됩니다.</p>
+<p>각 서브에이전트는 자체 컨텍스트 윈도우(context window)에서 실행되고 요약을 반환하므로, 파일 읽기 내용이 메인 대화에 남지 않습니다. 그래도 자체 토큰에 대한 비용은 부담하므로, 그 지출이 얼마나 드는지는 모델 설정이 결정합니다.</p>
+<p>실험적 기능인 에이전트 팀(agent teams)은 이 비용을 배가시킵니다. 각 팀원은 자체 컨텍스트 윈도우를 가진 별도의 Claude Code 인스턴스이며, 종료될 때까지 계속 토큰을 사용합니다. <a href="https://code.claude.com/docs/en/costs">비용 문서</a>에 따르면 팀원이 plan 모드로 실행될 때 팀은 표준 세션의 약 7배에 달하는 토큰을 사용합니다. 팀은 작게 유지하고, 각 작업은 독립적으로 완결되도록 구성하며, 팀원의 담당 부분이 끝나면 종료하십시오.</p>
+<p>트레이드오프가 있습니다. 작은 모델이 검색 결과를 잘못 해석하면 메인 모델이 엉뚱한 파일을 찾아 나서게 되고, 그 우회 비용은 메인 모델이 치르게 됩니다. 작은 모델은 파일 찾기, 테스트 실행, 로그 읽기처럼 실수를 발견하기 쉬운 작업에만 쓰는 것이 좋습니다.</p>
+<p>판단이 필요한 작업은 메인 모델에 맡기십시오. opusplan alias는 작업을 다른 방식으로 나눕니다. plan mode에서는 Opus가 계획을 세우고, Sonnet이 그 계획을 실행합니다. 이 방식에서는 코드 편집을 Sonnet이 맡게 되므로 위의 조언과 반대가 됩니다. 기본값으로 정하기 전에 직접 수행하는 작업에서 측정해 보십시오.</p>
+<h3>마이그레이션 시 프롬프트 점검</h3>
+<p>이전 모델용으로 작성한 지시문은 Opus 5.5가 더 많은 내용을 작성하고 도구 호출을 반복하게 만들 수 있습니다. Claude Code에서 /claude-api prompt-audit를 실행하면 스킬이나 CLAUDE.md 파일 같은 Claude Code 설정에 이러한 <a href="https://claude.com/blog/reducing-cost-and-improving-performance-with-claude-platform">프롬프트 작성 안티패턴</a>이 있는지 점검합니다. Claude Platform에서 만든 앱의 코드도 함께 점검합니다.</p>
+<p>이 기능을 Opus 4.8에서 Opus 5.5로 마이그레이션하는 상황에서 테스트했습니다. 이러한 패턴이 여러 개 들어 있는 프롬프트를 사용하는 내부 고객 지원 벤치마크(티켓 44건)를 활용했습니다. 낮은 작업 강도(effort)에서 Opus 5.5로 옮기자 벤치마크 비용이 약 18% 줄었습니다. prompt-audit를 실행하자 비용이 9% 더 줄어, Opus 4.8 시작 시점보다 약 25% 낮아졌습니다. 이 점검은 모델이 더 많이 작성하고 도구 호출을 반복하게 만드는 형식적인 지시문을 제거했습니다. 제거된 지시문은 필수 6단계 절차, 스크래치패드 규칙, 두 번 검증하라는 규칙, 서로 모순되는 지시문입니다.</p>
+<p>이 결과는 하나의 벤치마크에서 나온 것이므로, 기대해야 할 수치가 아니라 하나의 사례로 받아들이십시오. 점검을 실행한 뒤 실제 작업에서 전후의 /usage를 비교해 보십시오(직접 측정하기 참고).</p>
+<h3>캐싱과 컴팩션(compaction)</h3>
+<p>Claude Code는 캐싱과 컴팩션을 자동으로 처리합니다. 세션을 어떻게 운영하느냐에 따라 절감 효과가 달라집니다.</p>
+<h4>캐시 동작 방식</h4>
+<p>Claude Code는 시스템 프롬프트, 도구 정의, 지금까지의 대화처럼 요청에서 반복되는 부분을 캐시합니다.</p>
+<p>Opus 5.5에서 캐시 읽기 비용은 새 입력 토큰의 5%입니다. 캐시 쓰기 비용은 새로 읽는 것보다 높아서, 현재 가격 기준으로 5분 캐시는 입력 가격의 1.25배, 1시간 캐시는 입력 가격의 2배입니다. 캐시에 적중할 때마다 유지 시간이 추가 비용 없이 초기화됩니다.</p>
+<p>Claude Code에서 유지 시간은 결제 방식에 따라 달라집니다. Claude 구독에서는 1시간입니다. API 키나 클라우드 제공업체를 사용하면 기본값이 5분이며, 구독 상태에서도 사용량 크레딧을 소모하는 시점부터는 5분으로 줄어듭니다.</p>
+<p>컨텍스트가 120K 토큰일 때 Opus 5.5에서 5분 캐시 쓰기는 약 $0.60, 읽기는 약 $0.02입니다. 쓰기 한 번의 비용은 읽기 25번과 같습니다. API 키를 사용하는 경우 6분간 커피 한 잔을 마시고 오면 다음 $0.02짜리 읽기가 $0.60짜리 쓰기로 바뀝니다. 같은 크기에서 1시간 캐시 쓰기는 약 $0.96이며, API에서는 이 추가 비용을 내고 작업 중간의 공백 시간을 메울 수 있습니다.</p>
+<h4>세션 형태와 적중률</h4>
+<p>캐시는 프리픽스(prefix)를 저장하므로, 요청의 처음부터 이전 요청과 일치하는 부분만 재사용할 수 있습니다.</p>
+<p>안정적인 세션은 매 턴마다 대화의 끝에 내용을 덧붙이므로 적중률이 높게 유지됩니다. 요청의 앞부분을 바꾸는 요소는 모두 적중률을 떨어뜨립니다. 도구 정의를 바꾸면 캐시 전체가 비워지고, 시스템 프롬프트를 바꾸면 그 지점 이후가 비워지는데, 이는 거의 전부에 해당합니다.</p>
+<p>실제로는 다음과 같은 경우에 캐시 쓰기가 발생합니다.</p>
+<ul>
+<li>캐시 유지 시간보다 오래 멈출 때</li>
+<li>Amazon Bedrock, Google Cloud의 Agent Platform, 게이트웨이처럼 수준(level)이 캐시 일치 조건에 포함되는 환경에서 작업 강도를 바꿀 때</li>
+<li>한 대화에서 처음으로 fast mode를 켤 때, 이는 캐시 일치 조건의 일부를 바꾸기 때문입니다</li>
+<li>MCP 서버를 연결하거나 해제할 때, 이는 매 요청의 시작 부분에 로드되는 내용을 바꿀 수 있기 때문입니다</li>
+<li>모델을 전환할 때, 새 모델은 빈 캐시에서 시작하기 때문입니다</li>
+<li>대화가 컴팩션될 때, 캐시가 일치하던 기록이 다시 작성되기 때문입니다</li>
+</ul>
+<p>따라서 이러한 설정은 세션을 시작할 때 해 두고, 작업하는 동안에는 건드리지 않는 것이 좋습니다.</p>
+<h4>긴 세션의 턴당 비용이 더 큰 이유</h4>
+<p>매 턴마다 전체 컨텍스트를 다시 전송하므로, 캐시가 따뜻한 상태여도 컨텍스트가 커질수록 턴당 비용이 늘어납니다. 컨텍스트가 20K 토큰일 때 Opus 5.5에서 한 턴의 캐시 읽기 비용은 약 $0.004입니다. 150K에서는 약 $0.03이며, 이 크기에서 30턴을 진행하면 읽기에만 $0.90을 쓰게 됩니다. 같은 30턴이 20K에서는 약 $0.12입니다. Claude 4.6 이후 모델에서는 컨텍스트 윈도우가 커져도 토큰당 가격은 변하지 않으므로, 비용은 전적으로 대화를 다시 전송하는 데서 발생합니다.</p>
+<p>이 컨텍스트의 상당 부분은 이전 작업의 잔여물입니다. 한 시간 전의 스택 트레이스, 이미 작업을 마친 파일, 이후에 수정한 테스트 실행 결과 등이 그렇습니다. 이 모든 내용이 매 턴마다 계속 전송됩니다.</p>
+<h4>컴팩션, /compact, /clear</h4>
+<p>세션이 컨텍스트 한도에 가까워지면 Claude Code는 오래된 기록을 요약하여 이후 턴에서 전송하는 양을 줄입니다. /autocompact에 토큰 수를 지정해 실행하면 컨텍스트가 얼마나 찼을 때 컴팩션이 일어날지 바꿀 수 있습니다.</p>
+<p>직접 수행할 수 있는 명령어는 두 가지입니다. /clear는 대화를 비우며 비용이 들지 않으므로, 관련 없는 작업으로 넘어갈 때 사용합니다. /compact는 연속성을 유지하며 요청 한 번의 비용이 듭니다. 요약할 대화를 읽어야 하며, 유지할 내용을 지정할 수도 있습니다. 예를 들어 /compact keep the failing test names and the schema change와 같이 사용합니다.</p>
+<p>150K 토큰에서 컴팩션하는 대략적인 비용은 약 $0.25입니다. 이는 읽기 비용, 수천 출력 토큰 분량의 요약, 더 짧아진 컨텍스트에 대한 새 캐시 쓰기를 합한 금액입니다. 이후 각 턴은 읽기 비용을 약 $0.025씩 절약하므로, 컴팩션 비용은 약 10턴 안에 회수됩니다. 작업을 끝내기 직전의 컴팩션은 절약하는 금액보다 비용이 더 큽니다.</p>
+<p>해당 가격은 캐시가 유지되고 있다는 가정에 기반합니다. 캐시가 유지되는 동안에는 요약 요청이 캐시에서 대화를 읽어 오므로, 휴식 이후가 아니라 휴식 전에 compact를 실행하십시오. 캐시 수명보다 긴 휴식이 지나면 같은 /compact가 전체 대화를 다시 읽고 이를 캐시에 다시 기록합니다. 5분 캐시에서 150K 토큰이라면 입력 비용만 약 $0.75입니다. 버리고 싶은 방향으로 작업이 진행되었다면 /rewind로 이전 턴으로 되돌리십시오. 캐시가 유지되는 동안에는 이미 캐시된 프리픽스(prefix)로 돌아가게 됩니다.</p>
+<p>요약 과정에서는 세부 정보도 손실됩니다. 디버깅 세션 도중에 compaction을 실행하면 핵심이 되는 로그 한 줄이 빠질 수 있습니다. 작업이 자연스럽게 끊기는 지점에서 compact를 실행하고, 다음 단계가 특정 내용에 의존한다면 /compact 지시문에 그 내용을 명시하십시오.</p>
+<h4>입력 전에 로드되는 항목</h4>
+<p><a href="https://code.claude.com/docs/en/memory">CLAUDE.md 파일</a>은 모든 세션이 시작될 때 컨텍스트에 로드되므로, 파일의 각 줄은 매 턴마다 다시 전송되는 내용의 일부가 됩니다. <a href="https://code.claude.com/docs/en/costs">비용 문서</a>에서는 이 파일을 200줄 이하로 유지할 것을 권장합니다. MCP 도구 정의는 지연 로드(deferred)됩니다. 시작 시에는 도구 이름과 서버 지침만 로드되고, 전체 정의는 해당 도구를 사용할 때 로드됩니다. /mcp를 실행하여 연결된 서버를 확인하고, 사용하지 않는 서버는 끄십시오.</p>
+<h4>그 밖의 청구 항목</h4>
+<p>아래 표는 Claude Code 세션에 영향을 주는 다른 청구 규칙을 정리한 것이며, 관련 문서가 있는 경우 링크를 함께 제공합니다.</p>
+<p>빠른 모드(fast mode)는 Opus 5.5를 최대 2.5배 빠르게 실행하며, 가격은 표준 가격의 두 배인 입력 100만 토큰당 $8, 출력 100만 토큰당 $40입니다. Claude 구독에서는 플랜 한도가 아니라 사용량 크레딧(usage credits)으로 청구됩니다. 빠른 모드를 켠 뒤 첫 번째 요청에서는 전체 대화에 대해 캐시 없이 빠른 모드 입력 가격이 적용됩니다. 따라서 세션이 한참 진행된 후가 아니라 세션을 시작할 때 켜십시오.</p>
+<table><thead><tr><th>청구 항목</th><th>동작 방식</th></tr></thead><tbody><tr><td>캐시 수명</td><td>Claude Code에서는 구독의 경우 1시간이고, API 키나 클라우드 제공자를 사용하거나 구독이 사용량 크레딧을 소진하는 경우에는 5분입니다. 캐시 히트가 발생할 때마다 수명이 초기화됩니다. API에서는 더 높은 쓰기 가격으로 1시간 캐시를 사용할 수 있습니다. <a href="https://code.claude.com/docs/en/costs">비용 문서(Claude Code 수명) 및 프롬프트 캐싱 문서</a></td></tr><tr><td>캐시 쓰기</td><td>현재 API 가격 기준으로 5분 캐시는 입력 가격의 1.25배, 1시간 캐시는 2배입니다. <a href="https://platform.claude.com/docs/en/about-claude/pricing">가격 문서</a></td></tr><tr><td>사고(Thinking)</td><td>사용자에게 반환되지 않는 사고 과정을 포함하여 출력 토큰으로 청구됩니다. <a href="https://platform.claude.com/docs/en/build-with-claude/thinking">확장 사고 문서</a></td></tr><tr><td>노력 수준(Effort)</td><td>텍스트, 도구 호출, 사고를 포함한 모든 출력 토큰에 적용됩니다. <a href="https://platform.claude.com/docs/en/build-with-claude/effort">Effort 문서</a></td></tr><tr><td>자동 compaction</td><td>컨텍스트 윈도우가 한계에 가까워지면 실행됩니다. 토큰 수와 함께 /autocompact를 실행하면 임계값을 설정할 수 있습니다. <a href="https://code.claude.com/docs/en/context-window">컨텍스트 윈도우 문서</a></td></tr><tr><td>서브에이전트와 에이전트 팀</td><td>서브에이전트는 자체 컨텍스트 윈도우에서 작업하고 요약을 반환합니다. 플랜 모드의 에이전트 팀은 표준 세션의 약 7배에 해당하는 토큰을 사용합니다. <a href="https://code.claude.com/docs/en/costs">컨텍스트 윈도우 및 비용 문서</a></td></tr><tr><td>Batch API</td><td>Message Batches API를 통해 전송한 요청은 입력 및 출력 토큰 가격이 절반입니다. <a href="https://platform.claude.com/docs/en/build-with-claude/batch-processing">배치 처리 문서</a></td></tr><tr><td>현재의 일반적인 지출</td><td>평균: 엔터프라이즈 배포 환경 전체에서 개발자 1인당 활동일 기준 약 $13입니다. 사용자의 90%는 활동일 기준 비용이 $30 미만입니다. 두 수치 모두 현재 모델 기준입니다. <a href="https://code.claude.com/docs/en/costs">공개 문서, 비용 페이지(엔터프라이즈 평균 및 90% 상한)</a></td></tr></tbody></table>
+<h2>직접 측정하기</h2>
+<p>이 글의 수치는 예시일 뿐입니다. 코드베이스, 프롬프트, 작업 습관은 저마다 다르므로 직접 수행하는 작업으로 비용을 측정해 보십시오. 확인 방법은 다음과 같습니다.</p>
+<ol>
+<li><strong>세션에서 <a href="https://code.claude.com/docs/en/costs">/usage</a>를 실행합니다.</strong> /cost도 같은 기능을 합니다. Session 블록에는 토큰 사용량과 정가 기준의 예상 비용이 표시됩니다. 프롬프트 캐시 항목에서는 입력 중 캐시에서 가져온 비율을 확인할 수 있습니다. Pro, Max, Team, Enterprise 플랜에서는 같은 화면에 플랜 사용량 막대도 표시됩니다. 금액은 사용자의 컴퓨터에서 정가 기준으로 계산되므로, 구독 환경에서는 청구 금액이 아니라 작업량을 가늠하는 지표로 보셔야 합니다.</li>
+<li><strong>같은 작업을 두 번 실행합니다.</strong> Opus 5.5를 사용하려면 Claude Code v2.1.280 이상이 필요하므로 먼저 <code>claude update</code>를 실행하십시오. 단순한 예제가 아니라 백로그에 있는 실제 작업을 선택하십시오. /model로 Opus 5와 Opus 5.5를 전환하며 실행합니다. 각 실행의 턴 수, 출력 토큰, 비용을 기록하십시오. 결론을 내리기 전에 작업을 서너 개 수행해 보십시오.</li>
+<li><strong>팀 단위로는 사용량 및 비용 보고서를 활용합니다.</strong> <a href="https://platform.claude.com/docs/en/manage-claude/claude-code-analytics-api">Claude Code Analytics API</a>는 사용자별 예상 비용을 제공합니다. <a href="https://platform.claude.com/docs/en/manage-claude/usage-cost-api">Usage and Cost API</a>는 모델별, 그리고 캐시된 토큰과 캐시되지 않은 토큰별로 지출을 세분화하여 보여 줍니다.</li>
+<li><strong>노력 수준(effort) 단계를 시험해 봅니다.</strong> 어려운 작업 하나를 medium으로 실행한 뒤 high로 실행해 보십시오. 반복적인 작업 하나는 low로 실행하십시오.</li>
+</ol>
+<h3>세션 읽는 법</h3>
+<p>작업이 끝날 때 /usage에서 세 가지를 확인하십시오.</p>
+<ul>
+<li><strong>캐시 비율.</strong> 긴 세션이라면 높아야 합니다. 낮다면 긴 중단, 모델 전환, 중간에 연결된 MCP 서버, 또는 클라우드 제공자나 게이트웨이 환경에서의 effort 변경이 있었는지 확인하십시오. 프롬프트 캐시 항목에는 마지막 캐시 미스의 유력한 원인이 표시되는 경우가 많습니다.</li>
+<li><strong>입력 대비 출력.</strong> 작은 변경에 출력이 많다면 대개 작업에 비해 effort 수준이 너무 높거나 모델이 재시도를 반복하고 있다는 뜻입니다.</li>
+<li><strong>대화 크기 대비 총 입력.</strong> 총 입력이 대화 크기의 수 배에 달한다면 세션에서 많은 턴이 진행된 것이므로, 대화 내용을 읽어 어디에서 루프가 반복되었는지 찾아볼 만합니다.</li>
+</ul>
+<p>기준선으로, Claude Code 비용 문서에서는 엔터프라이즈 배포 환경 전체의 평균이 개발자 1인당 활동일 기준 약 $13이고, 사용자의 90%는 활동일 기준 $30 미만이라고 안내합니다. 평소 수준보다 훨씬 많은 비용이 드는 세션은 검토해 볼 가치가 있습니다.</p>
+<h2>유의 사항</h2>
+<ul>
+<li>범위가 명확한 일상 작업에는 medium effort를 사용합니다.</li>
+<li>모델이 스스로 결과를 검증할 수 있는 방법을 제공하고, 여러 파일에 걸친 변경은 plan mode에서 시작합니다.</li>
+<li>medium에서 진척이 없으면 effort를 high로 올립니다. API 키나 구독을 사용하는 경우 이 변경은 캐시를 그대로 유지합니다. 클라우드 제공업체나 게이트웨이를 사용하는 경우에는 작업이 끊기는 시점에 변경합니다.</li>
+<li>xhigh에서도 같은 문제가 두 번 발생하면 Fable 5.1로 전환합니다. 문제가 해결되면 다시 원래 모델로 돌아옵니다.</li>
+<li>검색과 로그 분석을 맡는 서브에이전트(subagent)는 Sonnet 또는 Haiku에 배치합니다. 코드 수정은 Opus 5.5에서 계속 수행합니다.</li>
+<li>긴 세션은 끊기지 않고 계속 이어지게 하여 캐시가 따뜻한 상태로 유지되도록 합니다.</li>
+<li>관련 없는 작업 사이에는 /clear를 사용하고, 작업이 끊기는 시점에는 유지할 내용을 메모와 함께 남겨 /compact를 사용합니다.</li>
+<li><strong>가장 중요한 항목:</strong> 각 모델에서 실제 작업을 하나씩 실행하고 /usage가 보고하는 수치를 비교합니다. 신뢰해야 할 것은 직접 측정한 수치입니다.</li>
+</ul>
+<p>이 글이 도움이 되었기를 바랍니다. Opus 5.5에서의 사용 한도가 Opus 5보다 더 늘어나지 않았다면 /feedback으로 알려 주시기 바랍니다.</p>
+<p>더 읽어볼 자료: <a href="https://code.claude.com/docs/en/costs">비용을 효과적으로 관리하기</a> · <a href="https://code.claude.com/docs/en/model-config">모델 구성</a> · <a href="https://claude.com/blog/claude-model-and-effort-level-in-claude-code">Claude Code에서 Claude 모델과 effort 수준 선택하기</a> · <a href="https://platform.claude.com/docs/en/build-with-claude/effort">Effort</a> · <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">프롬프트 캐싱</a> · <a href="https://claude.com/blog/maximizing-the-value-of-your-claude-code-sessions">Claude Code 세션의 가치 극대화하기</a></p>
+<p><em>검토해 주신 Michael Segner, Kacie Jenkins, Molly Vorwerck에게 감사드립니다.</em></p></article>
+  <article class="prose lang-en" hidden lang="en"><h2>THE COST OF A TASK, AND THE COST OF A RETRY</h2>
+<p>You don't set out to buy millions of tokens. You set out to build a feature, finish a migration, or run a task. The token count is whatever the model needed to get there.</p>
+<p>Two models with the same cost per token can cost very different amounts on the same task. One reads the code once. The other reads it, tries a fix, and reads it again. Each of those steps is a turn, and each turn resends the conversation so far. So the model that needs more turns costs more, even at the same price.</p>
+<p>By the end of this post you should be able to answer three questions about your own work:</p>
+<ul>
+<li>What do my typical tasks cost me on Opus 5.5?</li>
+<li>Which settings change that, and by how much?</li>
+<li>How do I check my own session usage?</li>
+</ul>
+<p>The tradeoff I want to share upfront is that every way to spend fewer tokens can also cost you a finished task. Lower effort, a smaller model, or less context can all certainly save tokens. A retry costs more than those savings. This post attempts to put a price on each tradeoff.</p>
+<p>Some numbers here are list prices, and some are illustrations built from them. The figures are interactive, so change the inputs as you read. These are best effort illustrations, so be sure to check our docs and your own math.</p>
+<h2>WHAT DOES A TASK COST?</h2>
+<p>A task in <a href="https://claude.com/product/claude-code">Claude Code</a> is a loop. The model reads the conversation, calls a tool, reads the result, and goes round again until it's done. Each trip round the loop is one request. Four things set what the loop costs.</p>
+<p><strong>Turns.</strong> Every turn resends the conversation so far. Fewer turns means less input processed.</p>
+<p><strong>Cache reads.</strong> Most of what a turn resends is text the model saw on the previous turn. It's billed as a cache read, at a small fraction of the input price.</p>
+<p><strong>Output token type.</strong> The most expensive tokens, at five times the input price. <a href="https://platform.claude.com/docs/en/build-with-claude/extended-thinking">Thinking</a> is billed as output, so a model that reasons less on the way to the answer costs less.</p>
+<p><strong>Model.</strong> Each model has its own prices, listed on the pricing page, so the model you pick sets the price of every token.</p>
+<p>Our examples use Opus 5.5 API list prices: $4 per million input tokens, $20 per million output tokens and $0.20 per million cache reads. Like the calculator further down, the examples bill cached input at the read price and everything else at the input price, and leave out cache writes. The token counts are illustrations.</p>
+<h3>Turns</h3>
+<p>Let’s say a task starts with 20K tokens of context and grows to 120K as the model reads files and tool results. At 40 turns, the average turn sends about 70K tokens. That's about 2.8M input tokens for the task, though the conversation never grew past 120K. With 90% read from cache, the input costs about $1.62. The same task in 25 turns processes about 1.75M tokens and costs about $1.02 in input.</p>
+<p>A turn costs more than the tokens it adds, because it resends everything before it. So the cheapest turn is the one you don't need.</p>
+<p>One habit that can cut turns is giving the model <a href="https://claude.com/resources/articles/building-verification-loops-in-claude-code-with-skills">a way to check its work</a>. For example, a test to run, a build, or a script that calls the endpoint. A model that can check its own work finds its mistakes earlier.</p>
+<p>A model that gathers what it needs in one pass, and batches its tool calls, pays the resend fewer times too.</p>
+<h3>Cache reads</h3>
+<p>The same 2.8M input tokens cost $11.20 if none come from cache. At a 90% hit rate they cost $1.62, and at 96% about $0.99. No other setting moves input cost this much. A steady session keeps a high hit rate on its own. I cover some actions to avoid breaking your cache later in this post.</p>
+<h3>Output tokens</h3>
+<p>On Opus 5.5, an output token costs 100 times a cache read. The 60K output tokens of a typical task cost $1.20, the same as reading 6M tokens from cache. Output includes thinking. You pay for all of it, even when Claude Code only shows you a summary. That's why effort, which mostly changes how much the model thinks, moves the bill so much.</p>
+<h3>Model</h3>
+<p>A model with cheaper cache reads mostly helps long sessions. One with cheaper output mostly helps tasks that need a lot of reasoning.</p>
+<h2>WHAT CHANGED IN OPUS 5.5</h2>
+<p>Two things changed: the price, and how much work the model does.</p>
+<p><strong>Every price line is lower.</strong> Input and output tokens are 20% cheaper than on Opus 5. Cache reads are 60% cheaper. The input price falls, and the read rate falls with it, from a tenth of the input price to a twentieth. Fig A compares the two models per million tokens. These are API list prices. On a Pro, Max or Team plan, the lower Opus 5.5 price is passed on to your limits, including cached context, so they go about 25% further than on Opus 5. The extra cut on cache reads is an API price change.</p>
+<p>Separately, five-hour limits went up on Pro, Max, Team and seat-based Enterprise plans, and eligible subscribers get a limit reset to use when they choose. You'll find it under Settings &gt; Usage on the web or in Claude Desktop, not in Claude Code in your terminal. A reset applies across your account, Claude Code included.</p>
+<figure><img src="https://claude.dev/media/b05e27f1d72e92adffee8d13608665be2af86db6133408b498199bc0f13e62d2.png" alt="Bar chart of API list prices per million tokens, Opus 5 against Opus 5.5: input $5.00 and $4.00, output $25.00 and $20.00, cache reads $0.50 and $0.20, which is 20%, 20% and 60% lower."><figcaption><b>FIG A</b>API list price per million tokens.</figcaption></figure>
+<p>On an API key, the cache-read price cut matters most for Claude Code. A long agentic session spends most of its input on cache reads. In the session priced in Fig B below, the cache line falls from $1.00 to $0.40, the largest drop on the receipt.</p>
+<p>How much you save depends on the shape of your work. A session that is mostly cache reads can save up to 60% on input. A short question with no cache and a long answer can save up to 20%, because output dominates it. Most Claude Code tasks sit between the two. The calculator below shows where yours sits.</p>
+<p>You may have seen that Opus 5.5 costs 40% less to run than Opus 5. That's our estimate for typical workloads billed by token, at default settings. It assumes Opus 5.5 uses fewer tokens per task at its medium default, on top of the lower prices, so it isn't a 40% cut to the price of a token. The token prices are the ones in Fig A, and Fig B shows what the price change does on its own.</p>
+<p>Opus 5.5 can use more tokens on an answer, because it always thinks before it replies. We expect people to get more done on Opus 5.5, but it varies by task, so measure it on your own work. Fig C compares cost per task on the two models. This part depends on your work far more than the price does.</p>
+<p>On a well-scoped task, both models finish in about the same number of turns, and the price cut is all you get. The gap should be biggest on open-ended tasks, where a model can spend many turns on the wrong idea. No single number holds for every codebase, so measure it (see the last section).</p>
+<p><strong>Long runs end with a report.</strong> Opus 5.5 closes a long run with what it changed, what it found, and what it needs from you. That can save money too, because you rerun a session less often when you can see what happened.</p>
+<h2>THE SAME TASKS SIDE-BY-SIDE</h2>
+<p>Fig B prices one session on both models with the same token counts. So the difference is the price change and nothing else. Switch models to compare. The token counts are illustrative.</p>
+<figure>$3.50at Opus 5 API list prices<ul><li><i></i>Read from cache 2.0M$1.00</li><li><i></i>Fresh input 200K$1.00</li><li><i></i>Output 60K$1.50</li><li>Total, Opus 5$3.50</li></ul><figcaption><b>FIG B</b>Illustrative session with the same tokens on both models, so this is the price change alone.</figcaption></figure>
+<p>The receipt has the three lines /usage shows for a session. Cache reads are the biggest line by tokens, at 2M. Output is the smallest by tokens and the biggest by cost. Fresh input sits between them. It covers the first read of each file and each new tool result.</p>
+<p>Fig B gives both models the same token counts, so it shows the price change alone. Your own sessions can use more or fewer tokens on Opus 5.5. Priced that way, the session costs about 31% less.</p>
+<p>A recorded run adds the second effect, the change in how much work the model does. On a task with a false start, the gap should widen.</p>
+<h3>Try your own numbers</h3>
+<p>Set what one of your tasks uses, or start from a preset. The presets are pretty illustrative but I’d still recommend doing your own math. Cached input bills at the cache-read price and fresh input at the input price, so the cache slider shows how much of the gap comes from cache reads.</p>
+<p>To fill the sliders from a real session, run /usage at the end of a task. The Session block gives input, output and cache figures. The last slider is your assumption about how much less work Opus 5.5 does on your tasks. Leave it at 0% for the price change alone. To set it from your own work, here's how: run the same task on Opus 5 and on Opus 5.5, and compare turns and output tokens. Measure it yourself walks through it, and Reading a session shows what to check in /usage.</p>
+<figure>Input tokens2.2MEverything sent to the model across all turns, cached or not.Read from cache91%Output tokens60KIncludes thinking, which is billed as output.Tasks per day10Token change on Opus 5.5 (your assumption)0%Leave at 0% for price alone. Opus 5.5 can use more or fewer tokens than Opus 5, so measure it on your own tasks.Opus 5, these tokens<b>$3.50</b>$770 a monthOpus 5.5, these tokens<b>$2.40</b>$528 a monthChange at API list prices<b>−31%</b>$242 less a month, from price aloneOpus 5, these tokens: $3.50. Opus 5.5, these tokens: $2.40. Change at API list prices: −31%, $242 less a month, from price alone.<figcaption><b>FIG C</b>A month is 22 working days. API list prices. On a Pro, Max or Team plan, this is not a bill. No batch or volume discounts, and cache writes are not counted (see <a href="https://claude.dev/blog/what-a-task-costs-on-opus-5-5/#caching-and-compaction">caching</a>).</figcaption></figure>
+<h2>TIPS FOR MAXIMIZING THE VALUE OF YOUR SESSION</h2>
+<p>Opus 5.5’s lower price makes each token cost less. How you run a session decides how many tokens you use, and these steps help.</p>
+<h3>Raise effort before you change models</h3>
+<p>Effort sets a general disposition for how many tokens the model spends on each turn: its thinking, the text it writes, and its tool calls. At lower effort it makes fewer tool calls and keeps them shorter. Opus 5.5 has four levels (low, medium, high and xhigh), plus max for a single session. Pick a level below to see when to use it and the command that sets it.</p>
+<figure>Medium: for well-scoped daily workDay-to-day work with a clear scope. It thinks less per turn than high, so each turn costs less.Start here when the task is well scoped.<ul><li><code>/effort medium</code></li><li><code>/effort status</code></li><li><code>/model</code></li><li><code>/usage</code></li></ul><figcaption><b>FIG D</b>Levels run from least to most thinking per turn.</figcaption></figure>
+<p>Claude Code sets a default level for each model, and /effort status shows yours. Try <strong>medium</strong> for well-scoped, day-to-day work. When medium stalls, try <strong>high</strong>. It spends more per turn than medium, but less than moving to a bigger model. Use <strong>low</strong> for mechanical work, like renames or applying a known pattern across files.</p>
+<p>On Opus 5.5 the default is medium, one level below Opus 5's default of high. Levels don't mean the same amount of thinking on every model. At a given level, Opus 5.5 thinks more per turn than Opus 5, most of all at xhigh and max. So don't carry over a level you chose for Opus 5. Start at medium, and keep xhigh and max for work where you've measured a gain.</p>
+<p>A rough way to think about effort pricing: say high adds 20K thinking tokens across a task. On Opus 5.5 that's $0.40. A retry loop of ten turns at 100K of cached context, with 10K output tokens in total, costs about the same. So high pays for itself on a task where it saves one retry. On a task medium would have finished the first time, it's wasted.</p>
+<h4>When medium fixes one layer</h4>
+<p>The clearest sign you need more effort is a fix that stops at one layer.</p>
+<p>Say a field is renamed in an API handler. At medium, the model updates the handler, the handler's tests pass, and the client still sends the old field. It did what it was asked. It just didn't read far enough to find the second caller. At high, it spends more turns reading call sites before it writes, and it changes both layers in one pass.</p>
+<p>A check can catch the same bug. If the model can run a test that goes through the client, the old field fails that test on the turn it was written, at medium. So before you raise effort, check whether the model has a way to check its work. A test run costs one turn and its output. More effort adds thinking to every turn.</p>
+<p>If upgrading effort levels and adding checks doesn’t work, then switch to a bigger model.</p>
+<h4>Changing effort mid-session</h4>
+<p>In Claude Code, run /effort with a level, for example /effort high. /effort status prints the current level. You can change it mid-task, and the new level applies to the next request.</p>
+<p>On Opus 5.5 with an API key or a Claude subscription, changing effort keeps the cache. You can raise it for one hard step and lower it again without rewriting the conversation. On Amazon Bedrock, Google Cloud's Agent Platform or a Claude apps gateway, a change of effort still clears the cached conversation, and the next request pays the cache-write price on all of it. Thinking is always on for Opus 5.5, so there's no thinking setting to change.</p>
+<h3>Choose the right model for your work</h3>
+<p>Model choice sets the price of every token in a session, so it moves the bill more than effort does. It also reaches further. Every subagent that inherits the main model inherits its price too. Most days need three models: a small one for lookups, Opus 5.5 for work you supervise closely, and a bigger one for the hardest tasks.</p>
+<figure><img src="https://claude.dev/media/f08757b9a91bce794fda0b6e3cd0deacede7783ce9db0097a67a47606e6900a4.png" alt="Three models in order of cost, with bars that show order of cost only: Haiku or Sonnet for lookups and subagents, Opus 5.5 as the daily driver, and Fable 5.1 for the hardest work, each with the kinds of work it suits."></figure>
+<h4>Opus 5.5 as the daily driver</h4>
+<p>Use Opus 5.5 for work you supervise: feature work across a few files, debugging, and code review with follow-up edits. You read what it does and step in when it drifts, so the loop stays short.</p>
+<h4>Moving up to Fable 5.1</h4>
+<p><strong>Move up to Fable 5.1 when the result matters more than the token price.</strong> For example long runs you won't supervise, problems with no existing pattern in the codebase, and large changes that coordinate many subagents. Don't wait for a third failure. If Opus 5.5 on xhigh hits the same problem twice, switch, and switch back once it's solved. For interactive work, Opus 5.5 is a better fit as it has lower latency and costs less.</p>
+<p>Fable 5.1 lists at $10 per million input tokens and $50 per million output, two and a half times the Opus 5.5 price. Its cache reads cost $0.25 per million, only 1.25 times the Opus 5.5 rate, because they bill at 0.025 times its input price. So the gap is smallest on a long, cache-heavy run, and largest on a task that writes a lot.</p>
+<p>Switch at a natural break. The cache belongs to the previous model, so expect the first turn on the new model to pay the write price on the whole conversation. Run /compact first, or start a fresh session with a short written plan, to make that turn smaller. Run <a href="https://code.claude.com/docs/en/model-config">/model</a> with an alias or a model name to switch. /model also saves your choice as the default for new sessions, so switch back when the hard part is done.</p>
+<h4>Moving down for lookups</h4>
+<p><strong>Move down to Sonnet or Haiku for lookups, not for writing code:</strong> subagents that search and summarize, reading logs and test output, and "where is this defined" questions. For a mechanical edit across many files, keep Opus 5.5 and set effort to low. The edit stays on the model that writes the rest of your code, at a lower cost per turn.</p>
+<p>To put a <a href="https://code.claude.com/docs/en/sub-agents">subagent</a> on a smaller model, set model: haiku or model: sonnet in its definition. To put every subagent on one model, set the CLAUDE_CODE_SUBAGENT_MODEL environment variable. A model named in a subagent's definition overrides the variable. A subagent with no model setting runs on your main model, unless the variable is set.</p>
+<p>Each subagent runs in its own context window and hands back a summary, so its file reads stay out of your main conversation. It still pays for its own tokens, so the model setting decides what that spend costs.</p>
+<p>Agent teams, an experimental feature, multiply this. Each teammate is a separate Claude Code instance with its own context window, and it keeps using tokens until it exits. Our <a href="https://code.claude.com/docs/en/costs">costs docs</a> put a team at about seven times the tokens of a standard session when teammates run in plan mode. Keep teams small, keep each task self-contained, and shut teammates down when their part is done.</p>
+<p>The tradeoff: a small model that misreads a search result sends the main model after the wrong file, and the main model pays for the detour. Keep the small model on work where a mistake is cheap to spot, like finding files, running tests and reading logs.</p>
+<p>Keep judgment calls on the main model. The opusplan alias splits the work a different way: Opus plans in plan mode, and Sonnet carries out the plan. That puts the code edits on Sonnet, the opposite of the advice above. Measure it on your own tasks before you make it a default.</p>
+<h3>Check your prompts when you migrate</h3>
+<p>Instructions written for an older model can make Opus 5.5 write more and repeat tool calls. Run /claude-api prompt-audit in Claude Code to check your Claude Code setup, such as your skills and CLAUDE.md file, for these <a href="https://claude.com/blog/reducing-cost-and-improving-performance-with-claude-platform">prompting anti-patterns</a>. It also checks the code of an app you build on the Claude Platform.</p>
+<p>We tested this on a migration from Opus 4.8 to Opus 5.5, using an internal customer support benchmark of 44 tickets whose prompt had several of these patterns. The move to Opus 5.5, at low effort, cut the benchmark's cost by about 18%. Running prompt-audit cut it by a further 9%, to about 25% below the Opus 4.8 starting point. The audit removed ritual instructions that made the model write more and repeat tool calls: a mandatory six-step procedure, a scratchpad rule, a verify-twice rule, and instructions that contradicted each other.</p>
+<p>That result comes from one benchmark, so treat it as an example rather than a number to expect. Run the audit, then compare /usage on a real task before and after (see Measure it yourself).</p>
+<h3>Caching and compaction</h3>
+<p>Claude Code handles caching and compaction for you. How you run a session decides how much they save.</p>
+<h4>How the cache works</h4>
+<p>Claude Code caches the parts of a request that repeat, such as the system prompt, tool definitions, and the conversation so far.</p>
+<p>On Opus 5.5 a cached read costs 5% of a fresh input token. Writing to the cache costs more than a fresh read, at 1.25 times the input price for a five-minute cache and twice the input price for a one-hour cache, on today's pricing. Each hit resets the lifetime at no charge.</p>
+<p>In Claude Code the lifetime depends on how you pay. On a Claude subscription it's an hour. On an API key or a cloud provider it's five minutes by default, and a subscription drops to five minutes once it's drawing on usage credits.</p>
+<p>At 120K tokens of context, a five-minute write on Opus 5.5 costs about $0.60 and a read about $0.02. One write costs as much as 25 reads. On an API key, a six-minute coffee break turns the next $0.02 read into a $0.60 write. A one-hour write at the same size costs about $0.96, and on the API you can pay that premium to cover the gaps in your day.</p>
+<h4>Session shape and hit rate</h4>
+<p>The cache stores a prefix, so it can reuse only the part of a request that matches the previous one from the start.</p>
+<p>A steady session appends to the end of the conversation on every turn and keeps its hit rate high. Anything that changes an earlier part of the request lowers it. Changing the tool definitions clears the whole cache, and a change to the system prompt clears it from that point on, which is almost everything.</p>
+<p>In practice, expect a cache write when:</p>
+<ul>
+<li>You pause longer than the cache lifetime;</li>
+<li>You change effort on Amazon Bedrock, Google Cloud's Agent Platform or a gateway, where the level is part of what the cache matches;</li>
+<li>You turn on fast mode for the first time in a conversation, which changes part of what the cache matches;</li>
+<li>You connect or disconnect an MCP server, which can change what loads at the start of each request;</li>
+<li>You switch models, since the new model starts from an empty cache; and</li>
+<li>The conversation is compacted, which rewrites the history the cache matched.</li>
+</ul>
+<p>So set these up when the session starts, and leave them alone while it works.</p>
+<h4>Why long sessions cost more per turn</h4>
+<p>Every turn resends the whole context, so a turn costs more as the context grows, even with a warm cache. At 20K tokens of context a turn's cache read costs about $0.004 on Opus 5.5. At 150K it costs about $0.03, and 30 turns at that size spend $0.90 on reads alone. The same 30 turns at 20K cost about $0.12. On Claude 4.6 and later models a bigger context window doesn't change the price per token, so the cost comes entirely from resending the conversation.</p>
+<p>Much of that context is left over from earlier work: a stack trace from an hour ago, a file you've finished with, the output of a test run you've since fixed. It's all still sent on every turn.</p>
+<h4>Compaction, /compact and /clear</h4>
+<p>When a session gets close to its context limit, Claude Code summarizes older history so later turns send less. Run /autocompact with a token count to change how full the context gets before that happens.</p>
+<p>Two commands let you do this yourself. /clear empties the conversation and costs nothing, so use it when you move to unrelated work. /compact keeps continuity and costs one request. It reads the conversation it summarizes, and you can say what to keep, for example /compact keep the failing test names and the schema change.</p>
+<p>A rough price for compacting at 150K tokens is about $0.25. That's the read, a summary of a few thousand output tokens, and a new cache write on the shorter context. Each later turn saves about $0.025 in reads, so the compaction pays for itself within about ten turns. A compaction just before you finish costs more than it saves.</p>
+<p>That price assumes a warm cache. While the cache is warm, the summary request reads the conversation from it, so compact before a break, not after one. After a break longer than the cache lifetime, the same /compact reads the whole conversation again and writes it back to the cache. At 150K tokens on a five-minute cache, the input alone comes to about $0.75. If you've gone down a path you want to drop, /rewind to an earlier turn instead. While the cache is warm, that returns to a prefix that's already cached.</p>
+<p>The summary also loses detail. A compaction in the middle of a debugging session can drop the one log line that mattered. Compact at a natural break, and when the next step depends on something specific, say so in the /compact instruction.</p>
+<h4>What loads before you type</h4>
+<p>Your <a href="https://code.claude.com/docs/en/memory">CLAUDE.md file</a> loads into the context at the start of every session, so each line in it is part of what every turn resends. The <a href="https://code.claude.com/docs/en/costs">costs docs</a> suggest keeping it under 200 lines. MCP tool definitions are deferred. Only tool names and server instructions load at the start, and a full definition loads when its tool is used. Run /mcp to see which servers are connected, and turn off the ones you aren't using.</p>
+<h4>The rest of the bill</h4>
+<p>The table lists the other billing rules that affect a Claude Code session, with a link to the docs where one exists.</p>
+<p>Fast mode runs Opus 5.5 up to 2.5 times faster, at twice the standard price: $8 per million input tokens and $40 per million output. On a Claude subscription it's billed to usage credits, not your plan limits. The first request after you turn it on pays the fast-mode input price on the whole conversation, uncached. So turn it on at the start of a session, not deep into one.</p>
+<table><thead><tr><th>What the bill counts</th><th>How it works</th></tr></thead><tbody><tr><td>Cache lifetime</td><td>In Claude Code, one hour on a subscription; five minutes on an API key or cloud provider, or once a subscription draws on usage credits. Each hit resets the lifetime. The API offers a one-hour cache at a higher write price. <a href="https://code.claude.com/docs/en/costs">Costs docs (Claude Code lifetime) and prompt caching docs</a></td></tr><tr><td>Cache writes</td><td>1.25× the input price for a five-minute cache and 2× for a one-hour cache, on today's API pricing. <a href="https://platform.claude.com/docs/en/about-claude/pricing">Pricing docs</a></td></tr><tr><td>Thinking</td><td>Billed as output tokens, including thinking that isn't returned to you. <a href="https://platform.claude.com/docs/en/build-with-claude/thinking">Extended thinking docs</a></td></tr><tr><td>Effort</td><td>Applies to every output token: text, tool calls and thinking. <a href="https://platform.claude.com/docs/en/build-with-claude/effort">Effort docs</a></td></tr><tr><td>Auto-compaction</td><td>Runs as the context window nears its limit. /autocompact with a token count sets the threshold. <a href="https://code.claude.com/docs/en/context-window">Context window docs</a></td></tr><tr><td>Subagents and agent teams</td><td>A subagent works in its own context window and returns a summary. Agent teams in plan mode use about 7× the tokens of a standard session. <a href="https://code.claude.com/docs/en/costs">Context window and costs docs</a></td></tr><tr><td>Batch API</td><td>Half price on input and output tokens for requests sent through the Message Batches API. <a href="https://platform.claude.com/docs/en/build-with-claude/batch-processing">Batch processing docs</a></td></tr><tr><td>Typical spend today</td><td>Average: about $13 per developer per active day across enterprise deployments. For 90% of users, cost stays below $30 per active day. Both figures are for current models. <a href="https://code.claude.com/docs/en/costs">Public docs, costs page (enterprise average and 90% bound)</a></td></tr></tbody></table>
+<h2>MEASURE IT YOURSELF</h2>
+<p>The figures in this post are illustrations. Your codebase, prompts and habits are different, so measure cost on your own tasks. Here's how to check.</p>
+<ol>
+<li><strong>In a session, run <a href="https://code.claude.com/docs/en/costs">/usage</a>.</strong> /cost does the same thing. The Session block shows token use and an estimated dollar cost at list price. A prompt-cache line shows how much of your input came from cache. On a Pro, Max, Team or Enterprise plan, the same screen shows your plan usage bars. The dollar figure is computed on your machine at list price, so on a subscription it is a guide to how much work you did, not a bill.</li>
+<li><strong>Run the same task twice.</strong> Opus 5.5 needs Claude Code v2.1.280 or later, so run <code>claude update</code> first. Pick something from your backlog, not a toy example. Use /model to switch between Opus 5 and Opus 5.5. Note turns, output tokens and cost for each run. Do three or four tasks before you draw a conclusion.</li>
+<li><strong>For a team, use the usage and cost reports.</strong> The <a href="https://platform.claude.com/docs/en/manage-claude/claude-code-analytics-api">Claude Code Analytics API</a> gives estimated cost per user. The <a href="https://platform.claude.com/docs/en/manage-claude/usage-cost-api">Usage and Cost API</a> breaks spend down by model and by cached versus uncached tokens.</li>
+<li><strong>Try the effort ladder.</strong> Run one hard task at medium and then at high. Run one mechanical task at low.</li>
+</ol>
+<h3>Reading a session</h3>
+<p>Check three things in /usage at the end of a task.</p>
+<ul>
+<li><strong>Cache share.</strong> For a long session it should be high. If it's low, look for a long pause, a model switch, an MCP server connected partway through or, on a cloud provider or gateway, a change of effort. The prompt cache line often names the likely cause of the last miss.</li>
+<li><strong>Output against input.</strong> A lot of output on a small change usually means the effort level is too high for the task, or the model is retrying.</li>
+<li><strong>Total input against the size of the conversation.</strong> If the total is many times the size of the conversation, the session took many turns, and the conversation is worth reading to find where the loop repeated.</li>
+</ul>
+<p>For a baseline, the Claude Code costs docs give an average across enterprise deployments of about $13 per developer per active day, and under $30 per active day for 90% of users. A session that costs well above your own normal level is worth reviewing.</p>
+<h2>KEEP IN MIND</h2>
+<ul>
+<li>Use medium effort for well-scoped daily work.</li>
+<li>Give the model a way to check its work, and start changes that span files in plan mode.</li>
+<li>When medium stalls, raise effort to high. With an API key or a subscription the change keeps your cache. On a cloud provider or gateway, change it at a break.</li>
+<li>If xhigh hits the same problem twice, switch to Fable 5.1. Switch back once it's solved.</li>
+<li>Put search and log-reading subagents on Sonnet or Haiku. Keep code edits on Opus 5.5.</li>
+<li>Keep a long session moving, so its cache stays warm.</li>
+<li>Use /clear between unrelated tasks, and /compact at a break with a note on what to keep.</li>
+<li><strong>The one that matters most:</strong> run one real task on each model and compare what /usage reports. Your own numbers are the ones to trust.</li>
+</ul>
+<p>I hope this post was helpful. If your limits don’t go further on Opus 5.5 than on Opus 5, tell us with /feedback.</p>
+<p>Further reading: <a href="https://code.claude.com/docs/en/costs">Manage costs effectively</a> · <a href="https://code.claude.com/docs/en/model-config">Model configuration</a> · <a href="https://claude.com/blog/claude-model-and-effort-level-in-claude-code">Choosing a Claude model and effort level in Claude Code</a> · <a href="https://platform.claude.com/docs/en/build-with-claude/effort">Effort</a> · <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Prompt caching</a> · <a href="https://claude.com/blog/maximizing-the-value-of-your-claude-code-sessions">Maximizing the value of your Claude Code sessions</a></p>
+<p><em>With thanks to Michael Segner, Kacie Jenkins and Molly Vorwerck for their reviews.</em></p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

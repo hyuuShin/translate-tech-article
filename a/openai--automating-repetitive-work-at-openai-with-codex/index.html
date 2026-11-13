@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Codex로 OpenAI의 반복 업무 자동화하기 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">Codex로 OpenAI의 반복 업무 자동화하기</h1>
+    <h1 class="lang-en" hidden lang="en">Automating repetitive work at OpenAI with Codex</h1>
+    
+    <p class="art-sum lang-ko">Runme와 WebMCP가 반복적인 엔지니어링 작업을 검토 가능하고 재사용할 수 있는 워크플로로 바꾸는 방법</p>
+    <p class="art-sum lang-en" hidden lang="en">How Runme and WebMCP turn recurring engineering tasks into reviewable, reusable workflows.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 8월 25일</dd></div>
+      <div><dt>저자</dt><dd>Jeremy Lewi</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/automating-repetitive-work-at-openai-with-codex">https://developers.openai.com/blog/automating-repetitive-work-at-openai-with-codex</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>저는 경력 대부분을 소프트웨어 엔지니어로서 반복 작업을 직접 수행하거나(소프트웨어를 배포하고 운영하는 일), 그 반복 작업을 대신 처리해 줄 소프트웨어를 만들며 보냈습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/automating-repetitive-work-at-openai-with-codex/runme-evaluation-goal-original.webp" alt="평가 목표와 워크플로 문서화 지침이 담긴 Runme 노트북 옆에 있는 Codex."></figure>
+<p>OpenAI에서의 첫 업무는 클라우드 인프라 팀에서 애플리케이션 팀을 위해 새로운 Kubernetes 클러스터를 구축하는 일이었습니다. 일주일 동안 프라이빗 링크(private link), 쿼터, Terraform 관련 문제를 해결하며 클러스터 묶음 하나를 준비했고, 그 클러스터들이 준비되면 곧바로 다음 묶음 작업을 시작했습니다.</p>
+<p>그다음 업무는 API 팀에서 최신 모델에 대한 평가를 실행하는 일이었습니다. 채점기(grader), 쿼터, 설정, PyTorch 관련 문제를 해결했고, 평가가 성공적으로 실행되어 모델이 출시되면 다음 모델로 다시 같은 작업을 시작했습니다.</p>
+<p>지금은 이런 반복 작업에 Codex를 활용합니다. 저는 여전히 소프트웨어를 만듭니다. 더 정확히 말하면 Codex가 만드는 일을 돕습니다. 다만 작업마다 별도의 자동화를 만드는 대신, 다음을 위해 <a href="https://web.runme.dev/">Runme</a>를 만들고 있습니다.</p>
+<ul>
+<li>워크플로를 둘러싼 컨텍스트를 수집하고 정리합니다.</li>
+<li>적절한 검토 및 승인 경계를 유지합니다.</li>
+<li>이전 실행에서 얻은 지식으로 이후 Codex 실행을 개선합니다.</li>
+</ul>
+<h2>Codex로 평가 실행하기</h2>
+<p>OpenAI에서는 새로운 모델과 기능을 출시할 때 의도대로 동작하는지 확인하기 위해 평가를 실행합니다. 평가를 실행하기 위해 저는 Runme 노트북을 만들고 목표를 간단히 개요로 작성합니다.</p>
+<pre data-lang="markdown"><code># Goal: Run the evaluation against the current model
+
+- Review a previous run to understand the workflow.
+- Write a detailed plan in this notebook.
+- Wait for me to review and approve the plan before beginning.
+- Document the commands you run, their output, and how you interpret the results.</code></pre>
+<p>그런 다음 Codex에게 이 노트북 셀을 목표로 사용하라고 요청합니다.</p>
+<pre data-lang="text"><code>Read the goal cell in the Runme notebook open in the browser. Treat it as the
+goal, write your plan in the notebook, and wait for my approval before starting.</code></pre>
+<p>Codex는 노트북을 읽고 작업이 진행됨에 따라 노트북을 업데이트합니다. 계획이 준비되면 제가 검토하고, 필요하면 수정합니다. 제가 개입해서 실질적으로 도움이 되는 부분은 대개 Codex가 여러 대안 중에서 선택하도록 돕는 일입니다. 어떤 평가 시스템을 사용할지, 새 인프라를 프로비저닝할지, 아니면 기존 리소스로 충분한지를 정하는 일이 여기에 해당합니다.</p>
+<p>Codex가 작업하는 동안 저는 진행 상황을 지켜보며(때로는 휴대폰으로), 막혔을 때 가끔 방향을 잡아 줍니다. 예를 들어 쿼터가 소진되어 개발 환경을 프로비저닝할 수 없다면, 기존 환경을 재사용하거나 승인된 다른 방안을 찾아보라고 제안할 수 있습니다.</p>
+<p>그 결과로 작업을 완료하는 데 필요한 단계와 막다른 길까지 기록한 노트북이 만들어집니다. 마무리하기 전에는 Codex와 함께, 그대로 두면 대화 속으로 사라질 결정을 정리해 둡니다. 왜 한 가지 방안을 선택했는지, 이제 어떤 접근 방식을 선호하는지, 다음에는 무엇을 다르게 해야 하는지를 기록합니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/automating-repetitive-work-at-openai-with-codex/runme-completed-evaluation-notebook-edge-to-edge.webp" alt="평가 목표, 검토된 근거, 그 결과로 나온 설정을 보여 주는 완성된 Runme 노트북."></figure>
+<h2>Codex와 노트북 협업하기</h2>
+<p><a href="https://github.com/runmedev/web">Runme</a> 프로젝트는 Codex와 함께 노트북을 만들 수 있는 오픈소스 웹 애플리케이션입니다. Jupyter, Colab과 마찬가지로 Markdown, 코드 셀, HTML을 지원하므로 지침, 명령어, 결과, 표, 차트를 한데 담은 문서를 만들 수 있습니다.</p>
+<p>노트북은 Google Drive에 바로 저장할 수 있습니다. 덕분에 함께 일하는 사람들이 별도의 문서 저장소를 새로 도입하지 않고도 익숙한 방식으로 결과물을 찾고 공유할 수 있습니다.</p>
+<p>Runme는 각 노트북마다 <code>*.index.md</code>라는 이름의 보조 Markdown 인덱스도 함께 작성합니다. Google Drive가 이 파일을 색인할 수 있으므로, 에이전트가 예시, 운영 컨텍스트, 이전 실행의 결과가 필요할 때 과거 노트북을 더 쉽게 찾을 수 있습니다.</p>
+<p>에이전트는 <a href="https://github.com/webmachinelearning/webmcp">WebMCP</a>를 통해 Runme와 상호작용합니다. 애플리케이션이 로드되면 에이전트가 다음 작업에 사용할 수 있는 <a href="https://github.com/runmedev/web/blob/4a74e79efa18d78d63930112818b560bb10a0bb3/app/src/components/WebMcp/WebMcpToolRegistrationHost.tsx#L65">브라우저 측 도구를 등록</a>합니다.</p>
+<ul>
+<li>Runme와 노트북 작업 방법에 대한 지침을 읽습니다.</li>
+<li>노트북 콘텐츠를 읽거나 업데이트하는, 범위가 제한된 JavaScript 프로그램을 실행합니다.</li>
+<li>애플리케이션 문서를 읽습니다.</li>
+</ul>
+<p>Runme가 정적 웹사이트로 제공되는 클라이언트 측 애플리케이션이기 때문에 이 아키텍처는 중요합니다. 기존 방식의 MCP 엔드포인트를 노출하기 위해서만 서버를 추가하면 인프라와 운영 복잡도가 늘어나고, 노트북 데이터가 처리되는 위치도 달라집니다. WebMCP를 사용하면 애플리케이션이 브라우저에서 직접 자체 기능을 노출할 수 있습니다.</p>
+<h2>유용한 컨텍스트 수집과 큐레이션</h2>
+<p>평가를 실행할 때마다 작업이 어떻게 이루어졌는지 문서화하여 다음 실행을 더 쉽게 만들 기회가 생깁니다. 워크플로가 개선될수록 더 유용한 컨텍스트가 만들어지고, 그 컨텍스트는 다시 Codex가 다음 버전의 작업을 더 효과적으로 처리하도록 돕습니다.</p>
+<figure>    평가 실행 Codex가 검토된 계획을 따릅니다.   워크플로 문서화 명령어, 결과, 결정을 기록합니다.   Codex 워크플로 개선 이전 실행에서 기록된 내용을 재사용합니다.   다음 평가를 더 빠르게 실행 기존 컨텍스트에서 시작합니다.   Codex + Runme  WebMCP Google Drive    </figure>
+<p>에이전트에게 도움이 될 만한 정보 대부분은 이미 일상 업무 속에 존재하지만, 터미널 기록, Slack, 런북, 문서, 대시보드에 흩어져 있습니다. 어려운 점은 문서화가 유용하다는 것을 증명하는 일이 아니라, 작업이 진행되는 동안 문서화를 적은 비용으로 만들 수 있게 하는 일입니다.</p>
+<p>Runme는 의도, 행동, 결정, 결과를 하나의 산출물에 담습니다. <a href="https://developers.openai.com/codex/long-running-work">지속형 목표(persistent goal)</a>는 Codex가 작업에 집중하도록 유지해 주고, <a href="https://developers.openai.com/codex/sandboxing/auto-review">자동 승인 검토</a>는 기존 권한 경계를 바꾸지 않고도 대상이 되는 행동을 검토할 수 있습니다.</p>
+<p>계획이 준비되었는지, 그리고 중대한 선택에 사람의 판단이 필요한지는 여전히 제가 결정합니다. Codex는 반복적인 실행을 맡고, 일어난 일을 제가 직접 쓰는 것보다 더 자세히 기록합니다. 그렇게 만들어진 노트북은 공유하기 쉬우므로, 이런 실무 지식이 한 사람의 채팅 기록 안에 갇혀 있을 필요가 없습니다.</p>
+<h2>나의 하트비트 되찾기</h2>
+<p>저는 경력의 상당 부분을 까다로운 기계가 제가 원하는 대로 동작하게 만드는 주문을 찾는 데 썼습니다. 클라우드 인프라와 Kubernetes는 소프트웨어의 배포와 운영을 더 쉽게 해 줄 것이라고 기대를 모았습니다. 그러나 실제로는 <a href="https://landscape.cncf.io/">CNCF landscape</a>에 잘 드러나듯이 방대한 도구 생태계도 함께 생겨났습니다. 하나의 문제를 해결하면 새로운 문제가 생기는 경우가 많은데, 그 문제를 해결하는 데 필요한 도구를 고르고, 익히고, 운영해야 하기 때문입니다.</p>
+<p>저에게 Codex의 매력은 이러한 반복적인 운영 작업을 도와주면서도, 중요한 의사결정에는 제가 계속 참여할 수 있다는 점입니다.</p>
+<p>이렇게 해서 그동안 빼앗겼던 시간을 조금이라도 되찾고, 그 시간에 강아지들과 놀 수 있기를 바랍니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>I’ve spent most of my career as a software engineer either turning a crank—deploying and operating software—or building software to turn that crank for me.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/automating-repetitive-work-at-openai-with-codex/runme-evaluation-goal-original.webp" alt="Codex beside a Runme notebook containing an evaluation goal and instructions for documenting the workflow."></figure>
+<p>My first job at OpenAI was on the cloud infrastructure team, bringing up new Kubernetes clusters for application teams. I’d spend a week getting a batch of clusters ready, working through issues with private links, quota, and Terraform. As soon as those clusters were ready, I’d start on another batch.</p>
+<p>My next job was on the API team, running evaluations against our latest models. I’d work through problems with graders, quota, configuration, and PyTorch. When the evaluations ran successfully and the model shipped, I’d start again with the next model.</p>
+<p>Now I use Codex to help with that repetitive work. I still build software—or, more accurately, Codex helps me build it—but instead of creating a separate automation for every task, I’m building <a href="https://web.runme.dev/">Runme</a> to:</p>
+<ul>
+<li>Collect and curate the context around a workflow.</li>
+<li>Keep the right review and approval boundaries in place.</li>
+<li>Improve future Codex runs with what earlier runs learned.</li>
+</ul>
+<h2>Running evaluations with Codex</h2>
+<p>At OpenAI, we run evaluations when shipping new models and features to check that they work as expected. To run an evaluation, I create a Runme notebook and write a short outline of the goal:</p>
+<pre data-lang="markdown"><code># Goal: Run the evaluation against the current model
+
+- Review a previous run to understand the workflow.
+- Write a detailed plan in this notebook.
+- Wait for me to review and approve the plan before beginning.
+- Document the commands you run, their output, and how you interpret the results.</code></pre>
+<p>Then I ask Codex to use that notebook cell as its goal:</p>
+<pre data-lang="text"><code>Read the goal cell in the Runme notebook open in the browser. Treat it as the
+goal, write your plan in the notebook, and wait for my approval before starting.</code></pre>
+<p>Codex reads the notebook and updates it as the work progresses. When the plan is ready, I review it and revise it if needed. Often, the useful part of my involvement is helping Codex decide between alternatives: which evaluation system to use, whether to provision new infrastructure, or whether existing resources will do the job.</p>
+<p>While Codex works, I monitor its progress—sometimes from my phone—and occasionally give it a nudge when it gets stuck. If a development environment can’t be provisioned because a quota is exhausted, for example, I might suggest reusing an existing environment or looking for another approved option.</p>
+<p>The result is a notebook that documents the steps required to complete the task, along with the dead ends. Before wrapping up, I work with Codex to capture decisions that would otherwise disappear into the conversation: why one option was chosen, which approach is now preferred, and what someone should do differently next time.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/automating-repetitive-work-at-openai-with-codex/runme-completed-evaluation-notebook-edge-to-edge.webp" alt="A completed Runme notebook showing an evaluation goal, reviewed evidence, and the resulting configuration."></figure>
+<h2>Collaborating on notebooks with Codex</h2>
+<p>The <a href="https://github.com/runmedev/web">Runme</a> project is an open-source web application for creating notebooks with Codex. Like Jupyter and Colab, it supports Markdown, code cells, and HTML, which makes it possible to create documents that combine instructions, commands, results, tables, and charts.</p>
+<p>The notebooks can be saved directly to Google Drive. That gives the people I work with a familiar way to find and share the resulting artifacts without introducing another document repository.</p>
+<p>For each notebook, Runme also writes a companion Markdown index named <code>*.index.md</code>. Google Drive can index that file, which makes previous notebooks easier for an agent to discover when it needs examples, operational context, or the outcome of an earlier run.</p>
+<p>Agents interact with Runme through <a href="https://github.com/webmachinelearning/webmcp">WebMCP</a>. When the application loads, it <a href="https://github.com/runmedev/web/blob/4a74e79efa18d78d63930112818b560bb10a0bb3/app/src/components/WebMcp/WebMcpToolRegistrationHost.tsx#L65">registers browser-side tools</a> that an agent can use to:</p>
+<ul>
+<li>Read instructions for working with Runme and its notebooks.</li>
+<li>Run bounded JavaScript programs that read or update notebook content.</li>
+<li>Read the application’s documentation.</li>
+</ul>
+<p>This architecture matters because Runme is a client-side application served as a static website. Adding a server solely to expose a traditional MCP endpoint would introduce extra infrastructure and operational complexity, and it would change where notebook data is handled. WebMCP lets the application expose its capabilities directly from the browser instead.</p>
+<h2>Collecting and curating useful context</h2>
+<p>Every time I run an evaluation, I have an opportunity to document how the work was done and make the next run easier. As the workflow improves, it produces more useful context. That context, in turn, helps Codex handle the next version of the task more effectively.</p>
+ <figure>    Run an evaluation Codex follows a reviewed plan.   Document the workflow Record commands, results, and decisions.   Improve Codex workflows Reuse what previous runs recorded.   Run the next evaluation faster Start with the existing context.   Codex + Runme  WebMCP Google Drive    </figure> 
+<p>Much of the information that could help an agent is already present in day-to-day work, but it’s scattered across terminal history, Slack, runbooks, documents, and dashboards. The hard part isn’t proving that documentation is useful; it’s making the documentation cheap enough to create while the work is happening.</p>
+<p>Runme brings the intent, actions, decisions, and outcomes into the same artifact. A <a href="https://developers.openai.com/codex/long-running-work">persistent goal</a> keeps Codex focused on the task, while <a href="https://developers.openai.com/codex/sandboxing/auto-review">automatic approval review</a> can review eligible actions without changing the existing permission boundaries.</p>
+<p>I still decide when a plan is ready and when a consequential choice needs human judgment. Codex does the repetitive execution and records what happened in more detail than I would have written myself. Because the resulting notebook is easy to share, that practical knowledge doesn’t have to stay trapped in one person’s chat history.</p>
+<h2>Getting my heartbeats back</h2>
+<p>I’ve spent a large fraction of my career figuring out the magic words that make persnickety machines do what I want. Cloud infrastructure and Kubernetes were supposed to make deploying and operating software easier. Instead, we also got a sprawling ecosystem of tools, captured well by the <a href="https://landscape.cncf.io/">CNCF landscape</a>. Solving one problem often creates a new one: choosing, learning, and operating the tools required to solve it.</p>
+<p>For me, the appeal of Codex is that it can help with that repetitive operational work while keeping me involved in the decisions that matter.</p>
+<p>Hopefully, I’ll get some of those heartbeats back—and spend them playing with my dogs.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

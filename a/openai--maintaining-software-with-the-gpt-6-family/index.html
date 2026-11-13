@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>GPT-6 제품군으로 소프트웨어 유지보수하기 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">GPT-6 제품군으로 소프트웨어 유지보수하기</h1>
+    <h1 class="lang-en" hidden lang="en">Maintaining software with the GPT-6 family</h1>
+    
+    <p class="art-sum lang-ko">OpenAI의 Core Experimentation 팀이 Codex를 활용해 사용하지 않는 코드를 제거하고, 오래된 실험을 정리하며, CI를 개선하는 방법을 소개합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">How OpenAI’s Core Experimentation team uses Codex to remove unused code, clean up stale experiments, and improve CI.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 10월 14일</dd></div>
+      <div><dt>저자</dt><dd>Rodrigo Roim</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/maintaining-software-with-the-gpt-6-family">https://developers.openai.com/blog/maintaining-software-with-the-gpt-6-family</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>성장하는 코드베이스에는 모두 유지보수가 필요합니다. 제거해야 할 미사용 코드, 정리해야 할 완료된 실험, 고쳐야 할 테스트가 계속 생깁니다. OpenAI에서는 코딩 에이전트 덕분에 개발 속도가 빨라졌고, 그만큼 유지보수 수요도 늘었습니다.</p>
+<p>저는 OpenAI의 Core Experimentation 팀에서 일하고 있으며, 프런트엔드 업데이트부터 모델 서빙 효율 개선까지 회사 전반의 실험을 지원하는 소프트웨어를 구축하고 유지보수합니다.</p>
+<p>GPT-6 Astra가 출시되면서 소프트웨어를 더 빠르게 구축하고 유지보수할 수 있게 되었고, GPT-6.1 Sol은 더 낮은 비용으로 비슷한 결과를 냈습니다. 이 글에서는 이 모델들로 정리 대상을 찾고, 근거를 수집하고, 리뷰용 변경 사항을 준비하는 방법을 공유합니다.</p>
+<h2>미사용 코드 제거</h2>
+<p>에이전트 기반 코딩(agentic coding) 이전에는 많은 소프트웨어 엔지니어링 팀이 런타임 로깅과 연동된 복잡한 정적 분석(static analysis) 시스템으로 미사용 코드를 탐지하고 제거했습니다. 이런 시스템과 꼼꼼한 코드 리뷰를 거쳐도 실수는 생깁니다. 저도 코드를 잘못 제거해서 발생한 장애를 여러 번 기억합니다. 리플렉션이 정적 분석을 빗나가게 하거나, 사용되지 않는 코드 경로가 향후 장애를 완화하기 위해 활성화될 수 있는 경우처럼 고려해야 할 예외 상황이 너무 많기 때문입니다.</p>
+<p>Codex에서 GPT-5.6 Sol을 사용하면 조사할 영역과 명확한 검증 기준을 지정하고, 모델이 정적 분석을 작성해 죽은 코드를 제거하도록 할 수 있었습니다. 이렇게 대상을 좁힌 프롬프트는 기존 정적 분석 시스템보다 개발하고 유지보수하기가 쉬웠고, 신뢰성은 비슷했습니다.</p>
+<p>GPT-6 Astra를 사용할 수 있게 되었을 때, 더 포괄적인 요청에도 모델이 작업할 수 있는지 확인하고 싶었습니다. 어디를 살펴봐야 하는지, 각 제거를 정당화하려면 어떤 근거가 필요한지를 모델이 스스로 파악할 수 있는지 보려는 것이었습니다. GPT-5.6 Sol이 완전히 처리하기에는 너무 모호한 짧은 Codex 프롬프트로 시작했습니다. 오타까지 포함한 원문 그대로입니다.</p>
+      Can you help identify and clean up dead code in the repo please, feel free to check slack,
+statsig [a feature flag and experimentation platform we use], or any other source you need to
+confirm that things are indeed no longer being used and can be cleaned up or simplified     GPT-6 Astra
+<p>Astra는 이 모호함을 잘 처리했습니다. 과거 PR을 살펴보고, Slack 스레드에서 맥락을 수집하고, 내부 프로젝트 트래커를 확인했습니다. 또한 프로덕션 성능 프로파일링 테이블을 읽어 삭제된 줄이 한 번도 실행되지 않았음을 확인했습니다. Astra는 각 삭제의 근거도 설명해 주었고, 덕분에 리뷰 속도가 빨라졌습니다.</p>
+<p>Astra의 성능을 확인한 뒤, 엔지니어 다섯 명이 협업해 이 프롬프트의 변형을 여러 저장소에 실행했고, 1,400개 이상의 풀 리퀘스트를 머지해 80만 줄이 넘는 코드를 삭제했습니다. 이 작업의 대부분은 다른 프로젝트를 주로 진행하면서 2주 동안 파트타임으로 수행했습니다. 코드 리뷰는 영향을 받는 각 프로젝트의 맥락을 가진 여러 팀에 분산했습니다. 이 삭제로 측정 가능한 효과도 나타났습니다. 예를 들어 한 서비스의 컨테이너 이미지는 3.31GB에서 1.72GB로 48% 줄었고, 또 다른 정리 작업에서는 테스트 스위트에서 시각적 스냅샷 변형 약 400개가 제거되었습니다.</p>
+<h2>오래된 실험 추적</h2>
+<p>소프트웨어 유지보수에서 더 어려운 문제는 <em>오래된(stale)</em> 실험을 정리하는 일입니다. 이런 실험은 반드시 사용되지 않는 것은 아닙니다. 코드가 여전히 프로덕션에서 실행되고 있을 수도 있고, 언제든 바뀔 수 있는 대상 적격성 평가에 의존할 수도 있어서 정적 분석이 훨씬 어렵습니다. 과거에 우리 팀은 데이터베이스 쿼리로 보강한 결정론적 정적 분석으로 오래된 실험을 정리했고, 관련 스크립트를 만들고 개선하는 데는 가장 강력한 모델(당시에는 GPT-5.6 Sol)을 사용했습니다. 이 방식에서는 분석이 실제로 오래된 실험을 식별하지 못하는 위음성(false negative)이 많이 발생한다는 것을 알고 있었습니다.</p>
+<p>GPT-6 Astra로 죽은 코드 정리에서 성과를 거두었기 때문에, 오래된 실험에도 짧은 프롬프트를 시도해 보기로 했습니다. 어디서 시작해야 할지 확신이 없어서 Astra와 함께 브레인스토밍을 했고, 새 스레드에서 시도해 볼 짧은 프롬프트를 작성해 달라고 요청했습니다.</p>
+      Find and remove substantial dead code associated with stale, constant Statsig gates/configs or
+abandoned experiments in projects {A} and {B}. Verify live Statsig configuration and check git
+history and overlapping PRs. Preserve production behavior, operational safeguards and
+gates/configs intended as killswitches or similar. Ignore SDK fallbacks and local overrides.
+Create one small draft PR per cleanup, linking its Statsig configuration console link in the
+summary.     GPT-6 Astra
+<p>Astra는 프롬프트에 명시된 안전장치를 지켰고, 우리 팀이 검토할 수 있는 근거와 함께 변경 사항을 준비했습니다. 저는 Astra가 올린 풀 리퀘스트에 코멘트를 남긴 뒤, Astra에게 제 코멘트를 확인하고 피드백을 반영하여 전체 코드베이스를 스캔하는 새 프롬프트를 만들어 달라고 요청했습니다. 정리할 대상이 너무 많은데 우선순위를 정할 방법이 없을까 걱정되어서, 이 부분도 Astra에게 도움을 요청했습니다. Astra는 다음과 같은 프롬프트를 제안했습니다.</p>
+      /goal Find every stale, constant, abandoned, or fully shipped Statsig gate, config, experiment,
+and layer present in this entire repository that can safely be removed with no production
+changes. Audit all Statsig projects and inventories, not just objects labeled stale.
+Find indirect usages through enums, constants, wrappers, aliases, schemas, dynamically assembled
+names, and cross-service consumers. Reconcile every production-referenced constant; do not stop
+after producing a conservative shortlist.
+Consider each object's cloud resource usage, including CPU. Use production telemetry and
+profiles where available to identify expensive dead checks.
+[Omitted for brevity: detailed instructions, generated by Astra, on verifying production
+behavior, prioritizing older objects, preserving intentional safeguards, and interpreting SDK
+fallbacks.]
+Produce a markdown report grouping all verified candidates into parallelizable ownership/file
+workstreams, including production values, evidence, owners, callsites, and observed evaluation
+or CPU costs if available.
+Do not modify live configurations or services.     GPT-6 Astra
+<p>그 결과로 나온 보고서는 기대할 만한 내용이었습니다. Astra는 계측(instrumentation)을 활용해 오래된 실험(stale experiment) 각각의 CPU 비용을 조사했고, 상위 몇 건은 수년 동안 아무도 오래된 실험으로 식별하지 못했던 실험에서 나온 큰 효율 개선 사례였습니다. 저는 이 큰 결과들을 신중하게 검증한 뒤 전체 정리를 진행했고, 그 결과 수백 개의 실험과 피처 플래그(feature flag)를 제거했습니다.</p>
+<p>Astra의 판단력을 보여주는 사례가 하나 있습니다. 몇 년 전 저희 엔지니어 중 한 명이 내부 개발자가 테스트 목적으로 신규 기능과 관련된 다른 모든 피처 플래그를 재정의(override)할 수 있도록 하는 <a href="https://www.statsig.com/">Statsig</a> 피처 플래그를 만들었습니다. 이 설정은 해당 플래그를 다른 모든 기능에 매핑하는 Python 코드 한 줄로 구현되어 있었습니다. 그 한 줄은 비슷한 피처 플래그 매핑 수백 개 사이에 있어서 눈에 띄지 않았습니다.</p>
+<p>Astra는 이 한 줄이 플래그를 <em>모든</em> 기능에 매핑하기 때문에 상당한 CPU 팬아웃(fan-out)을 일으킨다는 사실을 발견했습니다. Astra는 CPU 비용을 조사했지만, 해당 플래그가 피처 플래그 관리 콘솔에서 "Permanent"로 명시되어 있었고 운영상의 용도가 남아 있을 수 있었기 때문에 이 발견 사항을 사람의 검토 대상으로 올렸습니다. 검토 후 저희는 이 플래그를 제거했고, 영향을 받는 주요 서비스에서 CPU 사용량이 약 0.42% 절감될 것으로 추정했습니다.</p>
+<h2>GPT-6.1 Sol을 통한 비용 효율성 개선</h2>
+<p>최근에는 GPT-6.1 Sol이 GPT-6 Astra의 효과를 따라가면서도 더 효율적일 수 있는지 확인하기 위해 동일한 워크플로에서 GPT-6.1 Sol을 테스트했습니다.</p>
+<p>오래된 실험 정리 작업에서 모델을 비교하기 위해, 저는 위의 프롬프트를 모델과 추론 강도(effort)의 여러 조합에 동일하게 적용했습니다. Codex에게 저희 저장소 중 하나의 특정 하위 디렉터리를 감사(audit)하여 오래된 실험을 찾도록 요청했습니다. 이 하위 디렉터리에는 Python, TypeScript, Go, Rust로 작성된 6,000개 이상의 파일과 100만 줄 이상의 코드가 있습니다. 저는 발견 사항을 검토해 검증했습니다. 아래 그래프는 3가지 모델/추론 강도 조합의 결과를 보여줍니다.</p>
+<figure> <figcaption>오래된 실험 정리</figcaption>   <p>API 비용</p> <dl>  <dt>GPT-6 Astra Ultra</dt> <dd>     $109.06  </dd>  <dt>GPT-6.1 Sol Ultra</dt> <dd>     $15.12  </dd>  <dt>GPT-6.1 Sol Medium</dt> <dd>     $5.27  </dd>  </dl>  $0 $120   <p>발견 건수</p> <dl>  <dt>GPT-6 Astra Ultra</dt> <dd>     142  </dd>  <dt>GPT-6.1 Sol Ultra</dt> <dd>     131  </dd>  <dt>GPT-6.1 Sol Medium</dt> <dd>     86  </dd>  </dl>  0 150   <p>발견 건당 비용</p> <dl>  <dt>GPT-6 Astra Ultra</dt> <dd>     $0.77  </dd>  <dt>GPT-6.1 Sol Ultra</dt> <dd>     $0.12  </dd>  <dt>GPT-6.1 Sol Medium</dt> <dd>     $0.06  </dd>  </dl>  $0 $0.80    <p>비용은 표준 API 요금을 기준으로 하며, 리서치 서브에이전트와 각 목표를 달성하는 동안 Codex가 자동으로 수행한 후속 턴(turn)의 비용을 포함합니다.</p> </figure>
+<p>이 비교에서 GPT-6.1 Sol Ultra는 GPT-6 Astra Ultra의 92%에 해당하는 발견 건수를 API 비용의 14%만으로 만들어냈습니다. GPT-6.1 Sol Medium은 더 낮은 비용으로 채택된 발견 건수가 더 적었습니다.</p>
+<p>저는 모델/추론 강도 조합 간의 차이를 검토했고, 몇 가지 패턴이 드러났습니다. 예를 들어 Ultra 설정에서 모델 간 차이의 대부분은 다른 피처 플래그의 의존성으로 사용되는 상수 피처 플래그(constant feature flag) 때문이었습니다. GPT-6 Astra는 이를 식별했지만 GPT-6.1 Sol은 놓쳤습니다.</p>
+<p>이와 같은 오류 패턴을 찾아내면 이를 보정하는 프롬프트를 개발할 수 있고, 그 덕분에 비용 효율이 더 높은 모델이 더 비싼 모델과 비슷한 결과를 얻을 수 있습니다. 동시에 이후 모델이 출시되면 이러한 보정이 불필요해질 수 있으므로, 새 모델이 출시될 때마다 프롬프트를 다시 점검하는 것이 중요합니다.</p>
+<h2>시도해 볼 만한 다른 아이디어</h2>
+<p>제가 Codex로 얻은 발견 중 마음에 드는 몇 가지는 다음과 같은 짧은 프롬프트에서 시작되었습니다. GPT-6.1 Sol Medium으로 시도해 보시고, 결과가 유망하다면 더 폭넓은 감사를 위해 추론 강도를 높이는 것도 고려해 보십시오.</p>
+<p>불안정한(flaky) 테스트 수정:</p>
+      /goal 최근의 모든 CI 실행 내역을 살펴보고 불안정한 테스트를 찾으십시오. 각 불안정한 테스트에 대해 수정을 시도하고, 성공하면 PR을 올리십시오. 여러분의 일은 단순한 문제에 대한 명확한 수정 방법을 찾는 것이며, 모든 불안정한 테스트를 빠짐없이 수정하는 것이 아닙니다.     GPT-6.1 SolMedium
+<p>에이전트 컨텍스트 개선:</p>
+      제 최근 Codex 세션을 살펴보고, 에이전트를 잘못된 방향으로 이끌었거나 불필요한 작업을 유발한 것으로 보이는 AGENTS.md 지침을 하나 찾으십시오. 그런 일이 발생한 원래 세션의 프롬프트를 선택하십시오. 동일한 저장소 스냅샷과 동일한 모델에서 그 프롬프트를 두 번 다시 실행하십시오.
+1. 현재의 AGENTS.md 지침을 그대로 둔 경우
+2. 해당 지침 하나만 제거하거나 수정한 경우
+
+작업 품질, 에이전트 동작, 도구 호출, 토큰 사용량, 실행 시간, 비용을 비교하십시오. 해당 지침과 이를 수정한 것이 도움이 되었는지를 보여주십시오.     GPT-6.1 SolMedium
+<p>지속적 통합(CI)의 비용과 실행 시간 절감:</p>
+      이 저장소의 CI 부하를 줄이기 위한 아이디어에는 어떤 것이 있습니까? 아이디어를 표로 정리하고, 이 저장소의 CI 실행 이력을 바탕으로 하루 기준 절감되는 CI 시간(분)의 추정치에 따라 모든 아이디어의 순위를 매기십시오.     GPT-6.1 SolMedium
+<p>이 마지막 아이디어는 CI 시간을 줄이는 데 도움이 되었습니다. 이 프롬프트를 실행하고 제안 사항을 후속 조치한 결과, 약 30개의 CI 최적화 PR을 반영했습니다. CI 완료 시간의 중앙값은 약 10분에서 4.5분으로 줄었고, 90번째 백분위수는 12.5분에서 6분으로 줄었습니다. 이후의 수정에서는 누락된 mock 하나를 추가하여 63개 테스트로 구성된 resolver 테스트 스위트의 실행 시간을 592.6초에서 29.8초로 줄였습니다. 63개 테스트를 모두 유지하면서 95%를 단축한 것입니다.</p>
+<h2>작게 시작하고, 검토하고, 확장하기</h2>
+<p>GPT-6 시리즈는 Core Experimentation 팀이 대규모로 소프트웨어를 유지보수하는 방식을 개선했고, 여러 효율 개선을 가능하게 했습니다.</p>
+<p>지금까지 저희 팀은 GPT-6의 제안에서 시작된 1,400건 이상의 유지보수 풀 리퀘스트(pull request)를 머지했습니다. 그 결과 테스트 실행 속도 향상, 이미지 크기 감소, CPU 사용률 감소를 비롯한 여러 이점을 얻었습니다. 다만 일부 제안은 기대 효과에 비해 복잡성을 더 많이 추가했기 때문에, 우선순위 설정과 측정은 저희 워크플로에서 계속 중요한 부분으로 남아 있습니다.</p>
+<p>규모가 큰 코드베이스에서는 GPT-6 모델이 찾아내는 최적화 항목이 너무 많아 감당하기 어려운 경우가 흔했습니다. 앞서 공유한 계측(instrumentation)과 프롬프트 기법을 활용하면서, Codex는 이러한 개선 작업의 우선순위를 정하는 데 도움을 주었습니다.</p>
+<p>직접 운영하는 코드베이스에서 이 방식을 시험해 보려면, 먼저 작은 유지보수 작업 하나로 시작하는 것을 권합니다. 예를 들어 사용되지 않는 코드, 오래된 기능 플래그(feature flag), 또는 불안정한 테스트(flaky test)가 좋은 후보입니다. Codex에게 해당 사례를 하나 찾고, 근거를 수집하고, 작은 초안 PR을 제안하도록 요청하십시오. 이 작은 작업에서는 더 저렴한 구성으로도 충분할 수 있으므로, 여러 모델과 추론 강도(effort)를 비교해 보시기 바랍니다.</p>
+<p>작은 규모의 작업이 잘 진행되면, 하위 디렉터리나 범위가 명확한 프로젝트로 확대하십시오. 각 단계마다 Codex에게 코드 리뷰 피드백을 다음 프롬프트에 반영하도록 요청하십시오. 모델의 성능에 확신이 생기면 코드베이스 전체로 넓혀 나가시면 됩니다.</p>
+<hr>
+<p>저희 Core Experimentation 팀은 엔지니어링, 데이터 사이언스, 프로덕트 매니지먼트 분야에서 인재를 채용하고 있습니다. 이 글에 흥미를 느끼셨다면 <a href="https://openai.com/careers/">채용 페이지</a>를 통해 지원해 주십시오.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>Every growing codebase needs maintenance: unused code to remove, completed experiments to clean up, and tests to fix. At OpenAI, coding agents have helped us build faster, which has also increased our maintenance needs.</p>
+<p>I work on OpenAI’s Core Experimentation team, where we build and maintain the software that supports experiments across the company, from front-end updates to improvements in model-serving efficiency.</p>
+<p>The release of GPT-6 Astra helped us build and maintain software faster, and GPT-6.1 Sol delivered similar results at a lower cost. In this post, I’ll share how we use these models to find cleanup opportunities, gather evidence, and prepare changes for review.</p>
+<h2>Removing unused code</h2>
+<p>Before agentic coding, many software engineering teams relied on complex static analysis systems integrated with runtime logging to detect and remove unused code. Even with these systems and careful code reviews, mistakes happen. I recall several incidents due to mistaken code removal. There are too many edge cases to consider, like reflection throwing off static analysis or an unused code path that can be activated to mitigate future incidents.</p>
+<p>With GPT-5.6 Sol in Codex, I could specify an area to investigate and clear validation criteria, then let the model write static analysis and remove dead code. These targeted prompts were easier to develop and maintain than our existing static analysis systems, with similar reliability.</p>
+<p>When we got access to GPT-6 Astra, we wanted to see whether it could work from a broader request, figuring out where to look and what evidence it needed to justify each removal. We started with a short Codex prompt that was too ambiguous for GPT-5.6 Sol to handle completely. Here it is, typos and all:</p>
+      Can you help identify and clean up dead code in the repo please, feel free to check slack,
+statsig [a feature flag and experimentation platform we use], or any other source you need to
+confirm that things are indeed no longer being used and can be cleaned up or simplified     GPT-6 Astra     
+<p>Astra handled the ambiguity well. It looked at past PRs, gathered context from Slack threads, and inspected internal project trackers. It read production performance profiling tables to confirm the deleted lines were never reached. Astra also explained its rationale for each deletion, which accelerated our reviews.</p>
+<p>Once we saw how well Astra was doing, five engineers collaborated to run variations of that prompt across repositories, and we merged more than 1,400 pull requests, deleting over 800k lines of code. We did the bulk of this part-time over two weeks while primarily working on other projects. Code reviews were fanned out to various teams with context on each affected project. These deletions resulted in measurable benefits. For example, one service’s container image shrank from 3.31GB to 1.72GB, a 48% reduction, and another set of cleanups removed about 400 visual snapshot variants from our test suite.</p>
+<h2>Tracking down stale experiments</h2>
+<p>A harder problem in software maintenance is cleaning up <em>stale</em> experiments. These experiments aren’t necessarily unused: their code might still run in production or depend on eligibility evaluations that could change at any time, making static analysis much harder. Historically, our team cleaned up stale experiments through deterministic static analysis augmented with database queries and used our most powerful model (then GPT-5.6 Sol) to build and improve the associated scripts. We knew this resulted in many false negatives where our analysis couldn’t identify truly stale experiments.</p>
+<p>Given our success with dead code cleanup using GPT-6 Astra, I decided to try another short prompt for stale experiments. I wasn’t sure how to get started, so I brainstormed with Astra and asked it to write a short prompt to try in a new thread:</p>
+      Find and remove substantial dead code associated with stale, constant Statsig gates/configs or
+abandoned experiments in projects {A} and {B}. Verify live Statsig configuration and check git
+history and overlapping PRs. Preserve production behavior, operational safeguards and
+gates/configs intended as killswitches or similar. Ignore SDK fallbacks and local overrides.
+Create one small draft PR per cleanup, linking its Statsig configuration console link in the
+summary.     GPT-6 Astra     
+<p>Astra followed the safeguards in the prompt and prepared changes with evidence our team could review. I commented on its pull requests, then asked Astra to look at my comments, incorporate my feedback, and develop a new prompt to scan our entire codebase. I was afraid of having too many things to clean up and no way to prioritize them, so I also asked Astra to help me with that. Astra suggested this prompt:</p>
+      /goal Find every stale, constant, abandoned, or fully shipped Statsig gate, config, experiment,
+and layer present in this entire repository that can safely be removed with no production
+changes. Audit all Statsig projects and inventories, not just objects labeled stale.
+Find indirect usages through enums, constants, wrappers, aliases, schemas, dynamically assembled
+names, and cross-service consumers. Reconcile every production-referenced constant; do not stop
+after producing a conservative shortlist.
+Consider each object's cloud resource usage, including CPU. Use production telemetry and
+profiles where available to identify expensive dead checks.
+[Omitted for brevity: detailed instructions, generated by Astra, on verifying production
+behavior, prioritizing older objects, preserving intentional safeguards, and interpreting SDK
+fallbacks.]
+Produce a markdown report grouping all verified candidates into parallelizable ownership/file
+workstreams, including production values, evidence, owners, callsites, and observed evaluation
+or CPU costs if available.
+Do not modify live configurations or services.     GPT-6 Astra     
+<p>The resulting report was promising. Using our instrumentation, Astra investigated the CPU costs of each stale experiment, and the top few results were large efficiency wins associated with experiments that no one had identified as stale for years. I carefully validated those larger results and proceeded with the full cleanup, which removed hundreds of experiments and feature flags.</p>
+<p>One example shows Astra’s judgment: several years ago, one of our engineers created a <a href="https://www.statsig.com/">Statsig</a> feature flag that allowed internal developers to override all our other feature flags related to new features, for testing purposes. This configuration was implemented through a single line of Python code that mapped the flag to all other features. That line lived alongside hundreds of similar feature flag mappings and looked inconspicuous.</p>
+<p>Astra found that the line above caused significant CPU fan-out because it mapped the flag to <em>all</em> features. It investigated the CPU cost, but raised the finding for human review because the flag had been explicitly marked as “Permanent” in our feature flag management console and could still serve an operational purpose. After review, we removed the flag, with an estimated 0.42% CPU saving in the main affected service.</p>
+<h2>Improving cost effectiveness with GPT-6.1 Sol</h2>
+<p>More recently, we tested GPT-6.1 Sol on the same workflows to see whether it could match GPT-6 Astra’s effectiveness while being more efficient.</p>
+<p>To compare the models on stale experiment cleanup, I ran the same prompt above on different model/effort combinations, asking Codex to audit specific subdirectories in one of our repositories to find stale experiments. These subdirectories cover over 6,000 files and 1 million lines of code in Python, TypeScript, Go and Rust. I reviewed the findings to validate them. The graph below shows the results for 3 model/effort combinations:</p>
+ <figure> <figcaption>Stale experiment cleanup</figcaption>   <p>API cost</p> <dl>  <dt>GPT-6 Astra Ultra</dt> <dd>     $109.06  </dd>  <dt>GPT-6.1 Sol Ultra</dt> <dd>     $15.12  </dd>  <dt>GPT-6.1 Sol Medium</dt> <dd>     $5.27  </dd>  </dl>  $0 $120   <p>Findings</p> <dl>  <dt>GPT-6 Astra Ultra</dt> <dd>     142  </dd>  <dt>GPT-6.1 Sol Ultra</dt> <dd>     131  </dd>  <dt>GPT-6.1 Sol Medium</dt> <dd>     86  </dd>  </dl>  0 150   <p>Cost per finding</p> <dl>  <dt>GPT-6 Astra Ultra</dt> <dd>     $0.77  </dd>  <dt>GPT-6.1 Sol Ultra</dt> <dd>     $0.12  </dd>  <dt>GPT-6.1 Sol Medium</dt> <dd>     $0.06  </dd>  </dl>  $0 $0.80    <p>Costs use standard API pricing and include research subagents and the follow-up turns Codex ran automatically while working toward each goal.</p> </figure> 
+<p>In this comparison, GPT-6.1 Sol Ultra produced 92% as many findings as GPT-6 Astra Ultra at 14% of the API cost. GPT-6.1 Sol Medium produced fewer accepted findings at a lower cost.</p>
+<p>I reviewed the discrepancies across model/effort combinations, and a few patterns emerged. For instance, most of the discrepancies between models on Ultra were due to constant feature flags used as dependencies in other feature flags. GPT-6 Astra identified those, but GPT-6.1 Sol missed them.</p>
+<p>Finding error patterns like this helps us develop prompts that correct for them, so the more cost-effective model can achieve results similar to those of the more expensive one. At the same time, future model releases can make these corrections obsolete, so it’s important to revisit prompts when new models are released.</p>
+<h2>Other ideas to try</h2>
+<p>Some of my favorite Codex discoveries started with short prompts like these. Try them with GPT-6.1 Sol Medium, and consider increasing effort for broader audits if the results are promising.</p>
+<p>Fixing flaky tests:</p>
+      /goal Look at all recent CI runs to find flaky tests. For each flaky test, try a fix and if
+successful put up a PR. Your job is to find clear fixes to simple issues, not to exhaustively
+fix every flaky test.     GPT-6.1 SolMedium     
+<p>Improving agentic context:</p>
+      Look through my recent Codex sessions and find one AGENTS.md instruction that appears to have
+misdirected an agent or caused unnecessary work. Choose the original session prompt where that
+happened. Replay that same prompt twice from the same repository snapshot and model:
+1. With the current AGENTS.md instruction unchanged.
+2. With only that one instruction removed or fixed.
+
+Compare task quality, agent behavior, tool calls, token usage, runtime, and cost. Show the
+instruction and whether updating it helped.     GPT-6.1 SolMedium     
+<p>Reducing cost and runtime of continuous integration:</p>
+      What ideas do you have to relieve CI load in this repository? List your ideas in a table and
+rank all of them by estimated CI minutes saved per day based on this repo's CI run history     GPT-6.1 SolMedium     
+<p>This last idea helped us reduce CI time. After running it and following up on the suggestions, we landed about 30 CI optimization PRs. We saw median CI completion time fall from roughly 10 minutes to 4.5 minutes, while the 90th percentile fell from 12.5 minutes to 6 minutes. In a later fix, adding a missing mock cut a 63-test resolver suite’s runtime from 592.6 seconds to 29.8 seconds—a 95% reduction, with all 63 tests retained.</p>
+<h2>Start small, review, and expand</h2>
+<p>The GPT-6 series has improved how our Core Experimentation team maintains software at scale and unlocked several efficiency wins.</p>
+<p>So far, my team has merged more than 1,400 maintenance pull requests that started from GPT-6 proposals. This resulted in faster test execution, smaller images, lower CPU utilization, and many other benefits. However, some proposals added more complexity than their expected benefit justified, so prioritization and measurement remained an important part of our workflow.</p>
+<p>In larger codebases, we’ve found it easy to be overwhelmed by the number of optimizations GPT-6 models can find. With instrumentation and the prompt techniques shared above, Codex has helped us prioritize those improvements.</p>
+<p>If you want to try this in your own codebase, I’d start with one small maintenance task: some unused code, a stale feature flag, or a flaky test. Ask Codex to find an instance, gather evidence, and propose a small draft PR. Compare different models and efforts for that small task, since a cheaper configuration may be enough.</p>
+<p>Once a small pass works well, scale it up to a subdirectory or well-scoped project. At each step, ask Codex to incorporate your code review feedback into the next prompt. When you’re confident in the model’s performance, expand to your whole codebase.</p>
+<hr>
+<p>Our Core Experimentation team is hiring in Engineering, Data Science, and Product Management. If this post excites you, please apply through our <a href="https://openai.com/careers/">careers page</a>!</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

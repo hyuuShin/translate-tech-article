@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Claude와 Claude Code에서 Opus 5.5 활용 극대화하기 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Playbooks</p>
+    <h1 class="lang-ko">Claude와 Claude Code에서 Opus 5.5 활용 극대화하기</h1>
+    <h1 class="lang-en" hidden lang="en">Getting the most out of Opus 5.5 in Claude and Claude Code</h1>
+    
+    <p class="art-sum lang-ko">Claude 앱과 Claude Code에서 Opus 5.5에 프롬프트를 작성하고, 장시간 실행을 조정하며, 결과를 확인하는 방법</p>
+    <p class="art-sum lang-en" hidden lang="en">How to prompt Opus 5.5, steer a long run, and check your results in Claude apps and Claude Code.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 9월 22일</dd></div>
+      <div><dt>저자</dt><dd>Addy Osmani</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/getting-the-most-out-of-opus-5-5/">https://claude.dev/blog/getting-the-most-out-of-opus-5-5/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>Opus 5.5는 지금 Claude를 사용하시는 방식에 잘 맞습니다. 다만 몇 가지는 다르게 동작합니다. 더 오래 스스로 작업하고, 무엇을 했는지 분명하게 알려 주며, 모든 응답 전에 먼저 생각합니다. 이 가이드는 Claude 앱과 <a href="https://claude.com/product/claude-code">Claude Code</a>에서 Opus 5.5를 사용하는 방법을 다룹니다. 모델에 프롬프트를 작성하는 방법, 장시간 실행을 조율하는 방법, 결과를 확인하는 방법이 포함됩니다.</p>
+<h2>먼저 시도해 볼 것</h2>
+<p><strong>Opus 5.5와의 첫 세션에서 시도할 세 가지</strong></p>
+<ol>
+<li>작업 전체를 맡기십시오. '완료'가 어떤 상태인지, 그리고 언제 멈추고 물어봐야 하는지를 알려 주십시오. 그런 다음 작업하도록 두십시오.</li>
+<li>'신중하게 생각하라'는 문구를 삭제하십시오. Opus 5.5는 이미 모든 응답 전에 생각합니다.</li>
+<li>장시간 실행이 끝나면, 모델이 사용자에게 요청하는 내용을 가장 먼저 읽으십시오.</li>
+</ol>
+<h2>1. 요청 방법</h2>
+<h3>'완료'의 기준을 알려 주고 실행하도록 두기</h3>
+<p><strong>할 일.</strong> 작업 전체를 한 번의 메시지로 전달하십시오. '테스트가 통과한다', '모든 엔드포인트가 마이그레이션되었다'처럼 종료 기준을 명시하십시오. 그런 다음 알아서 진행하도록 두십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> Opus 5.5는 길고 여러 부분으로 이루어진 작업을 Opus 5보다 더 잘 이어 갑니다. 이전 Opus 모델과 비교하면 가장 큰 향상은 다단계 작업에서 나타납니다. 예를 들어 테스트가 통과할 때까지 대규모 저장소 전반에 변경 사항을 적용하는 작업이 그렇습니다. 초기 테스터들은 Opus 5.5가 거의 감독 없이 몇 시간 동안 긴 코딩 작업을 수행하게 했습니다. 종료 기준이 명확하면 Opus 5.5는 언제 작업이 끝났는지 압니다.</p>
+<p><strong>방법.</strong> 예를 들어 Claude Code에서는 다음과 같이 합니다.</p>
+프롬프트
+<pre><code>Migrate the payment endpoints from the old client to the new one.
+Done means: every endpoint uses the new client, the old client is deleted, and the test suite passes.
+Stop and ask me only if a test fails for a reason you can't explain.</code></pre>
+<figure><img src="https://claude.dev/media/88d75704ac7ad2bde70a2a5cb1fd5c1800228810397be996b1dbfd91b61a047e.png" alt="세 개의 라벨이 붙은 상자로 나뉜 예시 프롬프트: 작업 전체(결제 엔드포인트를 이전 클라이언트에서 새 클라이언트로 마이그레이션), 강조 표시된 종료 기준(모든 엔드포인트가 새 클라이언트를 사용하고, 이전 클라이언트가 삭제되고, 테스트 스위트가 통과함), 멈출 시점(설명할 수 없는 이유로 테스트가 실패할 때만). 하단 문구: '작업 전체를 한 번의 메시지로 전달하십시오. 종료 기준을 명시하십시오. 그런 다음 그대로 두십시오.'"><figcaption><b>그림 A</b>하나의 메시지에 작업 전체, 종료 기준, 멈출 시점을 담습니다.</figcaption></figure>
+<h3>'열심히 생각하라'는 지시 중단하기</h3>
+<p><strong>할 일.</strong> 프롬프트와 저장해 둔 지침에서 '신중하게 생각하라', '단계별로 생각하라' 같은 문구를 제거하십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> Opus 5.5는 응답하기 전에 항상 생각하며, 얼마나 생각할지도 스스로 정합니다. 생각하라고 요청할 필요가 없습니다. 채팅 제품에서 진행한 테스트에서는 '신중하게 생각하라'는 문구를 제거하자 응답이 더 빨리 시작되었고, 품질이 뚜렷하게 떨어지지는 않았습니다.</p>
+<p><strong>방법.</strong> 해당 문구를 삭제하십시오. 간단한 질문에 빠른 답변이 필요하면 '바로 답하십시오.'라고 말씀하십시오. Claude Code에서 생각의 양을 조정하려면 <a href="https://claude.dev/blog/spending-your-effort/">노력 수준(effort)을 변경</a>하십시오.</p>
+<h3>실행 중인 작업에 내용 추가하기</h3>
+<p><strong>할 일.</strong> 실행 도중에 기억나는 내용이 있다면, 모델이 작업하는 동안 후속 메시지를 입력할 수 있습니다.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> 이제 실행 시간이 길어졌기 때문에, 다시 시작하는 데 드는 비용이 더 큽니다.</p>
+<p><strong>방법.</strong> Claude Code에서는 Claude가 작업하는 동안 메시지를 입력하고 Enter를 누르십시오. 예를 들어 '기존 엔드포인트 이름도 별칭으로 유지하십시오.'와 같이 입력합니다.</p>
+<h3>디자인 작업에서는 원하지 않는 스타일 지정하기</h3>
+<p><strong>할 일.</strong> 페이지, 앱, 아티팩트를 요청할 때는 배제하고 싶은 디자인 습관을 목록으로 적으십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> 디자인 방향이 없으면 Opus 5.5는 몇 가지 기본 스타일로 돌아갑니다. '평범한 느낌은 피하라' 같은 일반적인 지시는 대체로 기본 스타일 하나를 다른 기본 스타일로 바꿀 뿐입니다. 구체적인 패턴을 나열하면 훨씬 효과가 좋습니다.</p>
+<p><strong>방법.</strong> 패턴을 구체적으로 지정하십시오.</p>
+프롬프트
+<pre><code>Build a personal website with placeholder content.
+Don't use a cream or off-white background, italic accent words in headings, numbered "01 / 02 / 03" section labels, monospace labels, or pill-shaped buttons.</code></pre>
+<p>그런 다음 모델이 대신 선택한 결과를 살펴보십시오. 그것도 마음에 들지 않으면 목록에 추가하고 다시 요청하십시오.</p>
+<h2>2. Claude Code에서 장시간 실행 조율하기</h2>
+<h3>원하는 중단 시점 알려 주기</h3>
+<p><strong>할 일.</strong> 언제 멈추고 물어봐야 하는지, 그리고 언제 계속 진행해야 하는지에 대한 짧은 규칙을 <a href="https://claude.com/resources/articles/using-claude-md-files">CLAUDE.md 파일</a>에 넣으십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> Opus 5.5는 작업하는 동안 진행 상황을 계속 알려 줍니다. 긴 작업에서는 계속 진행하지 않고 멈춰서 보고하는 경우가 가끔 있습니다. 다음 단계를 언급만 하고 실행하지 않는 요약, 계속하겠다는 제안, 작업을 막지 않는 선택지 목록 등이 그 예입니다. Opus 5.5는 이러한 중단 시점을 명시한 지침을 따릅니다. 원하는 중단 시점도 직접 지정하십시오.</p>
+<p><strong>방법.</strong> 다음 내용을 CLAUDE.md에 추가하고, 프로젝트에 맞게 수정하십시오.</p>
+프롬프트
+<pre><code>When a step doesn't need my input, keep going. Put status notes in the same message as your next action.
+Stop and ask only when you can't continue without me, or before anything destructive: deleting data, force-pushing, or changing anything outside this repository.</code></pre>
+<figure><img src="https://claude.dev/media/33679878db758a7730f1bb8988328df623e2aca8acec93a4bb6ecba3bc37ee43.png" alt="'원하는 중단 시점 알려 주기'라는 제목의 CLAUDE.md 카드에 두 개의 상자가 있습니다. 계속 진행: 단계에 내 입력이 필요하지 않으면 계속 진행하고, 상태 메모는 다음 작업과 같은 메시지에 넣습니다. 멈추고 질문: 나 없이는 계속할 수 없을 때, 또는 데이터 삭제, 강제 푸시, 이 저장소 외부의 변경처럼 되돌릴 수 없는 작업 전에만 합니다. 하단 문구: '프로젝트에 맞게 수정하십시오. 파괴적인 명령에 대해서도 권한 확인 프롬프트를 켜 두십시오.'"><figcaption><b>그림 B</b>CLAUDE.md 규칙: 언제 계속 진행하고 언제 멈추고 물어볼지 정합니다.</figcaption></figure>
+<p>실행이 '계속할까요?'라는 질문과 함께 멈추면 '계속'이라고 답하십시오. 이런 일이 자주 발생한다면 위의 규칙이 도움이 됩니다.</p>
+<p>계속 진행하라는 규칙은 중단이 줄어든다는 뜻이므로, 위험하거나 되돌리기 어려운 작업 전에는 사용자가 직접 확인하는 단계를 유지하십시오. 위 규칙의 마지막 줄이 그 역할을 합니다. 파괴적인 명령에 대해서도 권한 확인 프롬프트를 켜 두십시오.</p>
+<p>페어 프로그래밍에서는 반대의 방식이 필요할 수도 있습니다. 시작하기 전에 한 줄짜리 계획을 제시하고, 끝날 때 짧은 요약을 제공하도록 하는 방식입니다. 이 내용은 CLAUDE.md에 대신 적으십시오. Opus 5.5는 어느 쪽이든 따릅니다.</p>
+<h3>큰 작업을 서브에이전트로 나누도록 요청하기</h3>
+<p><strong>할 일.</strong> 대규모 코드베이스 전반에 걸친 감사, 마이그레이션, 리뷰를 할 때는 Opus 5.5에게 <a href="https://claude.dev/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code/">작업을 서브에이전트(subagent)로 나누고</a> 각 결과를 확인하도록 요청하십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> 초기 테스터들은 Opus 5.5가 병렬 서브에이전트를 조율하여 긴 감사와 마이그레이션을 거의 감독 없이 수행하게 했습니다.</p>
+<p><strong>방법.</strong></p>
+프롬프트
+<pre><code>Audit every service in services/ for the retry bug in the linked issue.
+Give each service to its own subagent. When a subagent reports back, check its evidence before you accept it.
+Finish with one table: service, affected yes or no, and the evidence.</code></pre>
+<figure><img src="https://claude.dev/media/96f05d24a6728ed462139b2430e36c897ec36d8777109fb73ce839e6db266427.png" alt="Diagram titled “Give each service to its own subagent.” The prompt “Audit every service in services/ for the retry bug in the linked issue” fans out to four subagents. Their reports join at a “Check its evidence” step (“When a subagent reports back, check its evidence before you accept it”), then an arrow leads to “Finish with one table,” an empty table with the columns Service, Affected yes or no, and The evidence."><figcaption><b>그림 C</b>서브에이전트로 작업을 나누고, 각 서브에이전트의 근거를 확인한 뒤, 하나의 표로 마무리합니다.</figcaption></figure>
+<h3>작업 목록을 파일로 관리</h3>
+<p><strong>할 일.</strong> 오래 걸리는 실행에서는 Opus 5.5에게 작업 목록을 파일에 보관하고 진행하면서 갱신하도록 요청하십시오. 그런 다음 스크롤백이 아니라 그 파일을 읽고 실행이 어디까지 진행되었는지 확인하십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> 이제 실행 시간이 더 길어졌습니다. 긴 실행은 컨텍스트 윈도우(context window)를 가득 채우고, 그러면 Claude Code가 이전 턴을 요약합니다. 파일에 저장한 목록은 이 과정에서도 유지되며, 무엇이 끝났고 무엇이 남았는지 한눈에 보여 줍니다.</p>
+<p><strong>방법.</strong> “TASKS.md에 체크리스트를 유지하세요. 항목을 마칠 때마다 체크하고, 새로 발견한 항목은 추가하세요.”</p>
+<h2>3. 결과 확인</h2>
+<h3>사용자에게 필요한 사항을 먼저 확인</h3>
+<p><strong>할 일.</strong> 긴 실행이 끝나면 먼저 Claude가 사용자의 응답을 기다리고 있는 사항이 있는지 확인하십시오. 예를 들어 결정을 보류해 둔 건이나 승인을 요청하는 변경 사항이 해당합니다. 그런 다음 Claude의 나머지 요약을 읽으십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> Opus 5.5는 Opus 5보다 작업 내용을 더 명확하게 보고합니다. 중간 업데이트와 최종 요약에서 무엇을 했는지, 무엇을 발견했는지, 사용자에게 무엇이 필요한지를 쉬운 말로 알려 줍니다.</p>
+<p><strong>방법.</strong> 요약의 형식을 바꾸려면 CLAUDE.md에 지시하십시오. 예를 들면 다음과 같습니다. “모든 실행을 세 개의 제목으로 마무리하세요: Blocked on me, Changed, Found.”</p>
+<h3>코드 리뷰 요청</h3>
+<p><strong>할 일.</strong> 사람이 검토하기 전에 Opus 5.5에게 diff나 풀 리퀘스트(pull request)를 리뷰하도록 요청하십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> 한 초기 테스터는 가장 낮은 노력 수준(effort)의 Opus 5.5가 높은 노력 수준의 Opus 5보다 더 많은 버그를 찾아냈고, 오탐(false alarm)도 더 적었다고 전했습니다. 또한 변경 사항을 쉬운 말로 설명하므로 풀 리퀘스트 설명을 검토하기가 더 수월합니다.</p>
+<p><strong>방법.</strong> 다음 프롬프트를 Claude에게 입력하십시오.</p>
+PROMPT
+<pre><code>Review the diff on this branch against main.
+List only problems you'd block the merge for. For each one, give the file and line, why it's wrong, and how to show it fails.</code></pre>
+<h3>확인하지 못한 내용의 표시 요청</h3>
+<p><strong>할 일.</strong> 조사와 분석 작업에서는 찾지 못했거나 확인하지 못한 내용을 밝히도록 요청하십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> “이 내용은 찾지 못했습니다”라는 보고는 읽을 가치가 있으며, 이를 요청하면 쉽게 찾아볼 수 있습니다.</p>
+<p><strong>방법.</strong> 요청에 “확인하지 못한 내용은 모두 표시하고, 어디를 찾아봤는지 알려 주세요”를 추가하십시오. 이 방법은 Claude 리서치 보고서와 Claude Code 모두에서 사용할 수 있습니다.</p>
+<h2>4. CLAUDE 앱에서 사용하기</h2>
+<p>먼저 모델 선택기에 Opus 5.5가 표시되는지 확인하십시오.</p>
+<h3>차트나 스크린샷을 그대로 공유</h3>
+<p><strong>할 일.</strong> 차트, 다이어그램, 스크린샷, 슬라이드를 그대로 첨부하십시오. 숫자를 다시 입력하지 마십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> Opus 5.5는 Opus 5보다 차트, 다이어그램, 스크린샷을 더 정확하게 읽으며, 이를 위해 별도의 추가 단계가 필요하지 않습니다. 또한 이미지 안의 위치에 따라 의미가 달라지는 경우에도 더 뛰어납니다. 예를 들어 화살표가 어떤 상자들을 연결하는지, 다이어그램의 두 버전 사이에서 무엇이 바뀌었는지, 캘린더 스크린샷에서 회의가 언제 시작하고 끝나는지를 파악하는 경우입니다.</p>
+<p><strong>방법.</strong> 이미지를 첨부하고 구체적인 질문을 하십시오. “이 서비스 중 billing API를 직접 호출하는 것은 어느 것입니까?”</p>
+<h3>긴 문서의 검토 요청</h3>
+<p><strong>할 일.</strong> 긴 계획서, 보고서, 발표 자료를 제공하고 오류를 찾도록 요청하십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> Opus 5.5는 이전 Opus 모델보다 세부 사항에 더 주의를 기울입니다. 저희 테스트에서는 긴 기획 스레드에서 요일이 맞지 않는 날짜를 찾아냈고, 발표 자료에서 수치와 일치하지 않는 차트도 찾아냈습니다.</p>
+<p><strong>방법.</strong> 다음 프롬프트를 입력하십시오. “이 발표 자료에서 서로 모순되는 부분을 찾아 주세요. 숫자, 날짜, 이름을 확인하고, 각 문제를 인용한 뒤 어디에 있는지 알려 주세요.”</p>
+<h3>완성된 파일 요청</h3>
+<p><strong>할 일.</strong> 스프레드시트나 문서가 필요하면 개요가 아니라 파일을 요청하십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> Opus 5.5가 만든 스프레드시트와 문서는 공유하기 전에 필요한 수정이 Opus 5가 만든 것보다 적습니다.</p>
+<p><strong>방법.</strong> “공유할 수 있는 스프레드시트로 만들어 주세요. 공급업체당 한 행으로 하고, 비용, 계약 종료일, 담당자 열을 넣어 주세요.”</p>
+<h3>프로젝트에서 확정된 답변 명시</h3>
+<p><strong>할 일.</strong> 긴 채팅에서 후속 질문에 대한 응답이 느리게 느껴진다면, 이전 답변은 확정된 것이라는 지침을 추가하십시오.</p>
+<p><strong>Opus 5.5에서 중요한 이유.</strong> 긴 채팅에서 Opus 5.5는 짧은 후속 질문을 생각하는 동안 이전 답변을 다시 검토하는 경우가 있습니다. 이로 인해 응답이 느려집니다.</p>
+<p><strong>방법.</strong> 프로젝트 지침에 다음 내용을 추가하십시오.</p>
+PROMPT
+<pre><code>Once you have answered something, treat that answer as done. Focus on what I'm asking now, and don't go back over an earlier answer unless I ask about it or point out a problem with it.</code></pre>
+<p>긴 분석을 다루는 프로젝트에는 이 지침을 넣지 마십시오. 그런 프로젝트에서는 이후 단계에서 이전 단계의 오류가 드러날 수 있기 때문입니다.</p>
+<h2>5. 메시지가 플래그된 경우</h2>
+<p>Opus 5.5는 Fable 수준의 생물 및 사이버 안전장치(safeguards)와 함께 출시된 첫 번째 Opus 모델입니다. Claude 앱과 Claude Code에서는 플래그된 메시지 대부분이 이전 모델로 전환되며, 작업은 그곳에서 계속됩니다. 소스 코드에서 보안 취약점을 찾는 작업은 허용되며, 일상적인 건강 및 교육 관련 질문도 계속 정상적으로 작동해야 합니다. 이러한 안전장치가 정당한 작업을 플래그하는 경우도 있을 수 있으며, 저희는 잘못된 플래그를 줄이기 위해 조정하고 있습니다. 모델이 전환되었을 때 표시되는 내용과 대처 방법은 다음과 같습니다.</p>
+<h3>Claude 앱에서</h3>
+<p><strong>표시되는 내용.</strong> “Switched to”로 시작하고 이전 모델의 이름이 이어지는 알림이 표시됩니다. Claude는 해당 모델로 응답하며, 채팅도 그 모델에 그대로 유지됩니다.</p>
+<p><strong>할 일.</strong></p>
+<ul>
+<li>Opus 5.5로 돌아가려면 모델 선택기(model picker)에서 해당 모델을 선택합니다. 이전 메시지가 대화에 남아 있으면 다시 플래그가 지정될 수 있습니다. 새 대화를 시작하면 이를 피할 수 있습니다.</li>
+<li>먼저 확인을 받으려면 Settings, Capabilities 순서로 이동한 다음 “Switch models when a message is flagged.”를 끄십시오. 선택할 수 있는 옵션이 담긴 “paused” 카드가 표시됩니다.</li>
+</ul>
+<p>이 검사는 파일과 검색 결과를 포함해 대화에 있는 모든 내용을 대상으로 합니다. 따라서 마지막 메시지뿐 아니라 이전 내용 때문에 플래그가 지정될 수도 있습니다.</p>
+<h3>Claude Code에서</h3>
+<p><strong>표시되는 내용:</strong> 이전 모델의 이름이 적힌 안내가 표시됩니다. 세션은 해당 모델로 계속 진행됩니다.</p>
+<p><strong>해야 할 일:</strong></p>
+<ul>
+<li>/model을 실행해 다시 전환합니다.</li>
+<li>Esc를 두 번 눌러 마지막 메시지를 수정한 뒤 다시 시도합니다.</li>
+<li>먼저 확인을 받으려면 /config를 실행해 “Switch models when a message is flagged.” 설정을 변경합니다.</li>
+<li>플래그가 잘못 지정된 경우 /feedback을 실행합니다.</li>
+</ul>
+<h3>답변에 추론 과정을 표시하도록 요청하지 않기</h3>
+<p><strong>해야 할 일:</strong> 프롬프트와 지침에서 내부 추론 과정을 답변에 그대로 출력하라는 요청을 제거합니다.</p>
+<p><strong>Opus 5.5에서 중요한 이유:</strong> 내부 추론 과정을 답변에 그대로 출력하라는 요청은 거부될 수 있습니다. 이는 플래그 범주 중 하나입니다.</p>
+<p><strong>방법:</strong> 대신 필요한 내용을 Claude에게 직접 요청합니다. 예를 들어 “이 접근 방식을 선택한 이유를 세 문장으로 설명해 주세요.”라고 요청합니다.</p>
+<h2>6. 속도</h2>
+<h3>답변을 기다리는 작업에서는 빠른 모드 켜기</h3>
+<p><strong>해야 할 일:</strong> Claude Code에서 각 답변을 읽고 다음 메시지를 보내는 주고받기 방식의 작업에는 빠른 모드(fast mode)를 사용합니다.</p>
+<p><strong>Opus 5.5에서 중요한 이유:</strong> 빠른 모드는 Opus 5.5 출시 시점에 리서치 프리뷰(research preview)로 제공됩니다. 모델은 동일하며 텍스트가 더 빨리 도착합니다. 추가 사용량 설정을 켜야 하고, 토큰당 비용은 표준 모드보다 높습니다.</p>
+<p><strong>방법:</strong> Claude에 /fast를 입력합니다.</p>
+<h2>Opus 5.5 체크리스트</h2>
+<p>다음 장기 작업을 시작하기 전에 확인해 보십시오.</p>
+<figure><img src="https://claude.dev/media/70157ea87e7b847039bcb94cd8d1d5c83262cae578fc24bca80b91f7f98dbf56.png" alt="The checklist as a card with four groups of checkbox items: Asking, Long runs in Claude Code, Checking, and Flags. The same items are listed as text below."><figcaption><b>그림 D</b>한눈에 보는 체크리스트</figcaption></figure>
+<p><strong>요청하기</strong></p>
+<ul>
+<li>작업에 “완료”의 기준이 무엇인지 명시되어 있습니다.</li>
+<li>프롬프트나 저장된 지침에 “think hard” 같은 문구가 없습니다.</li>
+<li>디자인 요청에 제외할 스타일이 나열되어 있습니다.</li>
+<li>차트와 스크린샷은 다시 입력하지 않고 첨부합니다.</li>
+</ul>
+<p><strong>Claude Code에서의 장기 실행</strong></p>
+<ul>
+<li>CLAUDE.md에 멈춰야 할 때와 계속 진행해야 할 때, 그리고 되돌릴 수 없는 작업 전에는 멈춰야 한다는 내용이 적혀 있습니다.</li>
+<li>되돌릴 수 없는 명령에 대한 권한 확인 프롬프트가 여전히 켜져 있습니다.</li>
+<li>대규모 감사와 마이그레이션은 서브에이전트(subagent)로 나누어 진행합니다.</li>
+<li>작업 목록을 파일로 관리합니다.</li>
+</ul>
+<p><strong>검증하기</strong></p>
+<ul>
+<li>보고서의 “사용자에게 필요한 사항” 부분을 먼저 읽습니다.</li>
+<li>사람이 검토하기 전에 리뷰 단계를 먼저 실행합니다.</li>
+<li>리서치 답변에는 확인하지 못한 내용이 표시되어 있습니다.</li>
+</ul>
+<p><strong>플래그</strong></p>
+<ul>
+<li>모델 선택기나 /model로 이전 모델로 돌아가는 방법을 알고 있습니다.</li>
+<li>“Switch models when a message is flagged” 설정이 원하는 대로 지정되어 있습니다.</li>
+</ul>
+<p><a href="https://www.anthropic.com/claude-opus-5-5">Opus 5.5</a>로 개발을 시작해 보십시오!</p>
+<p><em>검토해 주신 Molly Vorwerck에게 감사드립니다.</em></p></article>
+  <article class="prose lang-en" hidden lang="en"><p>Opus 5.5 works well with the way you already use Claude. A few things behave differently, though: it works for longer on its own, it tells you plainly what it did, and it thinks before every reply. This guide covers how to work with Opus 5.5 in Claude apps and <a href="https://claude.com/product/claude-code">Claude Code</a>, including how to prompt the model, steer a long run, and check your results.</p>
+<h2>TRY THIS FIRST</h2>
+<p><strong>Three things to try in your first session with Opus 5.5</strong></p>
+<ol>
+<li>Hand over the whole task. Say what “done” looks like and when you want it to stop and ask. Then let it work.</li>
+<li>Delete “think carefully” lines. Opus 5.5 already thinks before every reply.</li>
+<li>When a long run ends, read what it needs from you first.</li>
+</ol>
+<h2>1. HOW TO ASK</h2>
+<h3>Say what “done” looks like, then let it run</h3>
+<p><strong>What to do.</strong> Give the whole task in one message. Name the finish line, like “the tests pass” or “every endpoint is migrated.” Then let it cook.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Opus 5.5 keeps going on long, multi-part work better than Opus 5 did. Compared to prior Opus models, its biggest gains are on multi-step work, like carrying a change through a large repository until the tests pass. Early testers had it run long coding tasks for hours with little oversight. With a clear finish line, it knows when it’s done.</p>
+<p><strong>How.</strong> In Claude Code, for example:</p>
+PROMPT<pre><code>Migrate the payment endpoints from the old client to the new one.
+Done means: every endpoint uses the new client, the old client is deleted, and the test suite passes.
+Stop and ask me only if a test fails for a reason you can't explain.</code></pre>
+<figure><img src="https://claude.dev/media/88d75704ac7ad2bde70a2a5cb1fd5c1800228810397be996b1dbfd91b61a047e.png" alt="The example prompt split into three labelled boxes: the whole task (migrate the payment endpoints from the old client to the new one), the finish line, highlighted (every endpoint uses the new client, the old client is deleted, and the test suite passes), and when to stop (only if a test fails for a reason you can’t explain). Footer: “Give the whole task in one message. Name the finish line. Then leave it alone.”"><figcaption><b>FIG A</b>One message: the whole task, the finish line, and when to stop.</figcaption></figure>
+<h3>Stop telling it to “think hard”</h3>
+<p><strong>What to do.</strong> Remove “think carefully,” “think step by step,” and similar lines from your prompts and your saved instructions.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Opus 5.5 always thinks before it replies, and it decides how much. You don’t need to ask it to think. In our testing in a chat product, removing a “think carefully” line made replies start sooner, with no clear drop in quality.</p>
+<p><strong>How.</strong> Delete the line. For a quick answer to a simple question, say so: “Answer directly.” To change how much it thinks in Claude Code, <a href="https://claude.dev/blog/spending-your-effort/">change effort</a>.</p>
+<h3>Add to a running task</h3>
+<p><strong>What to do.</strong> If you remember something mid-run, you can type a follow-up while it works.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Runs are longer now, so a restart costs more.</p>
+<p><strong>How to do it.</strong> In Claude Code, type the message and press Enter while Claude works, for example, “Also keep the old endpoint names as aliases.”</p>
+<h3>For design work, name the styles you don’t want</h3>
+<p><strong>What to do.</strong> When you ask for a page, an app, or an artifact, list the design habits you want left out.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> With no design direction, Opus 5.5 falls back on a few default styles. A general instruction like “avoid a generic look” mostly swaps one default for another. A list of specific patterns works much better.</p>
+<p><strong>How.</strong> Name the patterns:</p>
+PROMPT<pre><code>Build a personal website with placeholder content.
+Don't use a cream or off-white background, italic accent words in headings, numbered "01 / 02 / 03" section labels, monospace labels, or pill-shaped buttons.</code></pre>
+<p>Then look at what it chose instead. If you don’t like that either, add it to the list and ask again.</p>
+<h2>2. STEERING A LONG RUN IN CLAUDE CODE</h2>
+<h3>Tell it which stops you want</h3>
+<p><strong>What to do.</strong> Put a short rule in <a href="https://claude.com/resources/articles/using-claude-md-files">your CLAUDE.md file</a> about when to stop and ask, and when to keep going.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Opus 5.5 keeps you posted as it works. On a long task, it sometimes stops to report instead of going on: a summary that names the next step without taking it, an offer to continue, or a list of choices that don’t block the work. It follows instructions that name these stops. Name the stops you want, too.</p>
+<p><strong>How.</strong> Add this to CLAUDE.md, and edit it to fit your project:</p>
+PROMPT<pre><code>When a step doesn't need my input, keep going. Put status notes in the same message as your next action.
+Stop and ask only when you can't continue without me, or before anything destructive: deleting data, force-pushing, or changing anything outside this repository.</code></pre>
+<figure><img src="https://claude.dev/media/33679878db758a7730f1bb8988328df623e2aca8acec93a4bb6ecba3bc37ee43.png" alt="A CLAUDE.md card titled “Tell it which stops you want” with two boxes. Keep going: when a step doesn’t need my input, keep going, and put status notes in the same message as your next action. Stop and ask: only when you can’t continue without me, or before anything destructive: deleting data, force-pushing, or changing anything outside this repository. Footer: “Edit it to fit your project. Keep permission prompts on for destructive commands too.”"><figcaption><b>FIG B</b>The CLAUDE.md rule: when to keep going, and when to stop and ask.</figcaption></figure>
+<p>If a run stops with “Want me to continue?” reply “continue.” If that happens often, the rule above will help.</p>
+<p>A rule to keep going means fewer stops, so keep your own check before anything risky or hard to undo. The last line of the rule above does that. Keep permission prompts on for destructive commands too.</p>
+<p>For pair programming, you may want the opposite: a one-line plan before it starts and a short recap at the end. Say that in your CLAUDE.md instead. Opus 5.5 follows either one.</p>
+<h3>Ask it to split big work across subagents</h3>
+<p><strong>What to do.</strong> For an audit, a migration, or a review across a large codebase, ask Opus 5.5 to <a href="https://claude.dev/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code/">split the work across subagents</a> and check each result.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Early testers had Opus 5.5 coordinate parallel subagents on long audits and migrations, with little oversight.</p>
+<p><strong>How.</strong></p>
+PROMPT<pre><code>Audit every service in services/ for the retry bug in the linked issue.
+Give each service to its own subagent. When a subagent reports back, check its evidence before you accept it.
+Finish with one table: service, affected yes or no, and the evidence.</code></pre>
+<figure><img src="https://claude.dev/media/96f05d24a6728ed462139b2430e36c897ec36d8777109fb73ce839e6db266427.png" alt="Diagram titled “Give each service to its own subagent.” The prompt “Audit every service in services/ for the retry bug in the linked issue” fans out to four subagents. Their reports join at a “Check its evidence” step (“When a subagent reports back, check its evidence before you accept it”), then an arrow leads to “Finish with one table,” an empty table with the columns Service, Affected yes or no, and The evidence."><figcaption><b>FIG C</b>Fan out to subagents, check each one’s evidence, then finish with one table.</figcaption></figure>
+<h3>Keep the task list in a file</h3>
+<p><strong>What to do.</strong> For a run that will take a while, ask Opus 5.5 to keep its task list in a file and update it as it goes. Then read the file, not the scrollback, to see where the run is.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Runs are longer now. A long run fills the context window, and Claude Code then summarizes older turns. A list in a file survives that, and it shows you at a glance what’s done and what’s left.</p>
+<p><strong>How.</strong> “Keep a checklist in TASKS.md. Tick each item when it’s done, and add anything new you find.”</p>
+<h2>3. CHECKING THE RESULT</h2>
+<h3>Read what it needs from you first</h3>
+<p><strong>What to do.</strong> When a long run ends, look first for anything Claude is waiting on you for, like a decision it left open or a change it wants you to approve. Then read the rest of Claude’s summary.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Opus 5.5 reports on its work more clearly than Opus 5. Its updates and its final summary say what it did, what it found, and what it needs from you, in plain language.</p>
+<p><strong>How.</strong> To change the summary’s format, say so in CLAUDE.md, for example, “End every run with three headings: Blocked on me, Changed, Found.”</p>
+<h3>Ask it to review the code</h3>
+<p><strong>What to do.</strong> Ask Opus 5.5 to review a diff or a pull request before a person does.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> One early tester said Opus 5.5 at its lowest effort caught more bugs than Opus 5 at high effort, with fewer false alarms. It also explains its changes in plain language, so its pull request descriptions are easier to review.</p>
+<p><strong>How.</strong> Feed this prompt to Claude:</p>
+PROMPT<pre><code>Review the diff on this branch against main.
+List only problems you'd block the merge for. For each one, give the file and line, why it's wrong, and how to show it fails.</code></pre>
+<h3>Ask it to mark what it couldn’t confirm</h3>
+<p><strong>What to do.</strong> For research and analysis, ask it to say what it couldn’t find or couldn’t check.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> “I couldn’t find this” is worth reading, and asking for it makes it easy to find.</p>
+<p><strong>How.</strong> Add “Mark anything you couldn’t confirm, and say where you looked” to the request. This works in a Claude research report and in Claude Code.</p>
+<h2>4. IN CLAUDE APPS</h2>
+<p>First, check that the model picker says Opus 5.5.</p>
+<h3>Share the chart or screenshot itself</h3>
+<p><strong>What to do.</strong> Attach the chart, diagram, screenshot, or slide. Don’t retype the numbers.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Opus 5.5 reads charts, diagrams, and screenshots more accurately than Opus 5, and it needs no extra steps to do it. It’s also better at meaning that depends on where things are in the image: which boxes an arrow connects, what changed between two versions of a diagram, or when a meeting starts and ends in a calendar screenshot.</p>
+<p><strong>How.</strong> Attach the image and ask a specific question: “Which of these services call the billing API directly?”</p>
+<h3>Ask it to check a long document</h3>
+<p><strong>What to do.</strong> Give it a long plan, report, or deck, and ask it to find mistakes.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Opus 5.5 pays more attention to detail than prior Opus models. In our testing, it caught a date that fell on the wrong weekday in a long planning thread, and a chart that didn’t match the numbers in a deck.</p>
+<p><strong>How.</strong> Submit the prompt: “Check this deck for anything that contradicts itself: numbers, dates and names. Quote each problem and say where it is.”</p>
+<h3>Ask for the finished file</h3>
+<p><strong>What to do.</strong> When you want a spreadsheet or a document, ask for the file, not an outline.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> The spreadsheets and documents Opus 5.5 makes need less editing than Opus 5’s before you share them.</p>
+<p><strong>How.</strong> “Make this a spreadsheet I can share: one row per vendor, with columns for cost, contract end date and owner.”</p>
+<h3>In a project, say when answers are settled</h3>
+<p><strong>What to do.</strong> If follow-up questions in a long chat feel slow, add an instruction that earlier answers are settled.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> In a long chat, Opus 5.5 sometimes goes back over an earlier answer while it thinks about a short follow-up. That slows the reply.</p>
+<p><strong>How.</strong> Add this to the project’s instructions:</p>
+PROMPT<pre><code>Once you have answered something, treat that answer as done. Focus on what I'm asking now, and don't go back over an earlier answer unless I ask about it or point out a problem with it.</code></pre>
+<p>Leave it out of projects for long analysis, where a later step can show a mistake in an earlier one.</p>
+<h2>5. WHEN A MESSAGE IS FLAGGED</h2>
+<p>Opus 5.5 is the first Opus model to launch with Fable-level bio and cyber safeguards. In Claude apps and Claude Code, most flagged messages move to an older model, and your work goes on there. Finding security vulnerabilities in source code is allowed, and everyday health and educational questions should still work. These safeguards can sometimes flag legitimate work, and we’re tuning them to cut down on incorrect flags. If you’re switched, here’s what you’ll see and what to do.</p>
+<h3>In Claude apps</h3>
+<p><strong>What you see.</strong> A notice that starts with “Switched to” and the name of an older model. Claude answers on that model, and the chat stays on it.</p>
+<p><strong>What to do.</strong></p>
+<ul>
+<li>To go back to Opus 5.5, choose it in the model picker. If the earlier message is still in the chat, it may be flagged again. Starting a new chat avoids that.</li>
+<li>To be asked first, go to Settings, then Capabilities, and turn off “Switch models when a message is flagged.” You’ll see a “paused” card with your options.</li>
+</ul>
+<p>The check covers everything in the conversation, including files and search results. So a flag can come from earlier content, not only your last message.</p>
+<h3>In Claude Code</h3>
+<p><strong>What you see.</strong> A notice that names the older model. The session continues on that model.</p>
+<p><strong>What to do.</strong></p>
+<ul>
+<li>Run /model to switch back.</li>
+<li>Press Esc twice to edit your last message and try again.</li>
+<li>To be asked first, run /config and change “Switch models when a message is flagged.”</li>
+<li>Run /feedback if the flag was wrong.</li>
+</ul>
+<h3>Don’t ask it to show its reasoning in the reply</h3>
+<p><strong>What to do.</strong> Remove requests to reproduce its internal reasoning in the reply from your prompts and instructions.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> A request to reproduce its internal reasoning in the reply can be declined. It’s one of the flag categories.</p>
+<p><strong>How.</strong> Ask Claude for what you need instead, for example, “Explain why you chose this approach in three sentences.”</p>
+<h2>6. SPEED</h2>
+<h3>Turn on fast mode when you’re waiting on each reply</h3>
+<p><strong>What to do.</strong> In Claude Code, use fast mode for back-and-forth work, where you read each reply before you send the next message.</p>
+<p><strong>Why it matters on Opus 5.5.</strong> Fast mode is available for Opus 5.5 at launch as a research preview. You get the same model, and the text arrives sooner. It needs extra usage turned on, and it costs more per token than standard mode.</p>
+<p><strong>How.</strong> Type /fast into Claude.</p>
+<h2>YOUR OPUS 5.5 CHECKLIST</h2>
+<p>Run through this before your next long task.</p>
+<figure><img src="https://claude.dev/media/70157ea87e7b847039bcb94cd8d1d5c83262cae578fc24bca80b91f7f98dbf56.png" alt="The checklist as a card with four groups of checkbox items: Asking, Long runs in Claude Code, Checking, and Flags. The same items are listed as text below."><figcaption><b>FIG D</b>The checklist at a glance.</figcaption></figure>
+<p><strong>Asking</strong></p>
+<ul>
+<li>The task says what “done” looks like</li>
+<li>No “think hard” lines in prompts or saved instructions</li>
+<li>Design requests list the styles to leave out</li>
+<li>Charts and screenshots are attached, not retyped</li>
+</ul>
+<p><strong>Long runs in Claude Code</strong></p>
+<ul>
+<li>CLAUDE.md says when to stop and when to keep going, and to stop before anything destructive</li>
+<li>Permission prompts are still on for destructive commands</li>
+<li>Large audits and migrations are split across subagents</li>
+<li>The task list is kept in a file</li>
+</ul>
+<p><strong>Checking</strong></p>
+<ul>
+<li>The “needs from you” part of the report is read first</li>
+<li>A review pass runs before a person reviews</li>
+<li>Research answers mark what couldn’t be confirmed</li>
+</ul>
+<p><strong>Flags</strong></p>
+<ul>
+<li>You know how to switch back: the model picker, or /model</li>
+<li>“Switch models when a message is flagged” is set the way you want</li>
+</ul>
+<p>Start building with <a href="https://www.anthropic.com/claude-opus-5-5">Opus 5.5</a>!</p>
+<p><em>With thanks to Molly Vorwerck for reviewing.</em></p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Astra를 활용한 건축 시각화 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">Astra를 활용한 건축 시각화</h1>
+    <h1 class="lang-en" hidden lang="en">Architectural visualization with Astra</h1>
+    
+    <p class="art-sum lang-ko">Astra로 집을 설계하고 일상적인 세부 요소를 다듬은 뒤, Blender 카메라 투어와 Unreal Engine 5 워크스루로 둘러본 과정을 소개합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">How I used Astra to design a house, refine its everyday details, and explore it through Blender camera tours and an Unreal Engine 5 walkthrough.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 9월 4일</dd></div>
+      <div><dt>저자</dt><dd>Thomas Ricouard</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/architectural-visualization-with-astra">https://developers.openai.com/blog/architectural-visualization-with-astra</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>저는 미니멀하면서도 세부 묘사가 살아 있는 가구, 정원, 영화 같은 분위기를 담은 집이라는 간단한 요구 사항으로 시작했습니다. Codex의 Astra에게 이 요구 사항을 Blender에서 편집 가능한 3D 장면으로 만들어 달라고 요청했습니다. 이를 가구가 갖춰진 가족 주택으로 발전시켰고, Unreal Engine 5 버전도 시험해 보았으며, 카메라 투어를 연출할 수 있을 때까지 Blender 장면을 계속 다듬었습니다.</p>
+<p>첫 번째 장면은 가구가 갖춰진 리빙 파빌리온을 중심으로 구성되었습니다. 이후 방을 만들기에 앞서 더 큰 가족 주택의 평면도를 설계했습니다. 그 과정에서 Astra와 함께 건축, 가구, 재질, 조명을 작업했고, 각 버전을 보며 다음에 무엇을 발전시킬지 결정했습니다. 가장 최근 단계에서는 일상적인 소품과 더 따뜻한 조명을 추가해 사람이 실제로 살고 있는 집처럼 느껴지게 했습니다.</p>
+<figure><figcaption><p>Blender의 Cycles로 렌더링한 집의 카메라 투어입니다.</p></figcaption></figure>
+<p>이 프로젝트에서 사용한 프롬프트 몇 개를 길이와 명확성을 고려해 편집하여 실었습니다. Astra가 무엇을 만들 수 있는지 확인하면서 요구 사항이 어떻게 발전했는지 보여 줍니다.</p>
+<h2>집과 분위기에서 시작하기</h2>
+<p>첫 번째 프롬프트는 평면도나 가구 카탈로그 없이 원하는 결과물만 설명했습니다.</p>
+<blockquote>
+<p>미니멀하면서도 세부 묘사가 풍부한 가구와 멋진 정원이 있는 아름다운 집을 설계해 주세요. 조명, 재질, 시간대를 충분히 고려해 장면을 영화처럼 연출해 주세요.</p>
+</blockquote>
+<p>Astra는 <a href="https://docs.blender.org/api/current/">Blender Python API</a>(<code>bpy</code>)를 통해 편집 가능한 장면을 만들었습니다. 건축물, 짜맞춤 가구(joinery), 가구, 식재, 재질, 조명, 카메라를 모두 만들어 냈습니다. 첫 결과물부터 제가 원하던 낮은 지붕, 개방된 거실 공간, 따뜻한 느낌의 목재, 옅은 색의 석재, 정원과의 연결감이 이미 담겨 있었습니다. 우리는 이 집에 Solace라는 이름을 붙였습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/original-courtyard-house-09be999ecfd3.webp" alt="The first Solace house rendered in Blender, with a low white roof, open furnished pavilion, timber screens, garden, and rectangular pool"><figcaption><p>첫 번째 설계 프롬프트로 만들어진 원래의 Courtyard House입니다.</p></figcaption></figure>
+<p>이 집은 하나의 설계 프롬프트에서 나왔지만, Astra는 결과물을 넘겨주기 전에 스스로 작업을 반복해서 개선했습니다. 미리보기 렌더링을 확인하고, 구도와 조명을 조정했으며, 식물이 서로 겹치는 부분이나 소파 위의 스로우 블랭킷 같은 세부 사항도 바로잡았습니다. 저는 모든 오브젝트를 일일이 설명하거나 수정 하나하나를 지시할 필요가 없었습니다.</p>
+<p>이 단계에서는 가구가 갖춰진 리빙 파빌리온이 중심이었습니다. 개인 공간 동은 여전히 외관 볼륨으로만 표현되어 있었습니다. 완전한 가족 주택 배치가 아니라, 앞으로 발전시킬 시각적 방향을 제시하는 수준이었습니다.</p>
+<p>다음 요청에서는 배경을 바꿨습니다.</p>
+<blockquote>
+<p>골든 아워로 바꿔 주세요. 태양이 보여야 하고, 집은 비리디언(viridian) 빛깔의 숲 한가운데에 있어야 합니다.</p>
+</blockquote>
+<p>Astra는 집은 그대로 두고 그 주위에 숲을 만들었습니다. 여러 층의 나무와 하층 식생(understory)을 추가하고 태양의 위치를 잡았으며, 대기 산란(atmospheric scattering)을 이용해 숲속으로 스며드는 빛이 눈에 보이게 했습니다. 이제 장면은 정원 가장자리 너머까지 깊이감을 갖게 되었고, 따뜻한 실내가 나무들 사이에서 도드라졌습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/golden-hour-forest-f6761339ea68.webp" alt="The original Solace pavilion surrounded by dense woodland, with low sunlight filtering through the trees toward the pool and illuminated living room"><figcaption><p>숲과 골든 아워 조명을 적용한 뒤의 초기 집입니다.</p></figcaption></figure>
+<p>원래의 집과 정원은 절차적(procedural) 방식으로 모델링했습니다. 더 넓은 숲에는 Poly Haven의 기존 나무, 고사리, 바위 에셋을 사용했습니다. 덕분에 환경을 배치하고 장면의 분위기를 살리는 데 작업을 집중할 수 있었습니다.</p>
+<h2>모델링 전에 더 큰 집을 도면으로 그리기</h2>
+<p>방향이 마음에 들자 한 걸음 더 나아가고 싶어졌습니다. 중간 버전에서는 가구가 갖춰진 침실 스위트를 추가하고 지오메트리, 주방, 가구를 개선했습니다. 그런 다음 가족이 살기에 적합한 더 큰 집을 요청했습니다.</p>
+<blockquote>
+<p>미니멀하고 현대적인 스타일이 마음에 드니 이 스타일은 유지하면서 집을 훨씬 더 살기 좋게 키워 주세요. 먼저 평면도를 그려 주세요. 이를 검증하면서 발전시켜 나가겠습니다.</p>
+</blockquote>
+<p>이 요청으로 작업의 성격이 바뀌었습니다. 방들이 서로 어떻게 연결되는지, 개인 공간은 어디에 두어야 하는지, 사람이 집 안에서 어떻게 이동하는지를 정해야 했습니다. 첫 번째 장면에 가구를 더 추가한다고 해서 이런 질문에 답이 나오지는 않습니다.</p>
+<p>Astra는 식재가 가꿔진 중정을 둘러싼 단층 ㄷ자형 주택을 제안했습니다. 거실, 식당, 주방이 중앙 파빌리온을 이루었습니다. 양쪽 동에는 침실 세 개, 서재, 욕실, 드레스룸이 들어갔습니다. 팬트리, 세탁실, 수납 공간은 주방과 살림살이를 위한 별도의 보조 공간이 되었습니다.</p>
+<figure><a href="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-concept-plan-36481903216b.webp"><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-concept-plan-36481903216b.webp" alt="Solace Garden House concept floor plan: a central living, dining, and kitchen pavilion, three bedrooms and an office in two wings, a planted courtyard, and a pool terrace"></a><figcaption><p>집을 다시 만들기 전에 검토한 콘셉트 평면도입니다. 이미지를 선택하면
+원본 크기로 열립니다.</p></figcaption></figure>
+<p>이 평면도 덕분에 구체적으로 확인할 항목도 생겼습니다. 침실이 통로 역할을 하지 않아도 되었습니다. 중정을 둘러 가는 동선 덕분에 양쪽 동 사이의 이동이 주방의 작업 동선을 침범하지 않았습니다. 야외 식사 공간, 잔디밭, 수영장은 닫힌 방이 되지 않으면서도 생활 공간을 바깥으로 확장해 주었습니다.</p>
+<p>저는 이 방향을 승인하고, 새 버전을 만들기 전에 기존 장면을 보존해 달라고 Astra에게 요청했습니다.</p>
+<blockquote>
+<p>현재 장면은 백업으로 남겨 두고, Blender에서 업데이트된 집을 만들어 주세요. 집, 가구, 정원이 세밀하게 표현되고 지오메트리가 정확해질 때까지 반복해서 다듬어 주세요. Blender에서 검증이 끝나면 Unreal Engine 5로 내보내겠습니다.</p>
+</blockquote>
+<p>이 순서는 중요했습니다. 실시간 워크스루라는 추가 작업에 착수하기 전에 먼저 평면도를 검토하고, 그다음 모델을 검토할 수 있었기 때문입니다. 이 프로젝트는 어디까지나 시각화 프로젝트입니다. 이 콘셉트 평면도가 실제 시공에 참고 자료로 쓰이려면 대지, 구조, 건축 요구 사항에 대한 전문가의 검토가 필요합니다.</p>
+<h2>방과 가구 만들기</h2>
+<p>Garden House는 숲이라는 배경과 절제된 색감을 그대로 유지하면서, 승인된 계획안을 바탕으로 건축 구조를 확장했습니다. 중정이 구성의 중심이 되었고, 양쪽에 있는 방에서 중정 너머를 바라볼 수 있게 했습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-exterior-822ca33fb418.webp" alt="The expanded U-shaped Garden House rendered in Blender, with two furnished wings facing a planted courtyard and pool in the forest"><figcaption><p>건축 및 시네마틱 마감 작업을 거친 뒤 Blender로 렌더링한 확장된 Garden House입니다.</p></figcaption></figure>
+<p>가구는 이 방들이 설득력 있게 보이도록 만드는 데 큰 부분을 차지했습니다. Astra는 소파 쿠션과 파이핑(piping), 곡선형 의자 프레임, 책, 속이 빈 도자기 오브젝트를 모델링했습니다. 침대에는 프레임, 침대 살, 매트리스, 형태를 갖춘 침구가 있었습니다. 옷장에는 내부 공간과 선반, 옷걸이 봉이 있었습니다. 사무실에는 케이블 정리 구조를 갖춘 책상, 모니터, 키보드, 캐스터가 달린 의자가 있었습니다.</p>
+<p>이러한 디테일은 장면 안에 실제로 존재하는 지오메트리였습니다. 다른 각도에서 확인할 수 있었고, 워크스루(walkthrough)에도 그대로 반영할 수 있었습니다. 쿠션과 침구는 직접 만든 형상이므로, 결과물이 천 시뮬레이션(cloth simulation) 실행 여부에 좌우되지 않았습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-living-room-1c0e7ed4fa8f.webp" alt="A Blender render of the Garden House living room showing the shaped sofa cushions, rounded coffee table, floor lamp, books, and ceramics on a full-height timber bookcase"><figcaption><p>모델링한 소파 천, 가구, 책, 도자기가 있는 거실입니다.</p></figcaption></figure>
+<p>주방과 욕실에도 같은 수준의 공을 들였습니다. 싱크대와 세면대에는 실제로 뚫린 개구부와 속이 빈 볼이 있었습니다. 주방에는 오븐 내부 공간, 선반 거치대, 수저 서랍, 팬트리 선반이 포함되었습니다. 넓은 외관 렌더링에서는 사소한 요소이지만, 카메라가 조리대나 방 안을 들여다볼 만큼 가까워지면 중요해지기 시작합니다.</p>
+<p>머티리얼도 그 거리에서 제대로 보여야 했습니다. 이후의 장면에서는 직접 만든 마감재와 Poly Haven의 스캔된 오크, 월넛, 플라스터 텍스처를 함께 사용했으며, 여기에는 <a href="https://polyhaven.com/a/white_oak_veneer">White Oak Veneer</a>도 포함됩니다. Astra는 목재 결의 방향을 맞추고, 텍스처 스케일이 가구의 치수와 일관되도록 유지했습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-kitchen-dining-0c42f5052fd9.webp" alt="The Garden House kitchen and dining room rendered in Blender, with a timber dining table, curved chairs, pale island, brass tap, and large windows looking into the forest"><figcaption><p>첫 번째 집과 같은 절제된 색감을 유지하면서 가구와 짜맞춤 목공의 디테일을 더한 주방과 식사 공간입니다.</p></figcaption></figure>
+<p>시네마틱 스터디를 위해 Astra는 Blender 실행 파일의 <code>--python</code> 옵션을 사용해 백그라운드 모드로 스크립트를 실행했습니다. 이 스크립트가 카메라를 배치하고, 렌즈를 선택하고, 뷰를 렌더링했습니다. 또한 Astra는 컴퓨터 사용(computer use) 기능으로 Blender에서 장면을 열어 점검하면서, 저장된 렌더링 결과와 애플리케이션 화면을 함께 확인했습니다.</p>
+<p>우리는 렌더링을 통해 모델을 계속 점검했습니다. Astra는 방의 뷰와 머티리얼의 근접 스터디를 만들고, 이를 활용해 문제를 찾아 수정했습니다. 한 가지 예는 스틸 싱크대입니다. 빛이 메시(mesh)에 어떻게 음영을 만드는지 결정하는 표면 노멀(normal) 때문에 볼의 평평한 부분이 눌린 것처럼 보였습니다. 노멀을 바로잡고 둥근 모서리를 다듬자 주방의 디자인은 바꾸지 않고도 더 깔끔한 결과를 얻었습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-kitchen-detail-fa857a81e21e.webp" alt="Close Blender render of the kitchen sink with a hollow steel bowl, rounded rim, brass tap, pale countertop, and oak cabinet front"><figcaption><p>싱크대의 셰이딩과 모서리를 다듬은 뒤의 머티리얼 근접 스터디입니다.</p></figcaption></figure>
+<h2>머티리얼 없이 지오메트리 점검하기</h2>
+<p>시네마틱 이미지는 분위기를 판단하는 데 유용합니다. 머티리얼을 끄면 작업을 다른 방식으로 볼 수 있습니다. 이미지를 만들어내는 벽, 개구부, 가구, 방의 배치가 드러나기 때문입니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-solid-cutaway-bc0ed029bcfb.webp" alt="Untextured solid view of the actual Garden House Blender model, with the roof and surrounding forest hidden to reveal the U-shaped layout and furnished rooms"><figcaption><p>솔리드 모드로 본 실제 Blender 지오메트리입니다. 이 점검용 뷰에서는 지붕, 주변 숲, 창유리를 숨겼으며, 원본 모델은 변경되지 않았습니다.</p></figcaption></figure>
+<p>이렇게 보면 첫 번째 파빌리온에서 이어진 발전 과정을 더 쉽게 알 수 있습니다. 새로운 집은 끊김 없이 이어지는 배치를 갖추고 있고, 양쪽 동 모두에 가구가 놓인 방이 있으며, 방과 중정을 잇는 개구부가 있습니다. 이러한 요소는 조명이나 최종 카메라 뷰와 무관하게 Blender에서 계속 편집할 수 있습니다.</p>
+<p>Astra는 문 개구부와 벽 연결부를 포함한 지오메트리도 점검했고, 장면 안의 이동 경로를 샘플링했습니다. 이러한 점검은 시각적 검토를 뒷받침했습니다. 하지만 렌더링을 직접 보는 일을 대체하지는 않았으며, 모든 교차 지점이나 건축 디테일이 올바르다는 것을 보증하는 것도 아니었습니다.</p>
+<h2>사람이 사는 집처럼 느껴지게 만들기</h2>
+<p>가구가 갖춰진 집을 살펴본 뒤, 디테일을 더 끌어올리기 위해 Blender로 돌아왔습니다. 배치는 이미 제대로 작동하고 있었습니다. 저는 방이 실제로 사용되는 공간처럼 느껴지고, 카메라가 더 가까이 다가가도 머티리얼이 충분히 버티기를 원했습니다. 다음 지시는 빛과 일상의 흔적에 초점을 맞췄습니다.</p>
+<blockquote>
+<p>조명을 더 차분하고 따뜻하며 정확하게 만들어 주세요. 머티리얼이 빛에 반응하는 방식을 개선하고, 접시와 일상 소품을 추가해서 사람이 사는 집처럼 느껴지게 해 주세요.</p>
+</blockquote>
+<p>Astra는 건축 구조를 그대로 두고, 누군가 사용할 만한 위치에 물건을 추가했습니다. 식탁에는 접시, 커트러리, 유리잔, 접힌 냅킨이 더해졌습니다. 주방 조리대에는 빵, 허브, 병이 놓였습니다. 펼쳐진 저널, 독서용 안경, 머그잔, 휴대폰, 열쇠 덕분에 커피 테이블은 전시품처럼 보이지 않게 되었습니다. 사무실과 침실에도 비슷한 사용 흔적이 더해졌습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/atelier-living-library-887b57a4de62.webp" alt="Later Blender render of the living room, with warm shelf lighting, timber grain, cushions, and an open journal, mug, phone, and keys on the coffee table"><figcaption><p>디테일과 조명 작업을 거친 뒤의 거실이며, 네이티브 4K Cycles 렌더링 결과입니다.</p></figcaption></figure>
+<p>이렇게 추가된 요소는 모델링된 오브젝트였습니다. 속이 빈 접시, 리브 장식이 있는 유리잔, 박음질 단이 있는 접힌 리넨 등입니다. Astra는 표면이 빛을 받는 방식도 다듬었습니다. Poly Haven의 스캔된 목재와 석고 텍스처에 패브릭, 도자기, 금속의 절차적(procedural) 디테일을 결합했습니다. 텍스처 스케일, 거칠기(roughness), 미세한 표면 변화 덕분에 가까운 거리에서도 재질이 자연스럽게 보였습니다.</p>
+<p>조명도 함께 바뀌었습니다. Astra는 공간을 평평해 보이게 만들던 숨겨진 보조광(fill light)을 제거하고, 남은 빛의 색을 따뜻하게 조정했으며, 광원을 눈에 보이는 조명 기구와 일치시켰습니다. 천장 조명을 모델링하고, 빛이 투과되는 전등갓 안에는 빛나는 전구를 배치했습니다. 그 결과 하이라이트와 그림자가 공간 안의 오브젝트와 더 분명한 관계를 갖게 되었습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/atelier-kitchen-dining-57bd6510a4e7.webp" alt="Later Blender render of the kitchen and dining room, with a set table, ribbed glasses, folded napkins, timber furniture, and warm light from modeled ceiling fixtures"><figcaption><p>같은 작업을 거친 뒤의 식탁과 주방입니다. 식탁 세팅과
+조명 기구는 편집 가능한 씬 안의 지오메트리입니다.</p></figcaption></figure>
+<h2>Blender 카메라 워크스루 연출</h2>
+<p>저는 이런 디테일을 움직임 속에서도 확인하고 싶었습니다. 그래서 역동적이면서도 사람의 시선처럼 느껴지는 카메라 워크로 1080p, 30초 길이의 하우스 투어를 요청했습니다. 먼저 프리뷰 렌더를 검토한 뒤, 전체 렌더를 확정하기 전에 프레이밍과 움직임을 조정했습니다.</p>
+<p>Astra는 이 요청을 메인 파빌리온, 사무실, 욕실, 침실을 다루는 네 개의 카메라 테이크로 구성하고 컷으로 연결했습니다. Python 스크립트는 카메라를 바닥에서 약 1.65미터 높이에 두고 24~26mm 렌즈를 사용했으며, 각 테이크의 시작과 끝에서 속도를 완만하게 조절하고 절제된 걷는 움직임을 더했습니다. 카메라의 시선은 가구와 전망을 향하도록 연출했고, 프리뷰에서 빈 벽에 오래 머물거나 어색하게 끝나는 샷은 수정했습니다.</p>
+<p>건축물을 더 선명하게 보여주기 위해 피사계 심도(depth of field)는 사용하지 않았습니다. Cycles는 30초 분량의 투어를 초당 30프레임의 1080p 개별 프레임 900장으로 렌더링했으며, 노이즈를 제어하기 위해 적응형 샘플링(adaptive sampling)과 OpenImageDenoise를 사용했습니다. Astra는 새로운 프레임을 보간하지 않고 이 프레임들을 그대로 조립해 영상으로 만들었습니다. 이것은 렌더링된 카메라 시퀀스이기 때문에 인터랙티브 워크스루보다 프레임당 훨씬 더 오랜 시간을 들일 수 있었습니다.</p>
+<figure><figcaption><p>수영장 쪽 진입 장면과 각 방을 둘러보는 투어입니다. Blender에서
+Cycles로 렌더링했습니다.</p></figcaption></figure>
+<p>투어를 본 뒤, 저는 집에 들어가기 전에 수영장, 물에 비친 반사, 선베드를 보여주는 야외 장면을 5초 더 요청했습니다. Astra는 그 진입 장면을 렌더링해 기존 영상에 이어 붙였습니다. 또한 외관, 중정, 거실, 주방, 침실의 네이티브 4K 스틸 이미지 다섯 장도 만들었습니다. 이제 같은 씬으로 연출된 영상과 정밀한 스틸 이미지를 모두 만들 수 있게 되었습니다.</p>
+<h2>Unreal Engine 5에서 집 둘러보기</h2>
+<p>프로젝트 초반에 저는 Astra에게 이 집을 Unreal Engine 5에서 플레이할 수 있도록 만들어 달라고도 요청했습니다. 사람의 눈높이로 집 안을 이동하며 자유롭게 둘러보고, 공간들이 어떻게 연결되는지 더 잘 파악하고 싶었습니다. 이 워크스루는 도입부 영상에 나온 Blender 디테일 및 조명 작업을 거치기 전의 초기 버전 집을 보여줍니다.</p>
+<figure>   <figcaption><p>초기 버전의 인터랙티브 Unreal 워크스루를 녹화한 영상입니다.</p></figcaption></figure>
+<p>Astra는 승인된 Blender 파일을 중심으로 내보내기 및 가져오기 파이프라인을 작성했습니다. Blender의 커브와 모디파이어가 만든 디테일을 포함해, 평가가 완료된 지오메트리를 FBX 파일로 내보냈습니다. 이 파일들과 함께 각 부품이 어디에 속하는지, 어떤 머티리얼을 사용하는지, 조명과 카메라가 어디에 배치되었는지를 기록한 JSON 씬 설명 파일도 작성했습니다.</p>
+<p>이 설명 파일 덕분에 Unreal에서 씬을 재구성할 수 있었습니다. 이 변환 과정에서는 Blender의 미터 단위와 Unreal의 센티미터 단위, 그리고 좌표 방향의 차이를 처리했습니다. 반복되는 나무는 공유 지오메트리의 인스턴스로 유지되었기 때문에, 숲에 나무가 나타날 때마다 별도의 완전한 메시를 만들 필요가 없었습니다.</p>
+<p>머티리얼에는 별도의 변환 작업이 필요했습니다. Blender와 Unreal은 서로 다른 머티리얼 시스템을 사용하기 때문입니다. Astra는 지원되는 Blender 머티리얼 입력을 읽어 원본 텍스처를 재사용하고, 목재, 석재, 패브릭, 유리, 물 같은 마감재에 대응하는 Unreal 머티리얼을 만들었습니다. 나뭇결을 포함해 텍스처가 지오메트리 위에 배치되고 스케일링되는 방식도 그대로 유지했습니다. 일부 셰이더 동작은 근사치로 구현되었기 때문에, 외관을 일치시키려면 여전히 직접 확인하는 작업이 필요했습니다.</p>
+<p>조명도 이 작업의 일부였습니다. 태양의 방향과 직접 배치한 조명 위치가 출발점이 되었고, Unreal의 하늘과 볼류메트릭 포그(volumetric fog)로 숲속의 분위기를 재현했습니다. Astra는 Blender와 화면을 비교하면서 외부의 보조광과 안개 정도를 조정했습니다. 목표는 씬이 움직임에 반응하는 상태를 유지하면서, 시각적 방향성을 실시간 조명으로 옮기는 것이었습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/ue5-kitchen-closeup-9dbf0b8bdf8b.webp" alt="Unreal Engine 5 still of the Garden House kitchen showing a pale island, curved timber stools, oven, coffee machine, sink, and woodland through the windows"><figcaption><p>아일랜드, 스툴, 가전제품, 목재 표면이 보이는 주방을 Unreal에서
+더 가까이 본 모습입니다. 스틸 이미지용으로 선택한 설정으로 패키징된
+애플리케이션에서 캡처했습니다.</p></figcaption></figure>
+<p>마지막으로 집에는 플레이어와 충돌 처리가 필요했습니다. Astra는 1인칭 캐릭터, 걷기 조작, 시작 지점을 추가했습니다. 바닥은 플레이어를 지탱해야 했고, 벽과 가구, 유리는 이동을 막아야 했습니다. 가까이 있는 나무 줄기는 장애물이 될 수 있지만, 모든 고사리가 보이지 않는 벽처럼 작동해서는 안 되었습니다. Astra는 그 결과물을 네이티브 Mac 애플리케이션으로 패키징하고, 캐릭터의 일반적인 이동 방식으로 집 안의 여러 경로를 테스트했습니다.</p>
+<p>Solace를 걸어 다니는 경험은 설계를 검토하는 또 다른 방법이 되었습니다. 정원에서 집으로 다가가 거실로 들어가고, 연출된 렌더에는 없던 위치에서 각 방을 들여다볼 수 있었습니다.</p>
+<p>Blender의 디테일 및 조명 작업을 마친 뒤, Astra에게 한층 생활감이 느껴지는 집을 다시 Unreal로 가져오도록 요청했습니다. Astra는 업데이트된 지오메트리와 머티리얼을 기존 프로젝트로 다시 내보내고, 모델에 인터랙션을 추가했습니다. 파이프라인은 각 문이나 서랍에 속한 부품, 경첩이나 슬라이드 위치, 스위치가 제어해야 할 조명을 기록했습니다. Unreal에서는 손잡이, 서랍 상자, 그 안의 내용물이 각자 속한 어셈블리와 함께 움직였습니다.</p>
+<p>가장 큰 변화는 집의 일부를 실제로 사용할 수 있게 되었다는 점입니다. 상황별 프롬프트와 <strong>E</strong> 키로 문과 주방 수납장을 열고, 선택한 조명을 켜고 끄고, 에스프레소 머신을 작동할 수 있었습니다. 에스프레소 머신의 추출 시퀀스에서는 버튼이 눌리고, 커피가 컵으로 흘러 들어가며, 액체 수위가 올라갔습니다. Blender에서 모델링한 디테일에 이제 방을 걸어 다니며 직접 확인할 수 있는 동작이 생겼습니다.</p>
+<figure><figcaption><p>인터랙티브 커피 머신을 포함한 Unreal Engine 5의 업데이트된 집입니다.</p></figcaption></figure>
+<h2>스토리보드로 Blender와 Unreal 비교</h2>
+<p>최신 작업을 마친 뒤, Astra에게 업데이트된 집과 동일한 카메라 앵글을 사용해 스토리보드를 새로 만들도록 요청했습니다. Astra는 개별 샷을 유지한 채 Blender용과 Unreal Engine 5용 스토리보드를 각각 구성했습니다. 각 스토리보드는 큰 외부 전경으로 시작하고, 그 뒤에 방과 정원을 담은 작은 뷰 여섯 개가 이어집니다. Astra는 번호가 붙은 제목, 짧은 캡션, 타이포그래피, 여백을 처리했고, 각 이미지는 잘라내지 않고 전체를 그대로 보존했습니다.</p>
+<p>업데이트된 보드에는 Cycles 렌더와 Lumen 스틸 캡처를 사용했습니다. 두 보드는 동일한 일곱 가지 대상을 같은 순서로 다루며, 카메라 위치, 방향, 화각도 일치합니다. 각 엔진은 고유한 조명, 머티리얼, 톤 매핑을 그대로 유지합니다. Unreal의 욕실 거울에는 여전히 일부 반사 아티팩트가 보입니다. 레이아웃을 공유하기 때문에 두 버전을 함께 검토하기가 쉬워지고, 개별 뷰가 집 전체를 보여 주는 프레젠테이션으로 바뀝니다. 스토리보드를 선택하면 레이블과 이미지를 더 크게 확인할 수 있습니다.</p>
+<figure><a href="https://cdn.openai.com/devhub/blog/architectural-visualization/solace-atelier-blender-storyboard-large-358d6e4c1f0c.webp"><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/solace-atelier-blender-storyboard-inline-1111c7788f77.webp" alt="Blender storyboard for the Garden House, with a large woodland exterior above six labeled images of the living room, kitchen, office, bedroom, bathroom, and garden"></a><figcaption><p>Cycles 렌더로 구성한 Blender 스토리보드입니다.</p></figcaption></figure>
+<figure><a href="https://cdn.openai.com/devhub/blog/architectural-visualization/solace-atelier-ue5-storyboard-large-85cd4dce1246.webp"><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/solace-atelier-ue5-storyboard-inline-ecd466e31e18.webp" alt="Unreal Engine 5 storyboard for the Garden House, using the same seven subject labels and layout with still captures of the exterior, rooms, and courtyard"></a><figcaption><p>Lumen 스틸 캡처로 구성한 Unreal Engine 5 스토리보드입니다.</p></figcaption></figure>
+<h2>건축을 넘어선 디자인</h2>
+<p>저는 전혀 다른 3D 씬에도 같은 방식을 사용해 왔습니다. HELIOS에서는 Astra에게 태양 주위를 다이슨 스피어(Dyson sphere)가 둘러싼 태양계를 만들도록 요청했습니다. 가상의 집광 구조물은 오목한 표면, 냉각 핀, 보강된 정비 구조물, 더 큰 제어 허브를 갖춘 수천 개의 개별 패널로 확장되었습니다. Astra는 이 지오메트리에 머티리얼과 조명을 결합해, 밝게 빛나는 항성 주위의 구조물이 눈에 잘 보이도록 만들었습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/helios-stellar-collector-8f89b625bd2f.webp" alt="Blender render of HELIOS showing a bright Sun inside an open spherical structure of triangular collector panels, trusses, and machinery, with planets around it"><figcaption><p>열린 셸 사이로 태양이 보이는 원본 HELIOS 집광 구조물입니다. 크기와 거리는 일정한 천문학적 축척으로 표현하지 않고 영화적 연출에 맞춰 구성했습니다.</p></figcaption></figure>
+<p>Astra는 작업하는 동안 렌더 결과를 직접 검토했습니다. 첫 프리뷰에서 행성이 색이 바랜 듯 보이고 토성의 고리가 프레임에 잘리는 것을 포착했습니다. 이에 보조광(fill lighting)을 줄이고 구도를 넓혔습니다. 이후 셸이 거의 닫힌 상태로 지구에서 바라본 뷰를 요청하자, 좁은 개구부 세 개를 가진 새 버전을 모델링했습니다. 프리뷰에서는 빛줄기 하나만 선명하게 보였기 때문에, 발광 표면을 개구부에 더 가깝게 옮겼습니다. 또한 주된 피사체와 시선을 다투는 반사를 줄이기 위해 바다 머티리얼도 수정해 테스트했습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/helios-earthward-closed-collector-ff43b5366b9b.webp" alt="Blender render of a nearly closed HELIOS collector with three shafts of light escaping above Earth's curved horizon and illuminated cities"><figcaption><p>패널 5,120개로 이루어진 거의 닫힌 셸과 세 개의 빛 개구부를 담은 지구 방향 구도입니다. 이 뷰 역시 영화적 축척과 조명을 사용합니다.</p></figcaption></figure>
+<p>HELIOS 렌더에는 가색(false-color) 자외선 관측 이미지를 가공한 <a href="https://svs.gsfc.nasa.gov/30362">NASA JPL / STEREO 및 SDO</a>의 태양 이미지와, <a href="https://science.nasa.gov/resource/blue-marble-2002/">NASA Earth Observatory의 Blue Marble</a>의 지구 이미지를 사용했습니다. <a href="https://science.nasa.gov/earth/earth-observatory/night-lights-2012-map-79765/">야간 조명</a> 이미지는 NASA Earth Observatory / Robert Simmon이 제작했으며, NOAA NGDC의 Chris Elvidge가 제공한 Suomi NPP VIIRS 데이터를 사용했습니다. <a href="https://www.solarsystemscope.com/textures/">Solar System Scope / INOVE</a>의 행성 및 구름 맵은 <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>에 따라 가공해 사용했습니다.</p>
+<p>Shipyard 프로젝트에서 Astra는 끝이 가늘어지는 선체, 분절된 링, 정교한 추진기 네 개를 갖춘 순양함 AURELION-07을 만들었습니다. 엔진에는 격납 밴드, 정비 라인, 오목한 노즐, 동심원 형태의 발광 개구부가 있었습니다. 세라믹 장갑, 가공된 금속, 유리에는 각각 서로 다른 머티리얼을 적용했습니다. 프로시저럴 텍스처(procedural texture)로 장갑과 금속의 색상, 거칠기, 표면 디테일에 변화를 주었습니다. 지오메트리, 머티리얼, 조명, 카메라는 Blender에서 계속 편집할 수 있는 상태로 유지되었습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/aurelion-far-meridian-6f95d4a76080.webp" alt="Blender render of AURELION-07's tapered ceramic hull, supporting struts, and segmented ring against a blue planet"><figcaption><p>Shipyard 프로젝트에서 개별적으로 모델링한 함선 AURELION-07을 Blender로 렌더링한 이미지입니다.</p></figcaption></figure>
+번역 대상에 개인정보나 인증정보는 없다. 사용자 이메일은 시스템 컨텍스트이며 입력 내용이 아님. 그대로 번역 진행.
+
+<p>이번에도 Astra는 미리보기(preview)를 활용해 보완이 필요한 부분을 스스로 찾아냈습니다. 뱃머리가 지나치게 밋밋하고 배경의 행성이 너무 두드러진다고 판단했습니다. 다음 작업에서는 점점 가늘어지는 선체에 맞춰 패널과 이음선을 입히고, 도킹 장비와 링 체결부를 추가했으며, 행성의 위치를 옮기고 더 어둡게 만들었습니다. 이후에는 엔진을 포함해 여러 각도에서 우주선을 살펴보았습니다. 제가 세부 사항을 하나하나 짚어주기 전에, 이 검토를 통해 모델과 구도가 먼저 수정되었습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/aurelion-fusion-departure-00fae78e55f3.webp" alt="Rear Blender render of AURELION-07 showing four detailed drive pods with service lines, metal bands, and luminous concentric nozzles"><figcaption><p>같은 우주선을 다른 각도에서 보면 엔진의 구조와 표면 디테일을 확인할 수 있습니다.</p></figcaption></figure>
+<h3>참고 자료를 바탕으로 한 정원 설계</h3>
+<p>저는 Astra에게 지베르니에 있는 모네의 정원에서 영감을 받아, 연못과 초록색 다리, 빽빽한 식물이 있는 정원을 만들어 달라고도 요청했습니다. 초기 렌더링에서 연못 바깥쪽이 비어 보였을 때는, 실제 참고 자료를 조사해서 주변 정원과 건물을 발전시켜 달라고 부탁했습니다.</p>
+<p>그다음 피드백은 여전히 평평해 보이는 표면에 관한 것이었습니다. Astra는 질감이 있는 자갈과 석조물을 추가하고, 수련 잎과 꽃잎을 더 정교하게 다듬은 뒤, 검토용으로 새로운 Cycles 뷰를 렌더링했습니다. 결과물은 계속 편집할 수 있는 Blender 장면으로 남았으며, 실제 정원의 비율은 구도에 맞게 조정되었습니다.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/giverny-water-garden-cec7107eed5b.webp" alt="Blender render of a Giverny-inspired garden, with a green Japanese bridge over a reflective lily pond, pink and white flowers, and dense willow foliage"><figcaption><p>지베르니에서 영감을 받은 수상 정원의 Cycles 렌더링입니다. 일부 식물, 텍스처, 하늘 환경은 Poly Haven에서 가져왔습니다.</p></figcaption></figure>
+<h2>나만의 장면으로 시작하기</h2>
+<p>Solace에서 마음에 들었던 점은 여러 단계에 걸쳐 같은 아이디어를 계속 발전시킬 수 있었다는 것입니다. 분위기를 설명하고, 평면도를 검토하고, 더 정밀한 가구를 요청한 뒤, 그 결과를 둘러볼 수 있었습니다. Astra는 장면, 스크립트, Unreal 프로젝트에 걸쳐 작업을 이어갔고, 저는 어떤 공간을 만들고 싶은지 계속 결정했습니다. HELIOS와 Shipyard에서도 전체 설계부터 개별 부품까지 같은 여유를 누릴 수 있었으며, Astra가 그 과정에서 결과물을 점검하고 개선해 주었습니다.</p>
+<p>직접 실험해 보려면 보고 싶은 장소나 사물에서 시작하십시오. 방, 가구, 우주선, 상상 속의 풍경 등 무엇이든 좋습니다. 용도와 분위기를 설명한 다음, Astra에게 편집 가능한 장면과 검토용 뷰 몇 개를 요청하십시오. 먼저 전체적인 형태를 살펴본 뒤, 더 가까이 다가가 무엇을 바꿔야 할지 물어보십시오. 하나의 사물을 다듬든 언젠가 세계 전체를 탐험하든, 각 렌더링은 다음 설계 결정을 위한 출발점이 될 수 있습니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>I started with a simple brief for a house: minimalist but detailed furniture, a garden, and a cinematic atmosphere. I asked Astra in Codex to turn that brief into an editable 3D scene in Blender. We developed it into a furnished family home, explored a version in Unreal Engine 5, and kept refining the Blender scene until I could direct a camera tour through it.</p>
+<p>The first scene centered on a furnished living pavilion. We later developed a floor plan for a larger family home before building its rooms. Along the way, I worked with Astra on the architecture, furniture, materials, and lighting, using each version to decide what to develop next. The latest pass added the everyday objects and warmer lighting that made the house feel lived in.</p>
+<figure><figcaption><p>A camera tour of the house, rendered in Blender using Cycles.</p></figcaption></figure>
+<p>I’ve included a few prompts from the project, edited for length and clarity. They show how the brief evolved as I saw what Astra could build.</p>
+<h2>Start with the house and the atmosphere</h2>
+<p>My first prompt described the result I wanted, without supplying a floor plan or a furniture catalog:</p>
+<blockquote>
+<p>Design a beautiful house with minimalist but highly detailed furniture and a nice garden. Make the scene cinematic, with considered lighting, materials, and time of day.</p>
+</blockquote>
+<p>Astra built an editable scene through the <a href="https://docs.blender.org/api/current/">Blender Python API</a> (<code>bpy</code>). It created the architecture, joinery, furniture, planting, materials, lights, and cameras. The first result already had the low roof, open living space, warm timber, pale stone, and connection to the garden that I was looking for. We named the house Solace.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/original-courtyard-house-09be999ecfd3.webp" alt="The first Solace house rendered in Blender, with a low white roof, open furnished pavilion, timber screens, garden, and rectangular pool"><figcaption><p>The original Courtyard House, delivered from the first design prompt.</p></figcaption></figure>
+<p>That house came from one design prompt, but Astra still iterated on its own work before handing it back. It inspected preview renders, adjusted the composition and lighting, and corrected details such as planting intersections and the throw on the sofa. I didn’t have to describe every object or direct each of those changes.</p>
+<p>At this stage, the furnished living pavilion was the focus. The private wing was still represented by an exterior volume. It gave us a visual direction to develop, rather than a complete family-house layout.</p>
+<p>My next request changed the setting:</p>
+<blockquote>
+<p>Make it golden hour. We should see the sun, and the house should be in the middle of a viridian forest.</p>
+</blockquote>
+<p>Astra kept the house and built the forest around it. It added layers of trees and understory, placed the sun, and used atmospheric scattering to make the light visible through the woodland. The view now had depth beyond the edge of the garden, and the warm interior stood out against the trees.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/golden-hour-forest-f6761339ea68.webp" alt="The original Solace pavilion surrounded by dense woodland, with low sunlight filtering through the trees toward the pool and illuminated living room"><figcaption><p>The same early house after the forest and golden-hour lighting pass.</p></figcaption></figure>
+<p>The original house and its garden were modeled procedurally. For the larger forest, Astra used existing tree, fern, and rock assets from Poly Haven. That let the work focus on arranging the environment and getting the scene to feel right.</p>
+<h2>Draw the larger house before modeling it</h2>
+<p>Once I liked the direction, I wanted to go further. An intermediate version added a furnished bedroom suite and improved the geometry, kitchen, and furniture. Then I asked for a larger house that would make sense as a place for a family to live:</p>
+<blockquote>
+<p>I like the minimalist, modern style, so keep that while we grow the house to be much more livable. Draw me a floor plan first. We’ll validate and evolve it from there.</p>
+</blockquote>
+<p>This changed the work. We had to decide how rooms connected, where the private spaces belonged, and how someone would move through the house. Adding more furniture to the first scene wouldn’t answer those questions.</p>
+<p>Astra proposed a single-story, U-shaped home around a planted courtyard. The living room, dining area, and kitchen formed the central pavilion. The wings added three bedrooms, an office, bathrooms, and a dressing room. A pantry, laundry, and storage spaces gave the kitchen and household their own supporting rooms.</p>
+<figure><a href="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-concept-plan-36481903216b.webp"><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-concept-plan-36481903216b.webp" alt="Solace Garden House concept floor plan: a central living, dining, and kitchen pavilion, three bedrooms and an office in two wings, a planted courtyard, and a pool terrace"></a><figcaption><p>The concept floor plan we reviewed before rebuilding the house. Select the
+image to open it at full size.</p></figcaption></figure>
+<p>The plan also gave us specific things to check. Bedrooms didn’t need to become passageways. A route around the courtyard kept movement between the wings out of the kitchen’s working aisle. Outdoor dining, the lawn, and the pool extended the living spaces without becoming enclosed rooms.</p>
+<p>I approved the direction and asked Astra to preserve the existing scene before building the new version:</p>
+<blockquote>
+<p>Keep the current scene as a backup, then build the updated house in Blender. Iterate until the house, furniture, and garden are detailed and the geometry is correct. Once we validate it in Blender, we’ll export it to Unreal Engine 5.</p>
+</blockquote>
+<p>That order mattered. We could review the plan, then the model, before taking on the extra work of a real-time walkthrough. This remained a visualization project; the concept plan still needs professional review of the site, structure, and building requirements before it could inform construction.</p>
+<h2>Build the rooms and the furniture</h2>
+<p>The Garden House kept the forest setting and restrained palette, but expanded the architecture around the approved plan. The courtyard became the center of the composition, with views across it from the rooms on either side.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-exterior-822ca33fb418.webp" alt="The expanded U-shaped Garden House rendered in Blender, with two furnished wings facing a planted courtyard and pool in the forest"><figcaption><p>The expanded Garden House, rendered in Blender after the architectural and
+cinematic finishing passes.</p></figcaption></figure>
+<p>The furniture was a large part of making those rooms convincing. Astra modeled sofa cushions and their piping, curved chair frames, books, and hollow ceramic objects. Beds had frames, slats, mattresses, and shaped bedding. Wardrobes had interiors, shelves, and hanging rails. The office had a desk with cable management, a monitor, a keyboard, and a chair with casters.</p>
+<p>These details were geometry in the scene. They could be inspected from another angle and carried into the walkthrough. The cushions and bedding were authored shapes, so the result didn’t depend on running a cloth simulation.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-living-room-1c0e7ed4fa8f.webp" alt="A Blender render of the Garden House living room showing the shaped sofa cushions, rounded coffee table, floor lamp, books, and ceramics on a full-height timber bookcase"><figcaption><p>The living room, with modeled upholstery, furniture, books, and ceramics.</p></figcaption></figure>
+<p>The same attention went into the kitchen and bathrooms. Sinks and basins had actual openings and hollow bowls. The kitchen included an oven cavity, racks, a cutlery drawer, and pantry shelves. Those are small things in a wide exterior render, but they start to matter when the camera is close enough to look at the countertop or into a room.</p>
+<p>Materials needed to work at that distance too. The later scene combined authored finishes with scanned oak, walnut, and plaster textures from Poly Haven, including <a href="https://polyhaven.com/a/white_oak_veneer">White Oak Veneer</a>. Astra aligned the timber grain and kept the texture scale consistent with the dimensions of the furniture.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-kitchen-dining-0c42f5052fd9.webp" alt="The Garden House kitchen and dining room rendered in Blender, with a timber dining table, curved chairs, pale island, brass tap, and large windows looking into the forest"><figcaption><p>The kitchen and dining area, with the same restrained palette as the first
+house and more detail in the furniture and joinery.</p></figcaption></figure>
+<p>For the cinematic studies, Astra ran scripts through Blender’s own executable in background mode, using its <code>--python</code> option. Those scripts placed the cameras, chose lenses, and rendered the views. Astra also opened and inspected the scene in Blender through computer use, checking the application alongside the saved renders.</p>
+<p>We kept checking the model through renders. Astra produced views of the rooms and close studies of the materials, then used them to find and repair problems. One example was the steel sink: its surface normals, which determine how light shades the mesh, made a flat part of the bowl look pinched. Correcting them and refining the rounded edges produced a cleaner result without changing the kitchen’s design.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-kitchen-detail-fa857a81e21e.webp" alt="Close Blender render of the kitchen sink with a hollow steel bowl, rounded rim, brass tap, pale countertop, and oak cabinet front"><figcaption><p>A close material study after the sink’s shading and edge refinement.</p></figcaption></figure>
+<h2>Inspect the geometry without the materials</h2>
+<p>A cinematic image is useful for judging the atmosphere. Turning off the materials gives another view of the work: the walls, openings, furniture, and room layout that produce the image.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/garden-house-solid-cutaway-bc0ed029bcfb.webp" alt="Untextured solid view of the actual Garden House Blender model, with the roof and surrounding forest hidden to reveal the U-shaped layout and furnished rooms"><figcaption><p>The actual Blender geometry in solid mode. The roof, surrounding forest, and
+window panes are hidden for this inspection view; the source model is
+unchanged.</p></figcaption></figure>
+<p>This makes the progression from the first pavilion easier to see. The new house has a continuous layout, furnished rooms in both wings, and openings connecting them to the courtyard. Those elements remain editable in Blender, independently of the lighting and final camera view.</p>
+<p>Astra also checked the geometry, including door openings and wall connections, and sampled routes through the scene. Those checks supported the visual reviews. They didn’t replace looking at the renders, and they weren’t a certification that every possible intersection or architectural detail was correct.</p>
+<h2>Make the house feel lived in</h2>
+<p>After exploring the furnished house, I returned to Blender to push the details further. The layout already worked; I wanted the rooms to feel occupied and the materials to hold up when the camera moved closer. My next brief focused on the light and the signs of everyday life:</p>
+<blockquote>
+<p>Make the lighting quieter, warmer, and more accurate. Improve how the materials respond to light, and add dishes and everyday objects so the house feels lived in.</p>
+</blockquote>
+<p>Astra kept the architecture and added objects where someone might use them. The dining table gained plates, cutlery, glasses, and folded napkins. The kitchen had bread, herbs, and bottles on the counter. An open journal, reading glasses, a mug, a phone, and keys made the coffee table feel less like a display. The office and bedrooms gained similar traces of use.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/atelier-living-library-887b57a4de62.webp" alt="Later Blender render of the living room, with warm shelf lighting, timber grain, cushions, and an open journal, mug, phone, and keys on the coffee table"><figcaption><p>The living room after the detail and lighting pass, from a native 4K Cycles
+render.</p></figcaption></figure>
+<p>These additions were modeled objects: hollow dishes, ribbed drinking glasses, and folded linen with stitched hems. Astra also refined how surfaces caught the light, combining scanned timber and plaster textures from Poly Haven with procedural detail in fabric, ceramics, and metal. Texture scale, roughness, and small surface variations helped the materials read at close range.</p>
+<p>The lighting changed with them. Astra removed hidden fill lights that had been flattening the rooms, warmed the remaining light, and matched light sources to visible fixtures. It modeled ceiling lights and placed glowing bulbs inside lampshades that let light through. That gave the highlights and shadows a clearer relationship to the objects in the room.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/atelier-kitchen-dining-57bd6510a4e7.webp" alt="Later Blender render of the kitchen and dining room, with a set table, ribbed glasses, folded napkins, timber furniture, and warm light from modeled ceiling fixtures"><figcaption><p>The dining table and kitchen after the same pass. The table settings and
+lighting fixtures are geometry in the editable scene.</p></figcaption></figure>
+<h2>Direct a Blender camera walkthrough</h2>
+<p>I also wanted to judge that detail in motion. I asked for a 30-second house tour at 1080p, with camera work that felt dynamic and human. We reviewed preview renders first, then adjusted the framing and movement before committing to the full render.</p>
+<p>Astra translated that direction into four camera takes covering the main pavilion, office, bathroom, and bedroom, joined by cuts. Its Python scripts placed the camera about 1.65 meters above the floor with 24–26 mm lenses, eased its speed at the start and end of each take, and added restrained walking motion. It directed the camera’s gaze toward the furniture and views, and revised shots whose previews lingered on blank walls or ended awkwardly.</p>
+<p>For a crisper view of the architecture, depth of field stayed off. Cycles rendered the 30-second tour as 900 individual 1080p frames at 30 frames per second, using adaptive sampling and OpenImageDenoise to control noise. Astra assembled those frames into a film without interpolating new ones. This was a rendered camera sequence, so it could spend much longer on each frame than an interactive walkthrough.</p>
+<figure><figcaption><p>A poolside approach and a tour of the rooms, rendered in Blender using
+Cycles.</p></figcaption></figure>
+<p>After watching the tour, I asked for five more seconds outside, showing the pool, water reflections, and loungers before entering the house. Astra rendered that approach and joined it to the existing film. It also produced five native 4K stills of the exterior, courtyard, living room, kitchen, and bedroom. The same scene could now support both a directed film and detailed still images.</p>
+<h2>Walk through the house in Unreal Engine 5</h2>
+<p>Earlier in the project, I also asked Astra to make the house playable in Unreal Engine 5. I wanted to move through it at a person’s height, look around freely, and get a better sense of how the spaces connected. This walkthrough shows an earlier version of the house, before the Blender detail and lighting pass shown in the opening film.</p>
+<figure>   <figcaption><p>A recording of the earlier interactive Unreal walkthrough.</p></figcaption></figure>
+<p>Astra wrote an export and import pipeline around the approved Blender file. It exported the evaluated geometry as FBX files, including detail produced by Blender’s curves and modifiers. Alongside those files, it wrote a JSON scene description recording where the parts belonged, which materials they used, and where the lights and cameras were placed.</p>
+<p>That description let Unreal reconstruct the scene. The transfer handled Blender’s meters and Unreal’s centimeters, along with the change in coordinate orientation. Repeated trees remained instances of shared geometry, so the forest didn’t need a separate complete mesh for every occurrence.</p>
+<p>The materials needed their own translation. Blender and Unreal use different material systems. Astra read the supported Blender material inputs, reused the source textures, and built corresponding Unreal materials for finishes such as timber, stone, fabric, glass, and water. It preserved how textures were positioned and scaled on the geometry, including the wood grain. Some shader behavior was approximated, so matching the appearance still required inspection.</p>
+<p>Lighting was another part of that work. The sun direction and authored light placements provided a starting point, while Unreal’s sky and volumetric fog recreated the woodland atmosphere. Astra compared views against Blender and adjusted the exterior fill and haze. The aim was to carry the visual direction into real-time lighting while keeping the scene responsive to movement.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/ue5-kitchen-closeup-9dbf0b8bdf8b.webp" alt="Unreal Engine 5 still of the Garden House kitchen showing a pale island, curved timber stools, oven, coffee machine, sink, and woodland through the windows"><figcaption><p>A closer Unreal view of the kitchen, showing the island, stools, appliances,
+and timber surfaces. Captured from the packaged application with settings
+chosen for still images.</p></figcaption></figure>
+<p>Finally, the house needed a player and collision. Astra added a first-person character, walking controls, and a starting point. Floors needed to support the player; walls, furniture, and glass needed to block movement. Nearby tree trunks could be obstacles without making every fern an invisible wall. Astra packaged the result as a native Mac application and tested routes through it using the character’s normal movement.</p>
+<p>Walking through Solace gave me another way to review the design. I could approach the house from the garden, enter the living space, and look into the rooms from positions that weren’t part of a composed render.</p>
+<p>After the Blender detail and lighting pass, I asked Astra to bring the more lived-in house back into Unreal. It re-exported the updated geometry and materials into the existing project and added interactions to the model. The pipeline recorded which parts belonged to each door or drawer, where they hinged or slid, and which lights a switch should control. In Unreal, handles, drawer boxes, and their contents moved together with the assemblies they belonged to.</p>
+<p>The biggest change was being able to use parts of the house. A contextual prompt and the <strong>E</strong> key let me open doors and kitchen storage, switch selected lights on and off, and operate the espresso machine. Its brewing sequence pressed the button, ran coffee into the cup, and raised the liquid level. The details we had modeled in Blender now had behavior I could try while walking through the rooms.</p>
+<figure><figcaption><p>The updated house in Unreal Engine 5, including an interactive coffee
+machine.</p></figcaption></figure>
+<h2>Compare Blender and Unreal in storyboards</h2>
+<p>After the latest pass, I asked Astra to refresh the storyboards using the updated house and matching camera angles. It kept the individual shots and assembled separate storyboards for Blender and Unreal Engine 5. Each begins with a large exterior view, followed by six smaller views of the rooms and garden. Astra handled the numbered titles, short captions, typography, and spacing, while preserving each complete image without cropping it.</p>
+<p>The updated boards use Cycles renders and Lumen still captures. They cover the same seven subjects in the same order, with matching camera positions, orientations, and fields of view. Each engine retains its own lighting, materials, and tone mapping. The Unreal bathroom mirrors still show some reflection artifacts. The shared layout makes the two versions easier to review together and turns the individual views into a presentation of the whole house. Select either storyboard to inspect its labels and images at a larger size.</p>
+<figure><a href="https://cdn.openai.com/devhub/blog/architectural-visualization/solace-atelier-blender-storyboard-large-358d6e4c1f0c.webp"><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/solace-atelier-blender-storyboard-inline-1111c7788f77.webp" alt="Blender storyboard for the Garden House, with a large woodland exterior above six labeled images of the living room, kitchen, office, bedroom, bathroom, and garden"></a><figcaption><p>The Blender storyboard, assembled from Cycles renders.</p></figcaption></figure><figure><a href="https://cdn.openai.com/devhub/blog/architectural-visualization/solace-atelier-ue5-storyboard-large-85cd4dce1246.webp"><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/solace-atelier-ue5-storyboard-inline-ecd466e31e18.webp" alt="Unreal Engine 5 storyboard for the Garden House, using the same seven subject labels and layout with still captures of the exterior, rooms, and courtyard"></a><figcaption><p>The Unreal Engine 5 storyboard, assembled from Lumen still captures.</p></figcaption></figure>
+<h2>Design beyond architecture</h2>
+<p>I’ve used the same approach for very different 3D scenes. In HELIOS, I asked Astra to build a solar system with a Dyson sphere around the Sun. The fictional collector grew into thousands of individual panels with recessed surfaces, cooling fins, braced service structures, and larger control hubs. Astra combined that geometry with materials and lighting that made the construction visible around the bright star.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/helios-stellar-collector-8f89b625bd2f.webp" alt="Blender render of HELIOS showing a bright Sun inside an open spherical structure of triangular collector panels, trusses, and machinery, with planets around it"><figcaption><p>The original HELIOS collector, with an open shell revealing the Sun. The
+sizes and distances are composed for cinema rather than shown at a uniform
+astronomical scale.</p></figcaption></figure>
+<p>Astra reviewed the renders as it worked. In the first previews, it noticed that the planets looked washed out and Saturn’s rings were clipped by the frame. It reduced the fill lighting and widened the composition. When I later asked for a view from Earth with the shell almost closed, it modeled a new version with three narrow openings. Only one shaft of light read clearly in the preview, so it moved the light-emitting surfaces closer to the openings. It also tested changes to the ocean material to soften a reflection that competed with the main subject.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/helios-earthward-closed-collector-ff43b5366b9b.webp" alt="Blender render of a nearly closed HELIOS collector with three shafts of light escaping above Earth's curved horizon and illuminated cities"><figcaption><p>The Earthward composition, with a nearly closed shell of 5,120 panels and
+three light openings. This view also uses cinematic scale and lighting.</p></figcaption></figure>
+<p>The HELIOS renders use solar imagery from <a href="https://svs.gsfc.nasa.gov/30362">NASA JPL / STEREO and SDO</a>, adapted from false-color ultraviolet observations, and Earth imagery from <a href="https://science.nasa.gov/resource/blue-marble-2002/">NASA Earth Observatory’s Blue Marble</a>. The <a href="https://science.nasa.gov/earth/earth-observatory/night-lights-2012-map-79765/">night lights</a> are credited to NASA Earth Observatory / Robert Simmon, using Suomi NPP VIIRS data courtesy of Chris Elvidge, NOAA NGDC. Planetary and cloud maps from <a href="https://www.solarsystemscope.com/textures/">Solar System Scope / INOVE</a> were adapted under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p>
+<p>In the Shipyard project, Astra built AURELION-07, a cruiser with a tapered hull, a segmented ring, and four detailed drives. The engines had containment bands, service lines, recessed nozzles, and concentric illuminated openings. Ceramic armor, machined metal, and glass had distinct materials. Procedural textures varied the color, roughness, and surface detail of the armor and metal. The geometry, materials, lights, and cameras remained editable in Blender.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/aurelion-far-meridian-6f95d4a76080.webp" alt="Blender render of AURELION-07's tapered ceramic hull, supporting struts, and segmented ring against a blue planet"><figcaption><p>AURELION-07, an individually modeled ship from the Shipyard project,
+rendered in Blender.</p></figcaption></figure>
+<p>Here too, Astra used a preview to identify what needed work. It found the bow too plain and the background planet too prominent. The next pass fitted panels and seams to the tapered hull, added docking hardware and ring fasteners, and moved and darkened the planet. It then inspected the ship from several angles, including the engines. The review led to changes in the model and the composition before I had to point out each detail.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/aurelion-fusion-departure-00fae78e55f3.webp" alt="Rear Blender render of AURELION-07 showing four detailed drive pods with service lines, metal bands, and luminous concentric nozzles"><figcaption><p>A second view of the same ship makes the engine construction and surface
+details visible.</p></figcaption></figure>
+<h3>Design a garden from reference</h3>
+<p>I also asked Astra to build a garden inspired by Monet’s garden at Giverny, with a lily pond, green bridge, and dense planting. When the early renders looked empty beyond the pond, I asked it to study real references and develop the surrounding garden and buildings.</p>
+<p>My next feedback was about surfaces that still looked flat. Astra added textured gravel and masonry, refined the lily leaves and petals, and rendered new Cycles views for review. The result remained an editable Blender scene, with the real garden’s proportions adapted for the composition.</p>
+<figure><img src="https://cdn.openai.com/devhub/blog/architectural-visualization/giverny-water-garden-cec7107eed5b.webp" alt="Blender render of a Giverny-inspired garden, with a green Japanese bridge over a reflective lily pond, pink and white flowers, and dense willow foliage"><figcaption><p>A Cycles render of the Giverny-inspired water garden. Selected plants,
+textures, and the sky environment come from Poly Haven.</p></figcaption></figure>
+<h2>Start with your own scene</h2>
+<p>What I liked about Solace was being able to keep developing the same idea across those stages. I could describe an atmosphere, review a floor plan, ask for more precise furniture, and then explore the result. Astra carried the work through the scene, the scripts, and the Unreal project, while I kept deciding what kind of place I wanted to build. HELIOS and Shipyard gave me the same room to work from the overall design down to individual parts, with Astra inspecting and improving the result along the way.</p>
+<p>For your own experiment, start with a place or object you want to see: a room, a piece of furniture, a spacecraft, or an imagined landscape. Describe its purpose and atmosphere, then ask Astra for an editable scene and a few views to review. Look at the broad shape first, then move closer and ask what needs to change. Each render can be a starting point for the next design decision, whether you want to refine one object or eventually explore a whole world.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

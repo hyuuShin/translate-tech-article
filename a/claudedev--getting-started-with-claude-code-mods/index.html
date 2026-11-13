@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Claude Code 모드(mod) 시작하기 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Tutorials</p>
+    <h1 class="lang-ko">Claude Code 모드(mod) 시작하기</h1>
+    <h1 class="lang-en" hidden lang="en">Getting started with Claude Code mods</h1>
+    
+    <p class="art-sum lang-ko">모드는 플러그인에 포함되어 배포되며 Claude Code 세션 안에서 실행되는 훅(hook)입니다. 빈 폴더에서 모드를 하나 만들어 본 뒤, 규모가 더 큰 모드 두 가지를 살펴봅니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">Mods are hooks that ship inside plugins and run inside your Claude Code session. Build one from an empty folder, then tour two larger mods.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 10월 1일</dd></div>
+      <div><dt>저자</dt><dd>Addy Osmani</dd></div>
+      <div><dt>분량</dt><dd>11분</dd></div>
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/getting-started-with-claude-code-mods/">https://claude.dev/blog/getting-started-with-claude-code-mods/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>모드(mod)는 <a href="https://claude.com/product/claude-code">Claude Code</a> 세션 안에서 실행되는 작은 JavaScript 또는 TypeScript 파일입니다. 세션에서 일어나는 일을 지켜보고, Claude Code의 동작을 바꾸고, 터미널이나 데스크톱 앱에 자체 UI를 그릴 수 있습니다. 모드를 써 보려고 API를 배울 필요는 없습니다. <code>claude</code>를 실행한 뒤 원하는 모드를 설명하기만 하면 됩니다. 핫 리로드(hot reload)를 허용할지 물으면 허용하십시오. 그러면 턴이 끝날 때 모드가 나타납니다.</p>
+<p>Claude Code에서는 이미 설정, 권한 규칙, 슬래시 명령, 스킬, 상태 표시줄 등으로 동작 방식을 상당 부분 바꿀 수 있습니다. 모드는 여기서 더 나아가 Claude Code가 하는 일을 다시 쓰거나 대체할 수 있고, 사용자 지정 UI도 그릴 수 있습니다. 내부적으로 모드는 플러그인에 포함되어 배포되는 훅(hook)이며, 각 모드는 세션에서 발생하는 모든 이벤트를 발생 시점에 확인합니다.</p>
+<p>따라서 모드는 Claude Code를 자신의 작업 방식에 맞추는 수단이 됩니다. 수시로 확인하는 표시 항목을 추가하거나, 불안한 명령 앞에 안전장치를 두거나, 자신이 변경 사항을 읽는 방식에 맞는 리뷰 화면을 만들 수 있습니다.</p>
+<p>이 가이드에서는 빈 폴더에서 시작해 <strong>Token Weather</strong>라는 모드를 하나 만듭니다. 프롬프트 위에 컨텍스트 윈도우 상태를 실시간 예보처럼 보여 주는 모드이며, 코드는 약 80줄입니다. 이어서 더 큰 모드인 <strong>Blast Radius</strong>와 <strong>Replay Theater</strong>를 살펴보며 API로 할 수 있는 다른 일들을 소개합니다. 세 모드의 완성된 코드는 <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods">anthropics/claude-code-playground</a>에 있습니다.</p>
+<figure><figcaption><b>FIG A</b>터미널 세션에서 차례로 실행한 Token Weather, Blast Radius, Replay Theater</figcaption></figure>
+<figure><img src="https://claude.dev/media/eaee11951bbed827ef89ee535abfbbed7277b67a65044ea277ade9e9acd1d3b5.png" alt="A one-line terminal band cycling through three forecasts, a yellow sun for Clear, a blue umbrella for Showers and a pink lightning bolt for Storm, each with its token count out of 200k and a small bar chart of recent turns."><figcaption><b>FIG B</b>컨텍스트 윈도우가 차오르는 동안의 Token Weather 밴드: 18%에서 Clear, 67%에서 Showers, 81%에서 Storm</figcaption></figure>
+<p><strong>Claude Code 2.1.287 이상이 필요합니다.</strong> 모드는 기본적으로 켜져 있으므로 따로 켤 필요가 없습니다. API는 릴리스마다 바뀔 수 있습니다. Claude Code는 모드를 로드할 때마다 사용 중인 빌드에 맞는 타입 선언을 모드의 <code>.claude-plugin/types/</code> 폴더에 기록하며, 해당 버전의 기준은 이 선언입니다.</p>
+<h2>모드의 동작 방식</h2>
+<p>모드는 동작이 JavaScript 또는 TypeScript 모듈에 들어 있는 Claude Code 플러그인입니다.</p>
+<ul>
+<li>폴더는 일반 플러그인과 같으며, <code>.claude-plugin/plugin.json</code> 매니페스트를 가집니다.</li>
+<li><code>hooks/hooks.json</code>은 <code>modules</code> 아래에 모듈 하나를 지정합니다.</li>
+<li>모듈은 <code>register(on, options)</code>를 내보냅니다(export). 이 함수 안에서 <code>on(event, matcher?, hook)</code>으로 훅을 추가합니다.</li>
+</ul>
+<p>모든 훅은 같은 형태를 가집니다.</p>
+CODEJavaScript
+<pre><code>on("tool.call", { tool: "Bash" }, async ($, e, next) =&gt; {
+  // $    the mods API: ui, session, state, store, fs, process, clock, http, tool, command, model, ...
+  // e    this event's input, as plain data
+  // next passes e to the other plugins and then to Claude Code's own behavior
+  return next(e);
+});</code></pre>
+<p>훅은 미들웨어처럼 체인을 이룹니다. 먼저 사용자의 훅이 실행되고, <code>next(e)</code>가 이벤트를 다음 플러그인에 넘기며, 체인의 맨 끝에서 Claude Code가 원래 하려던 동작을 수행합니다. 훅은 다음 세 가지 중 하나를 할 수 있습니다.</p>
+<figure>훅은 체인을 이룹니다. 이벤트는 사용자의 훅, 다른 플러그인, Claude Code 순으로 전달됩니다</figure>
+<table><thead><tr><th>동작</th><th>방법</th><th>예시</th></tr></thead><tbody><tr><td><strong>관찰</strong></td><td><code>const r = await next(e); /* look */ return r</code></td><td>모든 파일 편집을 기록합니다. 매 턴이 끝난 뒤 수치를 측정합니다.</td></tr><tr><td><strong>재작성</strong></td><td><code>return next({ ...e, command: safer })</code></td><td>체인의 나머지 부분이 보는 내용을 바꿉니다.</td></tr><tr><td><strong>응답</strong></td><td><code>next</code>를 호출하지 않고 <code>return { deny: "…" }</code></td><td>도구 호출을 거부합니다. 명령이나 도구를 직접 처리합니다.</td></tr></tbody></table>
+<p>이벤트는 도구 호출, 제출된 프롬프트, 턴의 시작과 종료, 세션의 시작과 종료, 슬래시 명령, 그리고 <code>ui.render</code>를 포함합니다. <code>ui.render</code>는 화면에 그려지는 모든 인터페이스 요소에 대한 이벤트입니다. 모듈은 DOM도 Node도 없는 별도의 샌드박스에서 실행되므로, 샌드박스 밖의 모든 것은 <code>$</code>를 통해 접근합니다.</p>
+<p><strong>설정 훅과의 차이.</strong> <a href="https://claude.com/resources/articles/how-to-configure-hooks">설정 훅</a>은 이벤트마다 셸 명령을 실행하고 stdin과 stdout으로 JSON을 주고받습니다. 반면 모드는 한 번 로드되어 세션에 계속 남아 있습니다. 상태를 유지할 수 있고, 이벤트가 발생할 때마다 갱신되는 UI를 그릴 수 있으며, Claude Code를 다시 호출할 수도 있습니다. 예를 들어 창(pane)을 열고, 프로세스를 실행하고, 슬래시 명령을 등록하고, 모델이 호출할 수 있는 도구를 등록할 수 있습니다.</p>
+<p><strong>Claude Code도 모드를 직접 사용합니다.</strong> AGENTS.md 지원, 대화 옆에 표시되는 <code>/diff</code> 창 등 Claude Code의 일부 기능은 모드로 만들어져 있습니다. 테스트를 포함한 소스는 공개 저장소 <a href="https://github.com/anthropics/claude-code">anthropics/claude-code</a>의 <code>mods/</code> 아래에 있으므로, 팀이 모드를 어떻게 만드는지 직접 읽어 볼 수 있습니다.</p>
+<h2>첫 번째 모드 만들기: Token Weather</h2>
+<p>Token Weather는 매 턴이 끝난 뒤 컨텍스트 윈도우가 얼마나 찼는지 읽어서 프롬프트 위에 한 줄을 그립니다. 이 줄에는 날씨 아이콘, 백분율, 윈도우 대비 사용한 토큰 수, 최근 턴을 나타내는 작은 차트, 마지막 턴에서 늘어난 양이 표시됩니다.</p>
+<table><thead><tr><th>사용률</th><th>예보</th></tr></thead><tbody><tr><td>25% 미만</td><td>☀ Clear</td></tr><tr><td>25–49%</td><td>☁ Cloudy</td></tr><tr><td>50–74%</td><td>☂ Showers</td></tr><tr><td>75–89%</td><td>☇ Storm</td></tr><tr><td>90% 이상</td><td>↯ Compact soon</td></tr></tbody></table>
+<p>실제 세션에서의 모습입니다. 턴마다 더 많은 파일을 읽으면서 밴드가 ☀ Clear에서 ☂ Showers, ☇ Storm으로 채워집니다.</p>
+<figure><figcaption><b>FIG C</b>세 턴에 걸친 전체 터미널 세션에서의 Token Weather: 200k 윈도우의 18%, 67%, 81%</figcaption></figure>
+<h3>지름길: Claude에게 맡기기</h3>
+<p>여섯 단계를 건너뛸 수도 있습니다. Claude Code는 모드를 작성하는 방법을 알고 있으므로, 원하는 모드를 설명하고 작업을 맡기면 됩니다. <code>claude</code>로 세션을 시작한 뒤 아래 프롬프트를 붙여 넣으십시오.</p>
+CODEText
+<pre><code>Make me a Claude Code mod called token-weather: a live forecast of my context window, shown in the band above the prompt.
+
+What it should show, on one line:
+- A weather icon and word for how full the context window is: under 25% ☀ Clear (yellow), 25–49% ☁ Cloudy (cyan), 50–74% ☂ Showers (blue), 75–89% ☇ Storm (magenta), 90% and up ↯ Compact soon (red).
+- The percentage used, then the tokens used out of the window, like "134.4k / 200k".
+- A small chart of the last 12 turns, drawn with ▁▂▃▄▅▆▇█.
+- How much the last turn added, like "▲ +98.3k last turn".
+
+It should update after every turn.</code></pre>
+<p>Claude는 세션에서 핫 리로딩(hot reloading)을 켤지 한 번 묻습니다. 허용하면 Claude의 턴이 끝날 때 프롬프트 위에 밴드가 나타납니다. 이후에는 모든 변경이 그 자리에서 다시 로드되므로, 계속 수정을 요청하면서("Storm이 70%에서 시작하게 해줘", "끝에 달러 비용을 추가해줘") 밴드가 바뀌는 모습을 확인할 수 있습니다. 모드는 이 세션에서만 로드되고 해당 폴더는 나중에 정리되므로, 계속 사용하려면 폴더를 다른 곳에 복사한 뒤 일반 플러그인처럼 설치하십시오(<a href="https://claude.dev/blog/getting-started-with-claude-code-mods/#step-6-share-it">6단계</a>).</p>
+<p>프롬프트에는 보고 싶은 내용만 적었다는 점에 주목하십시오. 모드를 작성하기 위해 API를 알 필요는 없습니다. 구현 방법은 Claude Code에 내장된 모드 작성 가이드가 다룹니다. 리로드 후에도 상태를 유지하려면 어디에 저장해야 하는지, <code>claude plugin validate</code>로 플러그인을 어떻게 검증하는지, 어떤 이벤트에 훅을 걸어야 하는지가 그 내용입니다. "What it should show" 항목을 바꾸면 우리가 만든 모드가 아니라 여러분의 모드가 됩니다.</p>
+<p>먼저 구성 방식을 살펴보고 싶거나 Claude가 작성한 내용을 확인하고 싶다면 계속 읽어 보십시오.</p>
+<h3>1단계: 폴더 생성</h3>
+<p>Claude Code 버전이 충분히 최신인지 확인합니다.</p>
+CODEShell
+<pre><code>claude --version   # 2.1.287 or later</code></pre>
+<p>다음과 같은 구조를 만듭니다.</p>
+CODEText
+<pre><code>token-weather/
+├── .claude-plugin/
+│   ├── plugin.json
+│   └── types/            (written by Claude Code when it loads the mod)
+├── hooks/
+│   ├── hooks.json
+│   └── token-weather.mjs
+├── types/
+│   └── index.d.ts        (added in step 3)
+└── tests/
+    └── token-weather.test.ts   (added in step 5)</code></pre>
+<p><code>.claude-plugin/plugin.json</code>은 표준 플러그인 매니페스트입니다.</p>
+CODEJSON
+<pre><code>{
+  "name": "token-weather",
+  "version": "0.1.0",
+  "description": "A live forecast of the context window, drawn above the prompt.",
+  "author": { "name": "You" }
+}</code></pre>
+<p><code>hooks/hooks.json</code>은 모듈을 가리킵니다. 모드에는 이 파일이 정확히 하나만 있습니다.</p>
+CODEJSON
+<pre><code>{
+  "modules": ["./token-weather.mjs"]
+}</code></pre>
+<h3>2단계: 화면에 그리기</h3>
+<p>프롬프트 바로 위의 밴드는 <code>AbovePrompt</code>라는 컴포넌트입니다. Claude Code가 이 위치에는 아무것도 그리지 않으므로 첫 번째 대상으로 적합합니다. 이 컴포넌트의 <code>ui.render</code> 이벤트에 훅을 걸고 요소 트리를 반환하십시오.</p>
+CODEJavaScript
+<pre><code>// hooks/token-weather.mjs
+export function register(on) {
+  on("ui.render", { component: "AbovePrompt" }, ($, e, next) =&gt; {
+    const { Box, Text } = $.ui.resolve(e);
+    return Box({
+      paddingX: 1,
+      children: [Text({ color: "yellow", bold: true, children: "☀  Clear skies" })],
+    });
+  });
+}</code></pre>
+<p>요소는 전역 변수가 아닙니다. <code>$.ui.resolve(e)</code>는 현재 그려지는 서피스(surface)에 맞는 생성자를 반환합니다. Claude Code가 그리는 서피스마다 지원하는 요소 집합이 조금씩 다르기 때문입니다. JSX도 사용할 수 있으며, 이때는 <code>h</code>를 팩토리로 지정합니다.</p>
+<p>플러그인을 로드한 상태로 세션을 시작합니다.</p>
+CODEShell
+<pre><code>claude --plugin-dir ./token-weather</code></pre>
+<p>프롬프트 위에 "☀ Clear skies"가 나타납니다. 세션은 열어 두십시오. 폴더를 감시하고 있으므로 파일을 저장할 때마다 재시작 없이 모듈이 그 자리에서 다시 로드됩니다. 이렇게 빠른 피드백 루프가 모드 작성의 재미를 크게 좌우합니다.</p>
+<p><strong>팁:</strong> 기본 구조를 파악했다면 <a href="https://claude.dev/blog/getting-started-with-claude-code-mods/#the-shortcut-let-claude-build-it">단축 방법</a>처럼 다음 모드를 Claude에게 설명해 보십시오. Claude는 같은 세션에서 핫 리로드되는 폴더에 플러그인을 작성합니다.</p>
+<h3>3단계: 실제 수치를 읽고 <code>$.state</code>에 보관</h3>
+<p><code>$.session.usage()</code>는 상태 표시줄과 같은 수치를 반환합니다. <code>context.tokens</code>는 마지막 응답이 기반으로 삼은 입력 토큰 수이고, <code>context.window</code>는 모델의 컨텍스트 윈도우 크기이며, <code>context.percent</code>는 앞의 값을 뒤의 값으로 나눈 비율입니다. 이 호출은 비용이 들지 않습니다. <code>breakdown</code>을 요청할 때만 토큰 수 계산 요청을 보냅니다.</p>
+<p>세션이 시작될 때와 매 턴이 끝난 뒤에 측정값을 읽습니다.</p>
+CODEJavaScript
+<pre><code>on("session.start", async ($, e, next) =&gt; {
+  const result = await next(e);
+  await takeReading($);
+  return result;
+});
+
+on("turn.complete", async ($, e, next) =&gt; {
+  const result = await next(e);
+  if (!e.agentId) {
+    await takeReading($); // main-loop turns only, not subagents
+  }
+  return result;
+});</code></pre>
+<p>두 훅 모두 먼저 <code>next(e)</code>를 호출한 다음 관찰합니다. 어느 쪽도 기존 동작을 바꾸지 않습니다.</p>
+<p><strong>측정값을 보관할 위치.</strong> 모듈 수준의 <code>let readings = []</code>가 가장 먼저 떠오르는 선택이지만, 핫 리로드는 모듈을 새로 로드하는 것입니다. <code>register</code>가 다시 실행되고 <code>session.start</code>가 다시 발생하며 모듈 변수는 초기화됩니다. 대신 이력을 <code>$.state</code>에 두십시오. <code>$.state</code>는 이름이 붙은 값을 세션 내내 호스트에 보관하며, 이 값은 리로드 후에도 유지됩니다.</p>
+CODEJavaScript
+<pre><code>// Held by the host, so the history survives a hot reload of this file.
+const readings = { plugin: "token-weather", key: "readings" };
+
+async function takeReading($) {
+  const { context } = await $.session.usage();
+  if (!context?.window) return;
+  const tokens = context.tokens ?? 0;
+  const percent = context.percent ?? Math.round((tokens / context.window) * 100);
+  const { value: history = [] } = await $.state.get(readings);
+  await $.state.set(readings, [...history, { tokens, window: context.window, percent }].slice(-HISTORY));
+}</code></pre>
+<p>상태 값은 플러그인의 <strong>타입 계약(type contract)</strong>에 선언해야 합니다. 타입 계약은 매니페스트가 가리키는 작은 <code>.d.ts</code> 파일입니다. <code>types/index.d.ts</code>를 추가하십시오.</p>
+CODETypeScript
+<pre><code>export type TokenWeatherReading = { tokens: number; window: number; percent: number };
+
+declare module "claude-code" {
+  interface PluginState {
+    "token-weather": { readings: TokenWeatherReading[] };
+  }
+}</code></pre>
+<p>그런 다음 <code>plugin.json</code>에 <code>"types": "./types/index.d.ts"</code>를 추가합니다. 이 단계를 건너뛰면 <code>claude plugin validate</code>가 해결 방법을 알려 주는 오류와 함께 중단됩니다. 오류 메시지는 <code>token-weather.readings is not declared: the manifest's types contract must name it in interface PluginState { … }</code>입니다.</p>
+<p>그 대가로 다시 그리기는 자동으로 처리됩니다. 렌더 훅이 실행되는 동안 호출한 <code>$.state.get</code>은 해당 그리기 작업을 구독하므로, 이후 <code>$.state.set</code>이 호출될 때마다 밴드가 다시 그려집니다. <code>$.ui.invalidate</code>를 직접 호출할 필요가 없습니다.</p>
+<h3>4단계: 예보 그리기</h3>
+<p>모듈 전체는 다음과 같습니다.</p>
+CODEJavaScript
+<pre><code>// Token Weather: a live forecast of the context window, above the prompt.
+
+const HISTORY = 12;
+const BARS = "▁▂▃▄▅▆▇█";
+const FORECAST = [
+  { upTo: 25, icon: "☀", word: "Clear", color: "yellow" },
+  { upTo: 50, icon: "☁", word: "Cloudy", color: "cyan" },
+  { upTo: 75, icon: "☂", word: "Showers", color: "blue" },
+  { upTo: 90, icon: "☇", word: "Storm", color: "magenta" },
+  { upTo: Infinity, icon: "↯", word: "Compact soon", color: "red" },
+];
+
+// Held by the host, so the history survives a hot reload of this file.
+const readings = { plugin: "token-weather", key: "readings" };
+
+export function register(on) {
+  on("session.start", async ($, e, next) =&gt; {
+    const result = await next(e);
+    await takeReading($);
+    return result;
+  });
+
+  on("turn.complete", async ($, e, next) =&gt; {
+    const result = await next(e);
+    if (!e.agentId) {
+      await takeReading($); // main-loop turns only, not subagents
+    }
+    return result;
+  });
+
+  on("ui.render", { component: "AbovePrompt" }, async ($, e, next) =&gt; {
+    const { value: history = [] } = await $.state.get(readings);
+    if (e.props.hasSurvey || history.length === 0) {
+      return next(e);
+    }
+    const { Box, Text } = $.ui.resolve(e);
+    return band(Box, Text, history, e.props.bodyColumns);
+  });
+}
+
+async function takeReading($) {
+  const { context } = await $.session.usage();
+  if (!context?.window) return;
+  const tokens = context.tokens ?? 0;
+  const percent = context.percent ?? Math.round((tokens / context.window) * 100);
+  const { value: history = [] } = await $.state.get(readings);
+  await $.state.set(readings, [...history, { tokens, window: context.window, percent }].slice(-HISTORY));
+}
+
+function band(Box, Text, history, columns) {
+  const now = history[history.length - 1];
+  const f = FORECAST.find((b) =&gt; now.percent &lt; b.upTo);
+  const parts = [
+    Text({ color: f.color, bold: true, children: `${f.icon}  ${f.word}` }),
+    Text({ children: `  ${now.percent}% of context` }),
+    Text({ dimColor: true, children: `  ${short(now.tokens)} / ${short(now.window)}` }),
+  ];
+  if (columns &gt;= 60) {
+    parts.push(Text({ dimColor: true, children: "   last turns " }));
+    parts.push(Text({ color: f.color, children: sparkline(history) }));
+    if (history.length &gt; 1) {
+      parts.push(Text({ dimColor: true, children: trend(history) }));
+    }
+  }
+  return Box({ flexDirection: "row", paddingX: 1, children: parts });
+}
+
+function sparkline(history) {
+  const top = Math.max(...history.map((r) =&gt; r.tokens), 1);
+  return history.map((r) =&gt; BARS[Math.floor((r.tokens / top) * (BARS.length - 1))]).join("");
+}
+
+function trend(history) {
+  const delta = history[history.length - 1].tokens - history[history.length - 2].tokens;
+  if (delta === 0) return "  steady";
+  return delta &gt; 0 ? `  ▲ +${short(delta)} last turn` : `  ▼ ${short(-delta)} last turn`;
+}
+
+function short(n) {
+  if (n &gt;= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;
+  if (n &gt;= 1_000) return `${+(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}</code></pre>
+<p>직접 만드는 모드에도 적용할 만한 세부 사항이 세 가지 있습니다.</p>
+<ul>
+<li><strong>컴포넌트의 props는 <code>e.props</code>에 있습니다.</strong> <code>hasSurvey</code>는 설문이 밴드를 사용하려 한다는 뜻이므로, 훅은 <code>next(e)</code>를 호출해 설문에 양보합니다. <code>bodyColumns</code>는 밴드의 실제 너비로, 트랜스크립트 옆에 패널이 도킹되어 있으면 터미널 너비보다 좁습니다. 트리의 크기를 이 값에 맞추십시오. <code>e</code>의 최상위에는 <code>e.component</code>, <code>e.surface</code>, <code>e.requestId</code>, <code>e.viewport</code>만 있습니다.</li>
+<li><strong>그릴 것이 없으면 넘기십시오.</strong> <code>next(e)</code>를 반환하면 밴드가 Claude Code와 다른 모드에 돌아갑니다.</li>
+<li><strong>이모지가 아니라 단일 너비 기호를 사용하십시오.</strong> ☀ ☁ ☂ ☇ ↯는 어떤 터미널 글꼴에서도 정렬이 맞습니다.</li>
+</ul>
+<p>파일을 저장하면 실행 중인 세션이 변경 내용을 반영합니다. 큰 파일을 읽는 턴이 몇 번 지나면 이 절의 처음에 있는 녹화 화면처럼 밴드가 Clear에서 Showers, Storm으로 바뀝니다.</p>
+<h3>5단계: 검증과 테스트</h3>
+<p><code>claude plugin validate</code>는 Claude Code가 읽는 방식과 동일하게 매니페스트와 모듈 소스를 읽고, 모듈이 어떤 훅을 걸고 무엇을 호출하는지 보고합니다.</p>
+CODEText
+<pre><code>$ claude plugin validate ./token-weather
+  &gt; types ./types/index.d.ts declares state: token-weather.readings
+  &gt; ./token-weather.mjs hooks: session.start, turn.complete, ui.render{component=AbovePrompt}
+  &gt; ./token-weather.mjs calls: $.session.usage (via takeReading), $.state.get, $.state.set (via takeReading), $.ui.resolve
+  &gt; ./token-weather.mjs state writes: token-weather.readings
+  &gt; ./token-weather.mjs state reads: token-weather.readings
+√ Validation passed</code></pre>
+<p><code>claude plugin test</code>는 플러그인의 <code>*.test.ts</code> 파일을 실제 Claude Code 런타임에서 실행합니다. 테스트가 <code>on</code>으로 등록한 훅은 체인에서 모드 <em>뒤에</em> 실행되며 Claude Code가 응답했을 값을 대신 제공하므로, <code>$.session.usage()</code>가 반환하는 값을 정확히 제어할 수 있습니다.</p>
+CODETypeScript
+<pre><code>// tests/token-weather.test.ts
+import { describe, expect, test } from "claude-code/testing";
+
+describe("token-weather", () =&gt; {
+  test("the band follows the context window", async ($, on) =&gt; {
+    // Hooks registered here run after the mod and stub what Claude Code would answer.
+    let tokens = 36_100;
+    on("session.start", ($, e) =&gt; ({ cwd: e.cwd }));
+    on("session.usage", () =&gt; ({
+      value: { startedAt: 0, rateLimits: [], context: { tokens, window: 200_000, percent: Math.round(tokens / 2_000) } },
+    }));
+    on("turn.complete", () =&gt; ({ text: "" }));
+
+    await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/work" } as any);
+    const ui = await $.ui.mount({
+      plugin: "token-weather",
+      surface: "terminal",
+      component: "AbovePrompt",
+      props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120 },
+    } as any);
+    expect(await ui.find({ type: "Text", text: /Clear/ })).toBeDefined();
+
+    tokens = 134_400;
+    await $.turn.complete({ reason: "answer", answer: "ok", durationMs: 1 } as any);
+    expect(await ui.find({ type: "Text", text: /Showers/ })).toBeDefined();
+    expect(await ui.find({ type: "Text", text: /67% of context/ })).toBeDefined();
+    expect(await ui.find({ type: "Text", text: /▲ \+98\.3k last turn/ })).toBeDefined();
+    await ui.unmount();
+  });
+});</code></pre>
+CODEText
+<pre><code>$ claude plugin test ./token-weather
+(pass) token-weather &gt; the band follows the context window
+ 1 pass
+ 0 fail</code></pre>
+<p>이 테스트는 3단계의 다시 그리기 동작도 확인합니다. 모드가 다시 그리기를 요청하지 않아도 <code>turn.complete</code> 이후에 밴드가 갱신됩니다.</p>
+<h3>6단계: 공유</h3>
+<p>모드는 플러그인이므로 같은 방식으로 배포합니다. 마켓플레이스에 올리면 되며, 마켓플레이스는 <code>.claude-plugin/marketplace.json</code> 파일이 들어 있는 폴더만으로도 충분합니다.</p>
+CODEJSON
+<pre><code>{
+  "name": "my-mods",
+  "owner": { "name": "You" },
+  "plugins": [{ "name": "token-weather", "source": "./token-weather" }]
+}</code></pre>
+CODEShell
+<pre><code>claude plugin marketplace add ./my-mods
+claude plugin install token-weather@my-mods --scope user</code></pre>
+<p>직접 만든 버전을 완성본과 비교하려면 anthropics/claude-code-playground에 있는 <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/token-weather">완성된 Token Weather 모드</a>를 참고하십시오.</p>
+<h2>모드 공유</h2>
+<p>모드는 Claude Code 플러그인이므로 다른 플러그인과 같은 방식으로 공유하며, 새로 배워야 할 내용은 없습니다. 모드를 마켓플레이스 파일과 함께 GitHub 저장소에 올리면 그 저장소가 곧 마켓플레이스가 됩니다. 누구나 이 저장소에서 설치할 수 있고, 일반적인 push로 업데이트할 수 있습니다.</p>
+<p>설치는 Claude Code에서 명령 세 개로 끝납니다.</p>
+CODEText
+<pre><code>/plugin marketplace add your-org/my-mods
+/plugin install token-weather@my-mods
+/reload-plugins</code></pre>
+<p>모드는 다시 로드할 때 시작됩니다. 모드가 나타나지 않으면 Claude Code를 재시작하십시오.</p>
+<p>모드는 사용자의 머신에서 Claude Code 안에서 실행되는 코드이며, Claude Code와 같은 접근 권한을 가집니다. 또한 모드는 Anthropic이 아니라 게시자가 작성합니다. 따라서 패키지를 설치할 때처럼 먼저 저장소를 읽어 보고, 신뢰할 수 있는 사람이 만든 모드만 설치하십시오. 명령을 실행하기 전에는 아무것도 설치되지 않습니다.</p>
+<p>Claude directory는 모드가 포함된 플러그인을 받고 있으며, <a href="https://claude.ai/directory/manage">claude.ai/directory/manage</a>에서 직접 만든 모드를 제출할 수 있습니다. 제출하면 사용자가 링크를 공유하지 않아도 다른 사람들이 모드를 찾을 수 있습니다.</p>
+<h2>추가 모드 2가지</h2>
+<p>Token Weather는 관찰하고 그리기만 합니다. 다음 두 모드는 한 걸음 더 나아가 이벤트에 개입하고, 패널(pane)을 열고, 입력을 받습니다.</p>
+<p>두 모드의 전체 코드는 anthropics/claude-code-playground에 있습니다. <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/blast-radius">Blast Radius</a>와 <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/replay-theater">Replay Theater</a>이며, 각각 제작 과정을 설명하는 README가 포함되어 있습니다.</p>
+<h3>Blast Radius: 위험한 명령이 실행되기 전에 무엇을 바꿀지 확인</h3>
+<p>Claude가 <code>rm -rf</code>, <code>git reset --hard</code>, <code>git clean</code>, 강제 push, 데이터베이스 마이그레이션 같은 명령으로 Bash를 호출하면 Blast Radius가 해당 호출을 보류합니다. 그리고 명령이 어떤 대상에 영향을 줄지 계산한 뒤, <strong>Proceed</strong>와 <strong>Cancel</strong> 버튼이 있는 패널을 엽니다. <code>2</code>를 누르면 Claude는 사유와 함께 거부 응답을 받습니다. <code>1</code>을 누르면 명령이 작성된 그대로 실행됩니다.</p>
+<figure><figcaption><b>FIG D</b>Blast Radius holds rm -rf build and lists the 9 files (1.1 MB) it would delete. Cancel refuses it; on the second try, Proceed runs it.</figcaption></figure>
+<p>이 모드는 세 가지 훅을 사용합니다. Bash에 대한 <code>tool.call</code>, 그리고 <code>Pane</code>과 <code>AbovePrompt</code>에 대한 <code>ui.render</code>입니다. 핵심 부분은 앞의 표에 나온 "answer" 동작입니다.</p>
+CODEJavaScript
+<pre><code>on("tool.call", { tool: "Bash" }, async ($, e, next) =&gt; {
+  const risk = classify(String(e.command ?? ""));
+  if (risk === null) return next(e);                 // everything else runs as normal
+
+  const report = await measure($, risk, await $.session.cwd());  // git status, git clean -n, du, ...
+  held = { command: e.command, risk, report, decision: null };
+  const opened = await $.ui.open({ id: "blast-radius", title: "Blast Radius", focus: true });
+  if (!opened.isPlaced) held.where = "band";         // too narrow for a pane: draw above the prompt
+
+  while (held.decision === null &amp;&amp; !next.signal.aborted) {
+    await $.process.run(["sleep", "0.25"]);          // time inside $ calls doesn't count against the hook's time limit
+  }
+  if (held.decision === "proceed") return next(e);   // let it run
+  return { deny: `Blast Radius held this command: the user pressed Cancel. It would have: ${report.summary}.` };
+});</code></pre>
+<p>이 예제에서 배울 수 있는 내용은 다음과 같습니다.</p>
+<ul>
+<li><strong>드라이 런(dry run)을 위한 <code>$.process.run</code>.</strong> 보고서는 각 도구의 자체 명령에서 가져옵니다. <code>git status --porcelain</code>, <code>git clean -n</code>, <code>git log HEAD..origin/main</code>, <code>showmigrations</code>가 그 예입니다. 인자는 argv 배열로 전달하므로 경로에 포함된 어떤 내용도 셸 코드로 실행되지 않습니다.</li>
+<li><strong>호출 보류.</strong> 훅은 디스패치마다 자체 시간으로 10초를 받지만, <code>$</code> 호출 안에서 대기한 시간은 포함되지 않습니다. 루프는 짧은 <code>sleep</code> 프로세스를 반복하며 기다리다가 버튼의 <code>onPress</code>가 결정을 설정하면 종료되고, <code>next.signal</code>이 중단되면(Esc를 누른 경우) 대기를 포기합니다.</li>
+<li><strong>단축키가 있는 버튼.</strong> <code>Button({ label: "Proceed", hotkey: "1", onPress })</code>는 클릭, Tab과 Enter, 또는 숫자 키로 동작합니다.</li>
+<li><strong>밴드로 대체 표시.</strong> 터미널 폭이 충분하면 트랜스크립트 옆에 패널이 고정됩니다. <code>$.ui.open</code>이 <code>isPlaced: false</code>로 응답하면 같은 보고서를 프롬프트 위에 그립니다.</li>
+</ul>
+<figure><img src="https://claude.dev/media/ac53d89fc2dbe36603c30639b12fdc7edcfba5072b9b417e656a65a2d196cc37.png" alt="A terminal with no side pane: a yellow-bordered box above the prompt shows the command, the two files with uncommitted changes it would discard, and numbered Proceed and Cancel choices."><figcaption><b>FIG E</b>At 120 columns, Blast Radius draws its report for git reset --hard in the band above the prompt</figcaption></figure>
+<p>이 모드는 권한 시스템이 아니라 안전망입니다. 명령어 텍스트를 읽어 판단하므로 <code>$(…)</code>, 별칭(alias), <code>rm</code>을 호출하는 스크립트는 검사를 통과합니다. 확실하게 차단하려면 권한 규칙을 사용하십시오.</p>
+<h3>Replay Theater: 직전 턴의 편집 내용을 단계별로 재생</h3>
+<p>턴이 실행되는 동안 Replay Theater는 모든 Edit 및 Write 호출을 기록합니다. 기록 대상은 파일, 그리고 변경 전후의 텍스트입니다. 턴이 끝나면 프롬프트 위에 힌트가 나타납니다. <code>r</code>을 누르거나 <code>/replay</code>를 입력하면 패널이 편집 내용을 diff 하나씩 차례로 보여 주며, 번호가 매겨진 단계 막대와 <strong>Prev</strong>, <strong>Next</strong>, <strong>Close</strong> 버튼이 함께 표시됩니다.</p>
+<figure><figcaption><b>FIG F</b>Replay Theater: the hint after a 5-edit rename across 3 files, then steps 1 to 5 in a pane</figcaption></figure>
+<p>이 모드는 편집을 차단하거나 변경하지 않고 관찰만 합니다.</p>
+CODEJavaScript
+<pre><code>on("tool.call", async ($, e, next) =&gt; {
+  if (EDIT_TOOLS.has(e.tool)) state.pending.push(...(await stepsFor($, e)));  // old/new text → diff
+  return next(e);                                                              // the edit runs untouched
+});
+
+on("turn.start", ($, e, next) =&gt; { if (!e.agentId) state.pending = []; return next(e); });
+
+on("turn.complete", async ($, e, next) =&gt; {
+  const r = await next(e);
+  if (!e.agentId &amp;&amp; state.pending.length) state.replay = state.pending;       // one replay per turn
+  return r;
+});
+
+on("session.start", async ($, e, next) =&gt; {
+  const r = await next(e);
+  await $.command.register({ name: "replay", description: "Step through the last turn's file edits" });
+  return r;
+});
+on("command.run", { command: "replay" }, async ($, e) =&gt; ({ text: (await openReplay($)) ? "Replaying" : "No edits" }));</code></pre>
+<p>이 예제에서 배울 수 있는 내용은 다음과 같습니다.</p>
+<ul>
+<li><strong>이벤트 짝 맞추기.</strong> <code>turn.start</code>와 <code>turn.complete</code>가 편집 내용을 턴 단위의 재생 하나로 묶고, <code>e.agentId</code>는 서브에이전트의 턴이 그룹에 섞이지 않게 합니다.</li>
+<li><strong>슬래시 명령 등록.</strong> <code>session.start</code>에서 <code>$.command.register</code>로 명령을 등록한 뒤, <code>command.run</code>에서 응답합니다.</li>
+<li><strong>파일 읽기.</strong> Write의 경우 쓰기가 반영되기 직전에 <code>$.fs.read</code>로 기존 내용을 가져오므로 diff가 실제 변경 내용과 일치합니다.</li>
+<li><strong>배치는 화면 표시 계층의 몫.</strong> 전체 화면에서는 패널이 오른쪽에 고정됩니다. 80열에서는 프롬프트 위에 인라인으로 열립니다. 모드는 어느 경우든 같은 트리를 그립니다.</li>
+</ul>
+<figure><img src="https://claude.dev/media/bb2b908077c752f4e43672b5d5e7b0d262756bf27303d0884634cd142487f996.png" alt="프롬프트 위에 마젠타색 테두리의 상자가 표시된 세로로 긴 터미널 창. 상자 안에는 번호가 매겨진 단계 표시줄, greet.js 파일, 한 줄짜리 diff, 이전·다음·닫기 버튼이 있습니다."><figcaption><b>FIG G</b>80열 너비의 Replay Theater, 프롬프트 위에 인라인으로 그려진 모습</figcaption></figure>
+<h2>꼭 지킬 만한 네 가지 습관</h2>
+<ul>
+<li><strong>Claude Code가 작성해 주는 타입을 활용하십시오.</strong> Claude Code는 모드를 불러올 때마다 빌드에 필요한 선언을 모드의 <code>.claude-plugin/types/</code> 폴더에 작성하므로, 별도 작업 없이 에디터와 <code>tsc -p</code>에서 바로 사용할 수 있습니다. 이 타입은 모든 이벤트, <code>$</code>의 모든 메서드, 모든 요소의 props에 대한 기준 문서 역할을 합니다.</li>
+<li><strong>props는 <code>e.props</code>에서 읽으십시오.</strong> <code>hasSurvey</code>, <code>bodyColumns</code> 등은 <code>e</code> 자체가 아니라 <code>e.props</code>에 있습니다.</li>
+<li><strong>핫 리로드(hot reload)를 염두에 두십시오.</strong> 파일을 저장할 때마다 <code>register</code>와 <code>session.start</code>가 다시 실행되므로, 데이터는 모듈 변수가 아니라 <code>$.state</code>에 보관하십시오.</li>
+<li><strong>그림이 표시되지 않으면 로그를 확인하십시오.</strong> <code>claude --debug</code>를 실행한 뒤, 훅이 유효성 검사를 통과하지 못하는 트리를 반환했다는 내용의 줄을 찾아보십시오.</li>
+</ul>
+<h2>무엇을 모드로 만들 것인가</h2>
+<p>여기에 소개한 세 가지 모드는 각각 하나의 질문에서 출발했습니다. <em>내 컨텍스트는 얼마나 찼는가?</em>, <em>이 명령은 무엇을 삭제하려는가?</em>, <em>Claude가 방금 무엇을 변경했는가?</em>가 그 질문입니다. 여러분의 질문은 다를 것이고, 바로 그 점이 핵심입니다. 시작점으로 삼을 만한 아이디어는 다음과 같습니다.</p>
+<ul>
+<li><code>$.session.usage()</code>를 이용한 비용 또는 사용량 제한(rate limit) 미터를 <code>$.ui.status</code>로 상태 표시줄에 표시</li>
+<li>모든 프롬프트에 팀의 컨벤션을 추가하는 <code>prompt.submit</code> 훅</li>
+<li>이번 세션에서 Claude가 읽은 파일을 나열하여, Claude가 본 내용을 실시간 지도처럼 보여 주는 창(pane)</li>
+<li>긴 턴이 끝나면 <code>$.ui.toast</code>로 토스트 알림을 보내는 집중 타이머</li>
+<li>운영 환경 kubectl 컨텍스트나 <code>terraform apply</code>처럼, 사용 중인 스택에 맞게 조정한 <code>tool.call</code> 가드</li>
+</ul>
+<h3>만든 모드 공유하기</h3>
+<p>이제 매일 쓰게 된 모드를 만드셨습니까? 실행 중인 모습을 담은 GIF나 스크린샷과 함께 X나 LinkedIn에 게시하여, 다른 개발자들이 어떤 일이 가능한지 볼 수 있도록 하십시오. 플러그인을 마켓플레이스에 올리고(<a href="https://claude.dev/blog/getting-started-with-claude-code-mods/#sharing-your-mod">모드 공유하기</a>) 링크를 함께 남기면, 마음에 드는 사람은 누구나 명령어 세 개로 설치할 수 있습니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>A mod is a small JavaScript or TypeScript file that runs inside your <a href="https://claude.com/product/claude-code">Claude Code</a> session. It can watch what's happening, change what Claude Code does, or draw its own UI, in the terminal or the desktop app. You don't need to learn the API to try one. Run <code>claude</code>, then describe the mod you want. Allow hot reload when it asks, and the mod shows up when the turn ends.</p>
+<p>Claude Code already lets you change a lot about how it behaves: settings, permission rules, slash commands, skills and a status line. Mods go further: they can rewrite or replace what Claude Code does, and draw custom UI. Under the hood, mods are hooks that ship inside plugins, and each one sees every event in your session as it happens.</p>
+<p>That makes mods a way to fit Claude Code to how you work. You can add a readout you check all the time, put a guard in front of the commands that make you nervous, or build a review view for how you like to read changes.</p>
+<p>This guide builds one mod from an empty folder, <strong>Token Weather</strong>, a live forecast of the context window drawn above the prompt. It's about 80 lines. Then it tours two larger mods, <strong>Blast Radius</strong> and <strong>Replay Theater</strong>, to show what else the API can do. The finished code for all three is in <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods">anthropics/claude-code-playground</a>.</p>
+<figure><figcaption><b>FIG A</b>Token Weather, Blast Radius and Replay Theater, one after another, in a terminal session</figcaption></figure>
+<figure><img src="https://claude.dev/media/eaee11951bbed827ef89ee535abfbbed7277b67a65044ea277ade9e9acd1d3b5.png" alt="A one-line terminal band cycling through three forecasts, a yellow sun for Clear, a blue umbrella for Showers and a pink lightning bolt for Storm, each with its token count out of 200k and a small bar chart of recent turns."><figcaption><b>FIG B</b>Token Weather's band as the context window fills: Clear at 18%, Showers at 67%, Storm at 81%</figcaption></figure>
+<p><strong>Claude Code 2.1.287 or later.</strong> Mods are on by default, so there's nothing to turn on. The API can change between releases. Each time Claude Code loads a mod, it writes the type declarations for your build into the mod's <code>.claude-plugin/types/</code> folder, and those are the authority for your version.</p>
+<h2>HOW A MOD WORKS</h2>
+<p>A mod is a Claude Code plugin whose behavior lives in a JavaScript or TypeScript module:</p>
+<ul>
+<li>The folder is a normal plugin, with a <code>.claude-plugin/plugin.json</code> manifest.</li>
+<li><code>hooks/hooks.json</code> names one module under <code>modules</code>.</li>
+<li>The module exports <code>register(on, options)</code>. Inside it, <code>on(event, matcher?, hook)</code> adds a hook.</li>
+</ul>
+<p>Every hook has the same shape:</p>
+CODEJavaScript<pre><code>on("tool.call", { tool: "Bash" }, async ($, e, next) =&gt; {
+  // $    the mods API: ui, session, state, store, fs, process, clock, http, tool, command, model, ...
+  // e    this event's input, as plain data
+  // next passes e to the other plugins and then to Claude Code's own behavior
+  return next(e);
+});</code></pre>
+<p>Hooks form a chain, like middleware. Yours runs, <code>next(e)</code> hands the event to the next plugin, and at the bottom Claude Code does what it would have done anyway. A hook can do one of three things:</p>
+<figure>Hooks form a chainAn event passes through your hook, then other plugins, then Claude Code</figure>
+<table><thead><tr><th>Move</th><th>How</th><th>Example</th></tr></thead><tbody><tr><td><strong>Observe</strong></td><td><code>const r = await next(e); /* look */ return r</code></td><td>Record every file edit. Take a reading after each turn.</td></tr><tr><td><strong>Rewrite</strong></td><td><code>return next({ ...e, command: safer })</code></td><td>Change what the rest of the chain sees.</td></tr><tr><td><strong>Answer</strong></td><td><code>return { deny: "…" }</code> without calling <code>next</code></td><td>Refuse a tool call. Serve a command or a tool yourself.</td></tr></tbody></table>
+<p>The events cover tool calls, the prompt as submitted, turns starting and finishing, the session starting and ending, slash commands, and <code>ui.render</code>: every piece of the interface as it's drawn. The module runs in a sandbox of its own, with no DOM and no Node, so everything outside it goes through <code>$</code>.</p>
+<p><strong>How this differs from settings hooks.</strong> <a href="https://claude.com/resources/articles/how-to-configure-hooks">A settings hook</a> runs a shell command for each event and passes JSON over stdin and stdout. A mod is loaded once and stays in the session. It can keep state, draw UI that updates as events happen, and call back into Claude Code: open a pane, run a process, register a slash command, or register a tool the model can call.</p>
+<p><strong>Claude Code uses them itself.</strong> Some of Claude Code's own features are built as mods, including AGENTS.md support and the <code>/diff</code> pane beside the conversation. Their source, with tests, is in the public <a href="https://github.com/anthropics/claude-code">anthropics/claude-code</a> repository under <code>mods/</code>, so you can read how the team builds them.</p>
+<h2>BUILD YOUR FIRST MOD: TOKEN WEATHER</h2>
+<p>Token Weather reads how full the context window is after each turn and draws one line above the prompt: a weather icon, the percentage, the tokens used out of the window, a small chart of recent turns, and how much the last turn added.</p>
+<table><thead><tr><th>Used</th><th>Forecast</th></tr></thead><tbody><tr><td>under 25%</td><td>☀ Clear</td></tr><tr><td>25–49%</td><td>☁ Cloudy</td></tr><tr><td>50–74%</td><td>☂ Showers</td></tr><tr><td>75–89%</td><td>☇ Storm</td></tr><tr><td>90% and up</td><td>↯ Compact soon</td></tr></tbody></table>
+<p>Here it is in a real session. Each turn reads more files, and the band fills from ☀ Clear to ☂ Showers to ☇ Storm:</p>
+<figure><figcaption><b>FIG C</b>Token Weather in a full terminal session over three turns: 18%, then 67%, then 81% of a 200k window</figcaption></figure>
+<h3>The shortcut: let Claude build it</h3>
+<p>You can skip the six steps. Claude Code knows how to write mods, so you can describe the one you want and let it do the work. Start a session with <code>claude</code> and paste the prompt below:</p>
+CODEText<pre><code>Make me a Claude Code mod called token-weather: a live forecast of my context window, shown in the band above the prompt.
+
+What it should show, on one line:
+- A weather icon and word for how full the context window is: under 25% ☀ Clear (yellow), 25–49% ☁ Cloudy (cyan), 50–74% ☂ Showers (blue), 75–89% ☇ Storm (magenta), 90% and up ↯ Compact soon (red).
+- The percentage used, then the tokens used out of the window, like "134.4k / 200k".
+- A small chart of the last 12 turns, drawn with ▁▂▃▄▅▆▇█.
+- How much the last turn added, like "▲ +98.3k last turn".
+
+It should update after every turn.</code></pre>
+<p>Claude asks once whether to turn on hot reloading for the session. Allow it, and the band appears above the prompt when Claude's turn ends. From then on, every change reloads in place, so you can keep asking for tweaks ("make Storm start at 70%", "add the dollar cost at the end") and watch the band change. The mod loads only in this session, and its folder is cleaned up later, so to keep it, copy the folder out and install it like any plugin (<a href="https://claude.dev/blog/getting-started-with-claude-code-mods/#step-6-share-it">Step 6</a>).</p>
+<p>Notice that the prompt only describes what you want to see. You don't need to know the API to write one. Claude Code's built-in guide for writing mods covers the how: where to keep state so it survives a reload, how to check the plugin with <code>claude plugin validate</code>, and which events to hook. Change the "What it should show" lines and it's your mod, not ours.</p>
+<p>If you'd rather see how it's put together first, or want to check what Claude wrote, read on.</p>
+<h3>Step 1: Create the folder</h3>
+<p>Check that your Claude Code is new enough:</p>
+CODEShell<pre><code>claude --version   # 2.1.287 or later</code></pre>
+<p>Create this layout:</p>
+CODEText<pre><code>token-weather/
+├── .claude-plugin/
+│   ├── plugin.json
+│   └── types/            (written by Claude Code when it loads the mod)
+├── hooks/
+│   ├── hooks.json
+│   └── token-weather.mjs
+├── types/
+│   └── index.d.ts        (added in step 3)
+└── tests/
+    └── token-weather.test.ts   (added in step 5)</code></pre>
+<p><code>.claude-plugin/plugin.json</code> is a standard plugin manifest:</p>
+CODEJSON<pre><code>{
+  "name": "token-weather",
+  "version": "0.1.0",
+  "description": "A live forecast of the context window, drawn above the prompt.",
+  "author": { "name": "You" }
+}</code></pre>
+<p><code>hooks/hooks.json</code> points at the module. A mod has exactly one:</p>
+CODEJSON<pre><code>{
+  "modules": ["./token-weather.mjs"]
+}</code></pre>
+<h3>Step 2: Draw something</h3>
+<p>The band directly above the prompt is a component called <code>AbovePrompt</code>. Claude Code draws nothing there itself, so it's a good first target. Hook its <code>ui.render</code> event and return a tree of elements:</p>
+CODEJavaScript<pre><code>// hooks/token-weather.mjs
+export function register(on) {
+  on("ui.render", { component: "AbovePrompt" }, ($, e, next) =&gt; {
+    const { Box, Text } = $.ui.resolve(e);
+    return Box({
+      paddingX: 1,
+      children: [Text({ color: "yellow", bold: true, children: "☀  Clear skies" })],
+    });
+  });
+}</code></pre>
+<p>The elements aren't globals. <code>$.ui.resolve(e)</code> returns the constructors for the surface being drawn, because each surface Claude Code draws on supports a slightly different set. JSX works too, with <code>h</code> as the factory.</p>
+<p>Start a session with the plugin loaded:</p>
+CODEShell<pre><code>claude --plugin-dir ./token-weather</code></pre>
+<p>"☀ Clear skies" appears above the prompt. Keep the session open. The folder is watched, so every save reloads the module in place, with no restart. That quick feedback loop is most of what makes mods fun to write.</p>
+<p><strong>Tip:</strong> Once you know the shape, describe the next mod to Claude the way <a href="https://claude.dev/blog/getting-started-with-claude-code-mods/#the-shortcut-let-claude-build-it">the shortcut</a> does. It writes the plugin to a folder that hot-reloads in the same session.</p>
+<h3>Step 3: Read real numbers and keep them in <code>$.state</code></h3>
+<p><code>$.session.usage()</code> returns the same figures as the status line. <code>context.tokens</code> is the input the last response was answered over, <code>context.window</code> is the model's window, and <code>context.percent</code> is one over the other. The call is free: it only sends a token-count request if you ask for a <code>breakdown</code>.</p>
+<p>Take a reading when the session starts and after every turn:</p>
+CODEJavaScript<pre><code>on("session.start", async ($, e, next) =&gt; {
+  const result = await next(e);
+  await takeReading($);
+  return result;
+});
+
+on("turn.complete", async ($, e, next) =&gt; {
+  const result = await next(e);
+  if (!e.agentId) {
+    await takeReading($); // main-loop turns only, not subagents
+  }
+  return result;
+});</code></pre>
+<p>Both hooks call <code>next(e)</code> first and then observe. Neither one changes what happens.</p>
+<p><strong>Where to keep the readings.</strong> A module-level <code>let readings = []</code> looks like the obvious choice, but a hot reload is a fresh load: <code>register</code> runs again, <code>session.start</code> fires again, and module variables start over. Put the history in <code>$.state</code> instead. It holds named values in the host for the whole session, and they survive reloads.</p>
+CODEJavaScript<pre><code>// Held by the host, so the history survives a hot reload of this file.
+const readings = { plugin: "token-weather", key: "readings" };
+
+async function takeReading($) {
+  const { context } = await $.session.usage();
+  if (!context?.window) return;
+  const tokens = context.tokens ?? 0;
+  const percent = context.percent ?? Math.round((tokens / context.window) * 100);
+  const { value: history = [] } = await $.state.get(readings);
+  await $.state.set(readings, [...history, { tokens, window: context.window, percent }].slice(-HISTORY));
+}</code></pre>
+<p>A state value is declared in the plugin's <strong>type contract</strong>, which is a small <code>.d.ts</code> file the manifest points to. Add <code>types/index.d.ts</code>:</p>
+CODETypeScript<pre><code>export type TokenWeatherReading = { tokens: number; window: number; percent: number };
+
+declare module "claude-code" {
+  interface PluginState {
+    "token-weather": { readings: TokenWeatherReading[] };
+  }
+}</code></pre>
+<p>Then add <code>"types": "./types/index.d.ts"</code> to <code>plugin.json</code>. If you skip this step, <code>claude plugin validate</code> stops you with an error that names the fix: <code>token-weather.readings is not declared: the manifest's types contract must name it in interface PluginState { … }</code>.</p>
+<p>In return, you get redraws for free. A <code>$.state.get</code> made while a render hook runs subscribes that drawing, so every later <code>$.state.set</code> redraws the band. You never call <code>$.ui.invalidate</code>.</p>
+<h3>Step 4: Draw the forecast</h3>
+<p>Here is the whole module:</p>
+CODEJavaScript<pre><code>// Token Weather: a live forecast of the context window, above the prompt.
+
+const HISTORY = 12;
+const BARS = "▁▂▃▄▅▆▇█";
+const FORECAST = [
+  { upTo: 25, icon: "☀", word: "Clear", color: "yellow" },
+  { upTo: 50, icon: "☁", word: "Cloudy", color: "cyan" },
+  { upTo: 75, icon: "☂", word: "Showers", color: "blue" },
+  { upTo: 90, icon: "☇", word: "Storm", color: "magenta" },
+  { upTo: Infinity, icon: "↯", word: "Compact soon", color: "red" },
+];
+
+// Held by the host, so the history survives a hot reload of this file.
+const readings = { plugin: "token-weather", key: "readings" };
+
+export function register(on) {
+  on("session.start", async ($, e, next) =&gt; {
+    const result = await next(e);
+    await takeReading($);
+    return result;
+  });
+
+  on("turn.complete", async ($, e, next) =&gt; {
+    const result = await next(e);
+    if (!e.agentId) {
+      await takeReading($); // main-loop turns only, not subagents
+    }
+    return result;
+  });
+
+  on("ui.render", { component: "AbovePrompt" }, async ($, e, next) =&gt; {
+    const { value: history = [] } = await $.state.get(readings);
+    if (e.props.hasSurvey || history.length === 0) {
+      return next(e);
+    }
+    const { Box, Text } = $.ui.resolve(e);
+    return band(Box, Text, history, e.props.bodyColumns);
+  });
+}
+
+async function takeReading($) {
+  const { context } = await $.session.usage();
+  if (!context?.window) return;
+  const tokens = context.tokens ?? 0;
+  const percent = context.percent ?? Math.round((tokens / context.window) * 100);
+  const { value: history = [] } = await $.state.get(readings);
+  await $.state.set(readings, [...history, { tokens, window: context.window, percent }].slice(-HISTORY));
+}
+
+function band(Box, Text, history, columns) {
+  const now = history[history.length - 1];
+  const f = FORECAST.find((b) =&gt; now.percent &lt; b.upTo);
+  const parts = [
+    Text({ color: f.color, bold: true, children: `${f.icon}  ${f.word}` }),
+    Text({ children: `  ${now.percent}% of context` }),
+    Text({ dimColor: true, children: `  ${short(now.tokens)} / ${short(now.window)}` }),
+  ];
+  if (columns &gt;= 60) {
+    parts.push(Text({ dimColor: true, children: "   last turns " }));
+    parts.push(Text({ color: f.color, children: sparkline(history) }));
+    if (history.length &gt; 1) {
+      parts.push(Text({ dimColor: true, children: trend(history) }));
+    }
+  }
+  return Box({ flexDirection: "row", paddingX: 1, children: parts });
+}
+
+function sparkline(history) {
+  const top = Math.max(...history.map((r) =&gt; r.tokens), 1);
+  return history.map((r) =&gt; BARS[Math.floor((r.tokens / top) * (BARS.length - 1))]).join("");
+}
+
+function trend(history) {
+  const delta = history[history.length - 1].tokens - history[history.length - 2].tokens;
+  if (delta === 0) return "  steady";
+  return delta &gt; 0 ? `  ▲ +${short(delta)} last turn` : `  ▼ ${short(-delta)} last turn`;
+}
+
+function short(n) {
+  if (n &gt;= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;
+  if (n &gt;= 1_000) return `${+(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}</code></pre>
+<p>Three details are worth copying into your own mods:</p>
+<ul>
+<li><strong>The component's props are on <code>e.props</code>.</strong> <code>hasSurvey</code> tells you a survey wants the band, so the hook yields to it with <code>next(e)</code>. <code>bodyColumns</code> is the band's real width, which is narrower than the terminal while a pane is docked beside the transcript. Size the tree to it. Only <code>e.component</code>, <code>e.surface</code>, <code>e.requestId</code> and <code>e.viewport</code> sit at the top level of <code>e</code>.</li>
+<li><strong>Pass when you have nothing to draw.</strong> Returning <code>next(e)</code> gives the band back to Claude Code and to other mods.</li>
+<li><strong>Use single-width symbols, not emoji.</strong> ☀ ☁ ☂ ☇ ↯ line up in every terminal font.</li>
+</ul>
+<p>Save the file and the running session picks it up. After a few turns that read large files, the band moves from Clear to Showers to Storm, as in the recording at the start of this section.</p>
+<h3>Step 5: Validate and test</h3>
+<p><code>claude plugin validate</code> reads the manifest and the module's source the same way Claude Code will, and reports what the module hooks and calls:</p>
+CODEText<pre><code>$ claude plugin validate ./token-weather
+  &gt; types ./types/index.d.ts declares state: token-weather.readings
+  &gt; ./token-weather.mjs hooks: session.start, turn.complete, ui.render{component=AbovePrompt}
+  &gt; ./token-weather.mjs calls: $.session.usage (via takeReading), $.state.get, $.state.set (via takeReading), $.ui.resolve
+  &gt; ./token-weather.mjs state writes: token-weather.readings
+  &gt; ./token-weather.mjs state reads: token-weather.readings
+√ Validation passed</code></pre>
+<p><code>claude plugin test</code> runs the plugin's <code>*.test.ts</code> files against the real Claude Code runtime. Hooks that a test registers with <code>on</code> run <em>after</em> the mod in the chain and stub what Claude Code would answer, so you control exactly what <code>$.session.usage()</code> returns:</p>
+CODETypeScript<pre><code>// tests/token-weather.test.ts
+import { describe, expect, test } from "claude-code/testing";
+
+describe("token-weather", () =&gt; {
+  test("the band follows the context window", async ($, on) =&gt; {
+    // Hooks registered here run after the mod and stub what Claude Code would answer.
+    let tokens = 36_100;
+    on("session.start", ($, e) =&gt; ({ cwd: e.cwd }));
+    on("session.usage", () =&gt; ({
+      value: { startedAt: 0, rateLimits: [], context: { tokens, window: 200_000, percent: Math.round(tokens / 2_000) } },
+    }));
+    on("turn.complete", () =&gt; ({ text: "" }));
+
+    await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/work" } as any);
+    const ui = await $.ui.mount({
+      plugin: "token-weather",
+      surface: "terminal",
+      component: "AbovePrompt",
+      props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120 },
+    } as any);
+    expect(await ui.find({ type: "Text", text: /Clear/ })).toBeDefined();
+
+    tokens = 134_400;
+    await $.turn.complete({ reason: "answer", answer: "ok", durationMs: 1 } as any);
+    expect(await ui.find({ type: "Text", text: /Showers/ })).toBeDefined();
+    expect(await ui.find({ type: "Text", text: /67% of context/ })).toBeDefined();
+    expect(await ui.find({ type: "Text", text: /▲ \+98\.3k last turn/ })).toBeDefined();
+    await ui.unmount();
+  });
+});</code></pre>
+CODEText<pre><code>$ claude plugin test ./token-weather
+(pass) token-weather &gt; the band follows the context window
+ 1 pass
+ 0 fail</code></pre>
+<p>The test also checks the redraw behavior from step 3. The band updates after <code>turn.complete</code> without the mod ever asking for a redraw.</p>
+<h3>Step 6: Share it</h3>
+<p>A mod is a plugin, so it ships the same way. Put it in a marketplace, which can be as simple as a folder with a <code>.claude-plugin/marketplace.json</code>:</p>
+CODEJSON<pre><code>{
+  "name": "my-mods",
+  "owner": { "name": "You" },
+  "plugins": [{ "name": "token-weather", "source": "./token-weather" }]
+}</code></pre>
+CODEShell<pre><code>claude plugin marketplace add ./my-mods
+claude plugin install token-weather@my-mods --scope user</code></pre>
+<p>To compare your version with a finished one, see <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/token-weather">the complete Token Weather mod</a> in anthropics/claude-code-playground.</p>
+<h2>SHARING YOUR MOD</h2>
+<p>A mod is a Claude Code plugin, so you share it the same way as any other plugin, and there's nothing new to learn. Put the mod in a GitHub repo with a marketplace file and that repo becomes your marketplace. Anyone can install from it, and you can update it with a normal push.</p>
+<p>Installing takes three commands in Claude Code:</p>
+CODEText<pre><code>/plugin marketplace add your-org/my-mods
+/plugin install token-weather@my-mods
+/reload-plugins</code></pre>
+<p>The mod starts when you reload. If it doesn't show up, restart Claude Code.</p>
+<p>A mod is code that runs inside Claude Code on your machine, with the same access Claude Code has, and it's written by its publisher, not Anthropic. So install mods the way you'd install a package: read the repo first and only install from people you trust. Nothing gets installed until you run the command.</p>
+<p>The Claude directory accepts plugins that include mods, and you can submit yours at <a href="https://claude.ai/directory/manage">claude.ai/directory/manage</a>, so people can find it without a link from you.</p>
+<h2>TWO MORE MODS</h2>
+<p>Token Weather only watches and draws. The next two mods step into events, open panes, and take input.</p>
+<p>The complete code for both is in anthropics/claude-code-playground: <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/blast-radius">Blast Radius</a> and <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/replay-theater">Replay Theater</a>, each with a README that explains how it was built.</p>
+<h3>Blast Radius: see what a risky command would change before it runs</h3>
+<p>When Claude calls Bash with <code>rm -rf</code>, <code>git reset --hard</code>, <code>git clean</code>, a force push, or a database migration, Blast Radius holds the call. It works out what the command would touch and opens a pane with <strong>Proceed</strong> and <strong>Cancel</strong>. Press <code>2</code> and Claude gets a refusal with the reason. Press <code>1</code> and the command runs as written.</p>
+<figure><figcaption><b>FIG D</b>Blast Radius holds rm -rf build and lists the 9 files (1.1 MB) it would delete. Cancel refuses it; on the second try, Proceed runs it.</figcaption></figure>
+<p>It uses three hooks: <code>tool.call</code> on Bash, and <code>ui.render</code> on <code>Pane</code> and on <code>AbovePrompt</code>. The core of it is the "answer" move from the table above:</p>
+CODEJavaScript<pre><code>on("tool.call", { tool: "Bash" }, async ($, e, next) =&gt; {
+  const risk = classify(String(e.command ?? ""));
+  if (risk === null) return next(e);                 // everything else runs as normal
+
+  const report = await measure($, risk, await $.session.cwd());  // git status, git clean -n, du, ...
+  held = { command: e.command, risk, report, decision: null };
+  const opened = await $.ui.open({ id: "blast-radius", title: "Blast Radius", focus: true });
+  if (!opened.isPlaced) held.where = "band";         // too narrow for a pane: draw above the prompt
+
+  while (held.decision === null &amp;&amp; !next.signal.aborted) {
+    await $.process.run(["sleep", "0.25"]);          // time inside $ calls doesn't count against the hook's time limit
+  }
+  if (held.decision === "proceed") return next(e);   // let it run
+  return { deny: `Blast Radius held this command: the user pressed Cancel. It would have: ${report.summary}.` };
+});</code></pre>
+<p>What it teaches:</p>
+<ul>
+<li><strong><code>$.process.run</code> for dry runs.</strong> The report comes from the tools' own commands: <code>git status --porcelain</code>, <code>git clean -n</code>, <code>git log HEAD..origin/main</code>, <code>showmigrations</code>. Arguments go in as an argv array, so nothing in a path is run as shell code.</li>
+<li><strong>Holding a call.</strong> A hook gets 10 seconds of its own time per dispatch, but time spent waiting inside a <code>$</code> call doesn't count. The loop waits on short <code>sleep</code> processes until a button's <code>onPress</code> sets the decision, and it gives up when <code>next.signal</code> aborts (you pressed Esc).</li>
+<li><strong>Buttons with hotkeys.</strong> <code>Button({ label: "Proceed", hotkey: "1", onPress })</code> works by click, by Tab and Enter, or by the digit.</li>
+<li><strong>Degrade to the band.</strong> The terminal docks a pane beside the transcript when it's wide enough. When <code>$.ui.open</code> answers <code>isPlaced: false</code>, the same report is drawn above the prompt:</li>
+</ul>
+<figure><img src="https://claude.dev/media/ac53d89fc2dbe36603c30639b12fdc7edcfba5072b9b417e656a65a2d196cc37.png" alt="A terminal with no side pane: a yellow-bordered box above the prompt shows the command, the two files with uncommitted changes it would discard, and numbered Proceed and Cancel choices."><figcaption><b>FIG E</b>At 120 columns, Blast Radius draws its report for git reset --hard in the band above the prompt</figcaption></figure>
+<p>It's a safety net, not a permission system. It reads the command text, so <code>$(…)</code>, aliases and scripts that call <code>rm</code> get past it. Use permission rules for a hard block.</p>
+<h3>Replay Theater: step through the last turn's edits</h3>
+<p>While a turn runs, Replay Theater records every Edit and Write call: the file, plus the text before and after. When the turn ends, a hint appears above the prompt. Press <code>r</code> (or type <code>/replay</code>) and a pane walks through the edits one diff at a time, with a strip of numbered steps and <strong>Prev</strong>, <strong>Next</strong> and <strong>Close</strong> buttons.</p>
+<figure><figcaption><b>FIG F</b>Replay Theater: the hint after a 5-edit rename across 3 files, then steps 1 to 5 in a pane</figcaption></figure>
+<p>It never blocks or changes an edit. It observes:</p>
+CODEJavaScript<pre><code>on("tool.call", async ($, e, next) =&gt; {
+  if (EDIT_TOOLS.has(e.tool)) state.pending.push(...(await stepsFor($, e)));  // old/new text → diff
+  return next(e);                                                              // the edit runs untouched
+});
+
+on("turn.start", ($, e, next) =&gt; { if (!e.agentId) state.pending = []; return next(e); });
+
+on("turn.complete", async ($, e, next) =&gt; {
+  const r = await next(e);
+  if (!e.agentId &amp;&amp; state.pending.length) state.replay = state.pending;       // one replay per turn
+  return r;
+});
+
+on("session.start", async ($, e, next) =&gt; {
+  const r = await next(e);
+  await $.command.register({ name: "replay", description: "Step through the last turn's file edits" });
+  return r;
+});
+on("command.run", { command: "replay" }, async ($, e) =&gt; ({ text: (await openReplay($)) ? "Replaying" : "No edits" }));</code></pre>
+<p>What it teaches:</p>
+<ul>
+<li><strong>Pairing events.</strong> <code>turn.start</code> and <code>turn.complete</code> bracket the edits into one replay per turn, and <code>e.agentId</code> keeps subagent turns out of the grouping.</li>
+<li><strong>Registering a slash command.</strong> <code>$.command.register</code> in <code>session.start</code>, then answer it on <code>command.run</code>.</li>
+<li><strong>Reading files.</strong> For a Write, <code>$.fs.read</code> gets the old contents just before the write lands, so the diff is real.</li>
+<li><strong>Placement is the surface's job.</strong> In fullscreen the pane docks on the right. At 80 columns it opens inline above the prompt. The mod draws the same tree either way.</li>
+</ul>
+<figure><img src="https://claude.dev/media/bb2b908077c752f4e43672b5d5e7b0d262756bf27303d0884634cd142487f996.png" alt="A tall terminal window with a magenta-bordered box above the prompt: a numbered step strip, the file greet.js, a one-line diff, and Prev, Next and Close buttons."><figcaption><b>FIG G</b>Replay Theater at 80 columns, drawn inline above the prompt</figcaption></figure>
+<h2>FOUR HABITS WORTH KEEPING</h2>
+<ul>
+<li><strong>Lean on the types Claude Code writes for you.</strong> Each time it loads your mod, Claude Code writes the declarations for your build into the mod's <code>.claude-plugin/types/</code> folder, so your editor and <code>tsc -p</code> work with no extra step. They're the reference for every event, every method on <code>$</code> and every element's props.</li>
+<li><strong>Read props from <code>e.props</code>.</strong> <code>hasSurvey</code>, <code>bodyColumns</code> and the rest live there, not on <code>e</code> itself.</li>
+<li><strong>Plan for hot reload.</strong> Every save runs <code>register</code> and <code>session.start</code> again, so keep data in <code>$.state</code>, not in module variables.</li>
+<li><strong>When a drawing doesn't show, read the log.</strong> Run <code>claude --debug</code> and look for a line saying a hook returned a tree that does not validate.</li>
+</ul>
+<h2>WHAT WILL YOU MOD?</h2>
+<p>The three mods here came from one question each: <em>how full is my context?</em>, <em>what is this command about to delete?</em>, and <em>what did Claude just change?</em> Your questions will be different, and that's the point. Some ideas to start from:</p>
+<ul>
+<li>A cost or rate-limit meter from <code>$.session.usage()</code>, as a status line with <code>$.ui.status</code></li>
+<li>A <code>prompt.submit</code> hook that adds your team's conventions to every prompt</li>
+<li>A pane that lists the files Claude read this session, as a live map of what it has seen</li>
+<li>A focus timer that sends a toast with <code>$.ui.toast</code> when a long turn finishes</li>
+<li>A <code>tool.call</code> guard tuned to your stack, such as production kubectl contexts or <code>terraform apply</code></li>
+</ul>
+<h3>Share what you build</h3>
+<p>Made a mod you now use every day? Post it on X or LinkedIn with a GIF or a screenshot of it running, so other developers can see what's possible. Put the plugin in a marketplace (<a href="https://claude.dev/blog/getting-started-with-claude-code-mods/#sharing-your-mod">Sharing your mod</a>) and link to it, so anyone who likes it can install it with three commands.</p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

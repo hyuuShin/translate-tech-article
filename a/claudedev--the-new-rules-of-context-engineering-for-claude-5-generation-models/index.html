@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Claude 5 세대 모델을 위한 컨텍스트 엔지니어링(context engineering)의 새로운 규칙 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Engineering</p>
+    <h1 class="lang-ko">Claude 5 세대 모델을 위한 컨텍스트 엔지니어링(context engineering)의 새로운 규칙</h1>
+    <h1 class="lang-en" hidden lang="en">The new rules of context engineering for Claude 5 generation models</h1>
+    
+    <p class="art-sum lang-ko">더욱 발전된 모델을 위해 Claude Code 시스템 프롬프트의 80% 이상을 제거했습니다. 이 과정에서 얻은 교훈을 Claude Code와 직접 만든 에이전트의 컨텍스트 엔지니어링에 적용하는 방법을 소개합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">We removed over 80% of Claude Code&#39;s system prompt for more advanced models. How to apply the lessons we learned to your own context engineering in Claude Code and with your own agents.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 7월 24일</dd></div>
+      <div><dt>저자</dt><dd>Thariq Shihipar</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/">https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>저는 이전에 <a href="https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns">최신 세대 Claude 5 모델에 프롬프트를 작성하는 가장 좋은 방법</a>과, 모델과 반복적으로 작업하며 만들고 싶은 것을 찾아가는 방법에 관해 글을 쓴 적이 있습니다.</p>
+<p>하지만 Claude에게 메시지를 보낼 때 프롬프트는 Claude가 받는 컨텍스트의 일부일 뿐입니다. 컨텍스트의 상당 부분은 시스템 프롬프트, Skills, CLAUDE.md 파일, 메모리 등 여러 출처에서 조합됩니다. 우리는 이를 <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">컨텍스트 엔지니어링(context engineering)</a>이라고 부르며, 이는 Claude Code를 사용하거나 직접 에이전트를 만들 때 얻는 결과에 큰 영향을 미칩니다.</p>
+<p>프롬프트와 달리 컨텍스트는 여러 요청에 걸쳐 범용적으로 사용되므로 그만큼 구체적일 수 없습니다. 사용자의 프롬프트가 무엇일지 알 수 없는 상황에서, Claude를 위한 이러한 범용 프롬프트와 지침은 어떻게 작성해야 할까요?</p>
+<p>Claude 자체의 능력이 발전하면서 이 작업은 의외로 어려워질 수 있습니다. 최근 우리는 최신 세대 Claude 모델에 프롬프트를 작성하는 방식에서 큰 변화를 확인했습니다. Claude Opus 5와 Claude Fable 5 같은 모델에서는 <a href="https://claude.com/product/claude-code">Claude Code</a>의 시스템 프롬프트 중 80% 이상을 제거했지만, 코딩 평가에서 측정 가능한 성능 저하는 없었습니다.</p>
+<p>이 새로운 부류의 모델에 프롬프트를 작성하며 배운 점과, 이를 컨텍스트 엔지니어링 개선에 활용하는 방법을 소개합니다. 이러한 모범 사례는 <code>claude doctor</code>에 담아 두었습니다. Claude Code에서 <code>/doctor</code> 명령어를 사용하면 스킬과 CLAUDE.md 파일의 크기를 적정 수준으로 조정할 수 있습니다.</p>
+<h2>CLAUDE의 족쇄 풀기</h2>
+<p>전반적으로 우리는 시스템 프롬프트, CLAUDE.md 파일, 스킬 모두에서 Claude Code에 과도한 제약을 걸고 있었다는 사실을 발견했습니다.</p>
+<p>예를 들어 Claude Code를 내부적으로 사용한 기록을 읽어 보면, 하나의 요청 안에 서로 충돌하는 메시지가 여러 개 들어 있는 경우를 볼 수 있습니다. 시스템 프롬프트에는 "문서는 적절히 남겨 두십시오"라고 되어 있는데 스킬에는 "주석을 추가하지 마십시오"라고 되어 있고, 여기에 사용자 요청까지 서로 부딪히는 식입니다.</p>
+<figure><img src="https://claude.dev/media/a0c1f3923f1e92004785e35257d3feed5081264767d0a99fa5eb397e2fb6f2e2.png" alt="One assembled context holding a system prompt line “leave documentation as appropriate”, a skill line “do not add comments”, and a user request “just make it work like the old one”."></figure>
+<p>일반적으로 Claude는 사용자의 의도를 파악해 올바른 답에 도달할 수 있지만, 이처럼 겹치고 충돌하는 메시지가 있으면 어떻게 행동할지 결정하기 전에 더 신중하게 고민해야 합니다.</p>
+<p>이러한 제약은 한때 최악의 시나리오를 피하기 위해 필요했지만, 이제는 상당수를 삭제하고 모델이 주변 컨텍스트와 판단력을 활용하게 해도 된다는 사실을 확인했습니다.</p>
+<p>또한 Claude Code에는 이제 훨씬 더 많은 도구가 있습니다. 과거에 Claude는 메모리, 정보, 지침의 출처로 CLAUDE.md에 의존했습니다. 지금은 메모리, 아티팩트, 스킬이 있으며, Claude는 이를 활용해 세션 간에 컨텍스트를 불러오고 공유하는 새로운 방식을 만들 수 있습니다.</p>
+<h2>과거와 현재</h2>
+<p>이전의 컨텍스트 엔지니어링 모범 사례 중 상당수는 이제 근거 없는 통념이 되었습니다. 대표적인 예는 다음과 같습니다.</p>
+<figure><img src="https://claude.dev/media/aaa82d5934e084f1e509ac1679c26d0d2338d6c995c1c2f349fc12b8a0fd1a9c.png" alt="Six old rules struck through, each pointing to its replacement: give Claude rules → give Claude judgement; give Claude examples → design interfaces; put it all upfront → use progressive disclosure; repeat yourself → simple tool descriptions; memory in CLAUDE.md files → auto-memory; simple specs → rich references."></figure>
+<h3>과거: Claude에게 규칙 제공</h3>
+<h3>현재: Claude의 판단력 활용</h3>
+<p>Claude Code를 처음 출시했을 때는 Claude가 파일 삭제와 같은 최악의 시나리오를 피하도록 해야 했습니다. 그래서 항상 들어맞지는 않을 수도 있는 매우 강한 지침을 주었습니다. 예를 들어 시스템 프롬프트에는 다음과 같이 적었습니다.</p>
+<p><em>코드에서는 기본적으로 주석을 작성하지 마십시오. 여러 단락으로 된 docstring이나 여러 줄의 주석 블록은 절대 작성하지 말고, 한 줄을 넘기지 마십시오. 사용자가 요청하지 않는 한 계획, 결정, 분석 문서를 만들지 말고, 중간 파일이 아닌 대화 컨텍스트를 바탕으로 작업하십시오.</em></p>
+<p>그러나 일부 프롬프트에서는 이 지침이 맞지 않았습니다. 문서화의 경우 사용자에게 고유한 선호가 있을 수도 있고, 매우 복잡한 코드의 특정 부분에는 여러 줄의 주석 블록이 필요할 수도 있기 때문입니다.</p>
+<p>그래도 이전 모델에서는 이러한 가드레일이 없으면 Claude가 작성하는 주석이 많은 경우 부정확했기 때문에, 우리는 이 절충을 감수해야 했습니다. 하지만 최신 모델은 판단력이 더 뛰어나 명시적인 규칙 없이도 이러한 결정을 잘 처리할 수 있습니다.</p>
+<p>새 시스템 프롬프트에서는 다음과 같이 말합니다. <em>주변 코드처럼 읽히는 코드를 작성하십시오. 주석의 밀도, 이름 짓기, 관용적 표현을 주변 코드에 맞추십시오.</em></p>
+<h3>과거: Claude에게 예시 제공</h3>
+<h3>현재: 인터페이스 설계</h3>
+<p>도구 사용에 관한 제1원칙은 Claude에게 사용 방법의 예시를 주는 것이었습니다. 그러나 최신 모델에서는 예시를 주면 오히려 모델의 탐색 범위가 특정 영역으로 제한된다는 사실을 확인했습니다.</p>
+<figure><img src="https://claude.dev/media/8bb6f9365532bb8b19443ad00f230444087a452f776232d05045f1c6c63c3de8.png" alt="Before: a TodoWrite tool description of about 9,100 characters of when-to-use lists and worked examples. After: a short description, “Create and update a task list for the current session”, with a status enum of pending, in_progress and completed and one rule, only one task in_progress at a time."></figure>
+<p>예시를 사용하는 대신 도구, 스크립트, 파일의 설계를 더 깊이 고민해 보십시오. Claude에게 어떤 파라미터가 있고, 이를 어떻게 하면 더 표현력 있게 만들 수 있을까요?</p>
+<p>예를 들어 Todo 도구의 경우, 상태를 pending, in_progress, completed 중 하나로 정해지는 열거형으로 나열하는 것만으로도 Claude에게 사용 방법에 대한 힌트가 됩니다. in_progress 항목을 하나만 유지하라는 지침은 우리가 원하는 동작을 정의하는 데 도움이 됩니다.</p>
+<h3>과거: 모든 것을 앞부분에 배치</h3>
+<h3>현재: 점진적 공개(progressive disclosure) 활용</h3>
+<p>Claude Code는 코딩에 초점을 맞추고 있었기 때문에, 시스템 프롬프트에 코드 리뷰와 검증 방법에 대한 상세한 정보가 포함되어 있었습니다. 이 정보가 항상 필요한 것은 아니었지만, 필요할 때는 매우 중요한 정보였습니다.</p>
+<p>그 이후 Claude Code는 적절한 시점에 적절한 컨텍스트를 불러오는 점진적 공개(progressive disclosure)를 매우 능숙하게 활용하게 되었습니다. 예를 들어 검증과 코드 리뷰를 별도의 skill로 분리하여, Claude Code가 필요할 때 선택적으로 호출할 수 있도록 했습니다.</p>
+<p>그러나 점진적 공개는 skill에만 해당하는 것이 아니며, 도구에도 적용합니다. 일부 도구는 '지연 로딩(deferred loading)' 방식으로 동작하며, 에이전트가 해당 도구를 사용하기 전에 ToolSearch로 전체 정의를 검색해야 합니다. 이를 통해 필요해지기 전까지 컨텍스트를 차지하지 않는 도구(예: Task 도구)를 더 많이 둘 수 있습니다.</p>
+<p>이 방식은 여러분의 CLAUDE.md와 Skill.md 파일에도 똑같이 적용할 수 있습니다. 흔한 오해는 Claude가 그렇지 않으면 찾지 못할 것이라는 이유로, 마주칠 <em>수도 있는</em> 모든 관행을 담은 중앙 저장소로 이 파일들을 만들어야 한다는 것입니다. 대신 <a href="https://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code">적절한 시점에 불러올 수 있는 파일 트리를 구성하는 방안을 고려해 보십시오</a>.</p>
+<h3>과거: 같은 내용 반복</h3>
+<h3>현재: 간결한 도구 설명</h3>
+<p>이전 Claude 모델은 때때로 지시를 반복해야 했고, 컨텍스트 윈도우의 앞부분보다 끝부분에 있는 지시를 더 잘 따르는 경향이 있었습니다. 그래서 시스템 프롬프트 본문에 도구에 대한 언급이 들어가고, 도구 설명에도 별도의 지시가 들어가는 경우가 있었습니다.</p>
+<p>우리는 이렇게 반복되는 예시를 삭제하고, 도구 사용 방법에 대한 지시를 시스템 프롬프트가 아닌 도구 설명에 넣을 수 있음을 확인했습니다.</p>
+<h3>과거: CLAUDE.md 파일 속 메모리</h3>
+<h3>현재: 자동 메모리</h3>
+<p>과거에는 # 단축키를 사용해 <code>CLAUDE.md</code>에 자동으로 기록하도록 하여, 사용자가 Claude의 메모리에 내용을 저장하도록 권장했습니다. 이제는 Claude가 작업과 사용자에게 관련된 내용을 자동으로 메모리에 저장합니다.</p>
+<h3>과거: 단순한 명세</h3>
+<h3>현재: 풍부한 참조 자료</h3>
+<p>플랜 모드에서 Claude Code는 계획을 담은 마크다운 파일에 크게 의존해 왔습니다. 이러한 파일을 계획으로 저장해 두면 Claude가 필요할 때 참조하는 데 도움이 되었습니다. 비슷한 또 다른 모범 사례는 더 긴 프로젝트에서 작업하는 동안 Claude가 참조할 수 있도록 명세(spec)를 코드베이스에 저장해 두는 것이었습니다.</p>
+<p>그러나 Claude는 점점 더 복잡한 참조 자료를 다룰 수 있게 되었습니다. 단순한 마크다운 파일 대신, 새로운 아티팩트(artifacts) 기능으로 만든 <a href="https://claude.dev/blog/using-claude-code-the-unreasonable-effectiveness-of-html/">HTML 아티팩트</a>를 Claude가 참조할 수 있습니다.</p>
+<p>코드 형태로 참조 자료를 제공할 수도 있습니다. 명세는 상세한 테스트 스위트일 수도 있고, Claude가 이식할 만한 다른 코드베이스의 함수일 수도 있습니다.</p>
+<p>평가 기준표(rubric)도 참조 자료의 또 다른 형태입니다. 평가 기준표를 사용하면 <a href="https://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code">동적 워크플로</a>를 활용하고 해당 기준표를 가진 검증 에이전트를 띄워서, 특정 분야에 대한 여러분의 안목(예: 좋은 API 설계란 무엇인가)을 Claude가 검증해 볼 수 있습니다.</p>
+<h2>컨텍스트에 적용하기</h2>
+<p>지금까지의 내용을 종합하면, 컨텍스트를 구성할 때 어떤 모습이 될까요?</p>
+<figure><img src="https://claude.dev/media/6c6b396594b664244e31fe5ba0c37619accc4777be823e699906c7a641dfcc60.png" alt="컨텍스트 윈도우를 스택으로 나타낸 그림: 맨 위에 프롬프트, 그다음에 @로 언급한 파일, 명세, 목업, 코드베이스, 아티팩트 같은 참조 자료, 그 아래에 시스템 프롬프트, CLAUDE.md 파일, skill, 메모리가 있습니다."></figure>
+<h3>시스템 프롬프트</h3>
+<p>시스템 프롬프트는 제품 컨텍스트와 밀접하게 연결되어 있습니다. Claude가 어떤 제품에서 동작하고 있으며 무엇을 하고 있는지를 알려 줍니다. Claude Code에서는 이를 수정할 일이 거의 없겠지만, <a href="https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop">직접 에이전트 하네스를 구축</a>하는 경우에는 이 부분에 많은 시간을 들여야 합니다.</p>
+<h3>CLAUDE.md</h3>
+<p>CLAUDE.md는 가볍게 유지하여 저장소의 용도를 간략히 설명하되, 토큰의 대부분은 코드베이스 내부의 주의 사항(gotcha)에 사용하십시오. 예를 들어 타입을 하나의 거대한 파일에만 두고 다른 곳에는 두지 않도록 코드를 구성한 경우가 이에 해당합니다. 파일 시스템이나 저장소를 보면 Claude가 알 수 있는 '당연한' 내용은 적지 마십시오.</p>
+<p>점진적 공개를 적극적으로 활용하십시오. 예를 들어 작업을 검증하는 방법에 대한 고유한 지시가 여러 개라면, 검증 skill을 만들고 CLAUDE.md에서 이를 참조하십시오.</p>
+<h3>Skills</h3>
+<p><a href="https://claude.dev/blog/lessons-from-building-claude-code-how-we-use-skills/">skill을 가벼운 안내서</a>로 생각하여, Claude가 필요할 때 정보를 찾을 수 있도록 하십시오. 매우 중요한 영역이 아니라면 지나치게 제약을 두지 마십시오.</p>
+<p>긴 skill은 가능한 한 점진적 공개를 활용하십시오. 여러 파일로 나누어 분리하는 것입니다.</p>
+<p>skill에는 여러분 개인, 팀, 또는 제품에 고유한 의견, 지식, 모범 사례를 담는 것이 가장 좋습니다.</p>
+<h3>참조 자료</h3>
+<p>파일을 @로 언급하여 참조 자료로 포함할 수 있습니다. 참조 자료를 통해 Claude는 현재 계획에 관한 심층 정보를 참조할 수 있습니다.</p>
+<p>이는 명세 파일, 목업, 또는 코드베이스 전체일 수도 있습니다. 일반적으로 코드로 된 파일을 선호하는 것이 좋은데, Claude가 매우 잘 아는 언어로 명확하고 충실도 높은 지시를 전달하기 때문입니다. 예를 들어 디자인의 HTML 목업은 일반적으로 디자인에 대한 설명이나 스크린샷보다 더 나은 결과를 만들어 냅니다.</p>
+<h2>단순화 시도하기</h2>
+<p>시스템 프롬프트, skill, CLAUDE.md 파일 전반에서 우리가 했던 것처럼 여러분도 단순화가 필요할 수 있습니다. 이를 자동으로 수행하는 데 도움이 되는 <code>claude doctor</code>라는 새 명령어를 출시했습니다. 더 고급 모델에 대한 프롬프트 작성 방법을 자세히 알고 싶다면 <a href="https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns">Fable 현장 가이드</a>를 확인해 보십시오.</p>
+<p><em>이 글은 Anthropic의 기술 스태프 Thariq Shihipar가 작성했습니다.</em></p></article>
+  <article class="prose lang-en" hidden lang="en"><p>I’ve written previously about how to best <a href="https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns">prompt the newest generation of Claude 5 models</a> and work with them iteratively to discover what you want to build.</p>
+<p>But when you send a message to Claude, the prompt is only a small part of the context it gets. Much of your context is assembled from your system prompt, Skills, CLAUDE.md files, memory, and other sources. We call this <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">context engineering</a>, and it makes a big impact on the results you generate when using Claude Code or in building your own agents.</p>
+<p>Unlike a prompt, context is used generally across many requests, so it cannot be as specific. How do you build these general prompts and guidance for Claude, especially when you don’t know what a user’s prompt might be?</p>
+<p>This can be surprisingly difficult as Claude’s own capabilities evolve. Most recently, we noticed a large jump in the way we prompt the newest generation of Claude models. We removed over 80% of <a href="https://claude.com/product/claude-code">Claude Code</a>’s system prompt for models like Claude Opus 5 and Claude Fable 5 with no measurable loss on our coding evaluations.</p>
+<p>Here’s what we’ve learned about prompting this new class of models, and how you can utilize it to update your context engineering. We’ve put these best practices in <code>claude doctor</code>; use the command <code>/doctor</code> in Claude Code to rightsize your skills, and CLAUDE.md files.</p>
+<h2>UNHOBBLING CLAUDE</h2>
+<p>Overall, we found that we were overconstraining Claude Code, both through our system prompt and in our CLAUDE.md files and skills.</p>
+<p>For example, when we read transcripts of our own internal usage of Claude Code, we see several conflicting messages in a single request like “leave documentation as appropriate,” or “DO NOT add comments” as our system prompt, skills, and user requests clash with each other.</p>
+<figure><img src="https://claude.dev/media/a0c1f3923f1e92004785e35257d3feed5081264767d0a99fa5eb397e2fb6f2e2.png" alt="One assembled context holding a system prompt line “leave documentation as appropriate”, a skill line “do not add comments”, and a user request “just make it work like the old one”."></figure>
+<p>Generally, Claude can interpret the user’s intent to get to the right answer, but Claude must think more carefully about these overlapping and conflicting messages before deciding what to do.</p>
+<p>And while these constraints were once needed to avoid worst case scenarios, we have since found we can delete many of them and let the model use surrounding context and judgement instead.</p>
+<p>Additionally, Claude Code now has many more tools. Claude used to rely on CLAUDE.md as a source of memory, information, and guidance. Now we have memory, artifacts, and skills, which Claude can use to create new ways of loading and sharing context across sessions.</p>
+<h2>THEN AND NOW</h2>
+<p>There were a number of previous context engineering best practices that had become myths. Including:</p>
+<figure><img src="https://claude.dev/media/aaa82d5934e084f1e509ac1679c26d0d2338d6c995c1c2f349fc12b8a0fd1a9c.png" alt="Six old rules struck through, each pointing to its replacement: give Claude rules → give Claude judgement; give Claude examples → design interfaces; put it all upfront → use progressive disclosure; repeat yourself → simple tool descriptions; memory in CLAUDE.md files → auto-memory; simple specs → rich references."></figure>
+<h3>Then: Give Claude rules</h3>
+<h3>Now: Let Claude use judgement</h3>
+<p>When we first rolled out Claude Code, we needed to be sure that Claude avoided worst case scenarios, such as deleting files. This meant we would give particularly strong guidance that might not always be true. For example, in the system prompt we used to say:</p>
+<p><em>In code: default to writing no comments. Never write multi-paragraph docstrings or multi-line comment blocks — one short line max. Don't create planning, decision, or analysis documents unless the user asks for them — work from conversation context, not intermediate files.</em></p>
+<p>But for a certain subset of prompts, this guidance would be wrong. In the case of documentation, the user may have their own preferences, or specific parts of very complex code might need multi-line comment blocks.</p>
+<p>Still, without these guardrails for older models, the comments Claude wrote would be incorrect in many cases and we had to accept this tradeoff. But newer models have better judgement and can handle these decisions well without explicit rules.</p>
+<p>In the new system prompt we say: <em>Write code that reads like the surrounding code: match its comment density, naming, and idiom.</em></p>
+<h3>Then: Give Claude examples</h3>
+<h3>Now: Design interfaces</h3>
+<p>The number one rule for tool usage was to give Claude examples on how to use them. With our newest models, we’ve found that giving examples actually constrains them to a certain exploration space.</p>
+<figure><img src="https://claude.dev/media/8bb6f9365532bb8b19443ad00f230444087a452f776232d05045f1c6c63c3de8.png" alt="Before: a TodoWrite tool description of about 9,100 characters of when-to-use lists and worked examples. After: a short description, “Create and update a task list for the current session”, with a status enum of pending, in_progress and completed and one rule, only one task in_progress at a time."></figure>
+<p>Instead of using examples, think more about the design of your tools, scripts and files- what parameters does Claude have and how can they be more expressive?</p>
+<p>For example, in the Todo tool example, just listing status as an enumeration between pending, in_progress, and completed, hints to Claude about how to use it. The instruction on keeping one item in_progress helps define our requested behavior.</p>
+<h3>Then: Put it all upfront</h3>
+<h3>Now: Use progressive disclosure</h3>
+<p>Because Claude Code was focused on coding, our system prompt included detailed information on how to do code review and verification. These were not always needed, but when they were, it was crucial information.</p>
+<p>Since then, Claude Code has gotten very competent at using progressive disclosure- loading the right context at the right times. For example, we moved verification and code review into their own skills that Claude Code could selectively call.</p>
+<p>But progressive disclosure is not just for skills, we also use it for tools. Some of our tools are ‘deferred loading,’ which means the agent must search for their full definitions using ToolSearch before using them. This allows us to have more tools (such as our Task tools) that don’t take up context until they’re needed.</p>
+<p>The same can be applied to your own CLAUDE.md and Skill.md files. A common myth is that you want to make these a central repository for every known practice that you <em>might</em> run into, because Claude would not find it otherwise. Instead, <a href="https://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code">consider having a tree of files that can be loaded at the right time</a>.</p>
+<h3>Then: Repeat yourself</h3>
+<h3>Now: Simple tool descriptions</h3>
+<p>Earlier Claude models could sometimes need repeated instructions or be more likely to listen to instructions at the end of their context window than at the start. This meant our system prompt would sometimes have references to tools in the main system prompt as well as instructions in the tool description.</p>
+<p>We found we could delete these repeat examples and put instructions on how to use tools in the tool descriptions rather than the system prompt.</p>
+<h3>Then: Memory in CLAUDE.md files</h3>
+<h3>Now: Auto-memory</h3>
+<p>We used to encourage users to save things to Claude’s memory, by using the # hotkey to write to their <code>CLAUDE.md</code> automatically. Instead, Claude now automatically saves memories that are relevant to the work and to you.</p>
+<h3>Then: Simple specs</h3>
+<h3>Now: Rich references</h3>
+<p>In plan mode, Claude Code has heavily relied on markdown files with plans. Storing these files as plans helped Claude refer to them when needed. Another similar best practice was to store specs in the codebase for Claude to refer to while working across longer projects.</p>
+<p>But we’ve found that Claude can handle increasingly more complicated references. Instead of simple markdown files, Claude can reference <a href="https://claude.dev/blog/using-claude-code-the-unreasonable-effectiveness-of-html/">HTML artifacts</a> created by our new artifacts feature.</p>
+<p>You may also give Claude references in the form of code. A spec may also be a detailed test suite, or a function in a different codebase that Claude might port.</p>
+<p>Rubrics are another form of references. Rubrics allow Claude to try and verify your taste in a particular field (e.g. what does a good API design look like) by using <a href="https://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code">dynamic workflows</a> and spinning up verifier agents with those rubrics.</p>
+<h2>APPLYING THIS TO YOUR CONTEXT</h2>
+<p>Pulling this all together, what does this look like when you assemble your context?</p>
+<figure><img src="https://claude.dev/media/6c6b396594b664244e31fe5ba0c37619accc4777be823e699906c7a641dfcc60.png" alt="The context window drawn as a stack: your prompt on top, then references such as @-mentioned files, specs, mockups, codebases and artifacts, then the system prompt, CLAUDE.md files, skills and memory."></figure>
+<h3>System prompt</h3>
+<p>A system prompt is heavily tied to the product context. It tells Claude what product it’s operating in and what it’s doing. For Claude Code, you will likely never modify this, but if you are <a href="https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop">building your own agent harness</a>, this is where you should spend a lot of time.</p>
+<h3>CLAUDE.md</h3>
+<p>Keep your CLAUDE.md lightweight and briefly describe what your repo is for, but spend most of the tokens on gotchas inside of the codebase. For example, you may organize your code to keep types in one monolithic file and nowhere else. Avoid stating ‘the obvious’ things Claude should know by looking at your file system or your repo.</p>
+<p>Use progressive disclosure heavily, for example if you have several unique instructions on how to verify your work, create a verification skill and reference it from your CLAUDE.md.</p>
+<h3>Skills</h3>
+<p>Think of <a href="https://claude.dev/blog/lessons-from-building-claude-code-how-we-use-skills/">skills as lightweight guides</a> to let Claude find information when needed. Avoid making them overconstrained, except in highly important areas.</p>
+<p>For long skills, try and use progressive disclosure as much as possible- divide it into many files and split them out.</p>
+<p>It’s best when skills encode particular opinions, knowledge, or best practices that are particular to you, your team, or product.</p>
+<h3>References</h3>
+<p>You can @ mention files to include them as references. References allow Claude to refer to in-depth information about the current plan.</p>
+<p>This might be in specs files, mockups, or even entire codebases. Generally you should prefer files that are in code as it provides clear, high-fidelity instructions to Claude in a language it knows very well. For example, a HTML mockup of a design will generally produce better results than a description of the design or a screenshot.</p>
+<h2>TRY SIMPLIFYING</h2>
+<p>Across your system prompt, skills, and CLAUDE.md files, you may need to simplify just like we did. We rolled out a new command called <code>claude doctor</code>, which will help you do this automatically as well. For more details on prompting more advanced models specifically, check out our <a href="https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns">Fable field guide</a>.</p>
+<p><em>This article was written by Thariq Shihipar, member of technical staff, Anthropic.</em></p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

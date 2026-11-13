@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Sora 2 프롬프트 가이드 · OpenAI Learn</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html" class="on">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-learn/index.html">OpenAI Learn</a> / Cookbook</p>
+    <h1 class="lang-ko">Sora 2 프롬프트 가이드</h1>
+    <h1 class="lang-en" hidden lang="en">Sora 2 Prompting Guide</h1>
+    
+    <p class="art-sum lang-ko">이 가이드는 최신 Sora API 기능을 반영하여 업데이트되었습니다. 업데이트된 기능에는 캐릭터 참조(Character references, 객체 및 동물)가 포함되며, 사용자는 캐릭터를 업로드할 수 있습니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">This guide has been updated to reflect the latest Sora API capabilities, including: Character references (objects and animals) – Upload a ch</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 3월 12일</dd></div>
+      
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/cookbook/examples/sora/sora2_prompting_guide">https://developers.openai.com/cookbook/examples/sora/sora2_prompting_guide</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><h1>성공적인 영상 프롬프트 작성하기</h1>
+<h2>업데이트: 2026년 3월</h2>
+<p>이 가이드는 다음과 같은 최신 Sora API 기능을 반영하여 업데이트되었습니다.</p>
+<ul>
+<li><strong>캐릭터 참조(character references, 사물 및 동물)</strong>: 캐릭터를 한 번 업로드하면 여러 영상에서 일관된 외형으로 재사용할 수 있습니다.</li>
+<li><strong>고해상도 내보내기</strong>: 1920×1080 또는 1080×1920 해상도로 영상을 생성할 수 있습니다.</li>
+<li><strong>더 긴 영상</strong>: 최대 길이가 12초에서 20초로 늘어났습니다.</li>
+<li><strong>영상 확장</strong>: 마지막 프레임만이 아니라 처음 클립 전체를 컨텍스트로 사용하여 기존 영상을 이어서 확장할 수 있습니다.</li>
+<li><strong>영상용 Batch API</strong>: 대규모 제작 워크플로를 위해 비동기 영상 생성 작업을 실행할 수 있습니다.</li>
+</ul>
+<h2>프롬프트를 작성하기 전에</h2>
+<p>프롬프트 작성은 스토리보드를 한 번도 본 적 없는 촬영감독에게 작업을 설명하는 일과 같습니다. 세부 사항을 빠뜨리면 촬영감독은 즉흥적으로 판단하고, 그 결과 구상했던 장면과 다른 결과물이 나올 수 있습니다. '샷'이 무엇을 달성해야 하는지 구체적으로 설명하면 모델이 더 높은 통제력과 일관성을 가지고 작업할 수 있습니다.</p>
+<p>하지만 일부 세부 사항을 열어 두는 것도 그만큼 효과적일 수 있습니다. 모델에 더 많은 창작의 자유를 주면 예상치 못한 변주와 아름다운 해석이 나올 수 있습니다. 두 방식 모두 유효합니다. <strong>상세한 프롬프트는 통제력과 일관성을 주고, 간결한 프롬프트는 창의적인 결과가 나올 여지를 줍니다.</strong> 적절한 균형은 목표와 원하는 결과에 따라 달라집니다.
+프롬프트를 계약서가 아니라 창작 희망 목록이라고 생각하십시오. ChatGPT와 마찬가지로 <strong>같은 프롬프트를 여러 번 사용하면 매번 다른 결과가 나오며</strong>, 이는 버그가 아니라 의도된 특성입니다. 생성할 때마다 새로운 해석이 나오므로 두 번째나 세 번째 결과가 더 나을 때도 있습니다.</p>
+<p>무엇보다 반복해서 다듬을 준비를 하십시오. 카메라, 조명, 동작을 조금만 바꿔도 결과가 크게 달라질 수 있습니다. 모델과 협업한다고 생각하십시오. 사용자가 방향을 제시하면 모델이 창의적인 변주로 응답합니다.</p>
+<p>이는 정밀한 과학이 아닙니다. 아래 안내는 모델을 사용하면서 얻은 유용한 제안 정도로 받아들여 주십시오.</p>
+<h2>API 매개변수</h2>
+<p>프롬프트는 영상의 내용을 제어하지만, 일부 속성은 API 매개변수로만 지정할 수 있습니다. 이러한 속성은 문장으로 요청할 수 없으며, API 호출에서 명시적으로 설정해야 합니다.</p>
+<ul>
+<li><strong>model</strong>: <code>sora-2</code> 또는 <code>sora-2-pro</code>입니다.</li>
+<li><strong>size</strong>: {width}x{height} 형식의 문자열입니다. 지원하는 해상도는 선택한 모델에 따라 다릅니다.
+<ul>
+<li>sora-2
+<ul>
+<li>720x1280, 1280x720,</li>
+</ul>
+</li>
+<li>sora-2-pro
+<ul>
+<li>720x1280, 1280x720</li>
+<li>1024x1792, 1792x1024</li>
+<li>1080x1920, 1920x1080</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>seconds</strong>: 클립 길이이며, 지원하는 값은 "4", "8", "12", "16", "20"입니다. 기본값은 "4"입니다.</li>
+<li><strong>characters</strong> <em>(선택 사항)</em>: 한 번의 생성에서 <strong>업로드한 캐릭터를 최대 두 개</strong>까지 참조할 수 있습니다. 각 항목에는 Characters API에서 반환된 캐릭터 ID를 포함해야 합니다.</li>
+</ul>
+<p>이 매개변수들은 영상의 컨테이너에 해당합니다. 해상도, 길이, 캐릭터 참조는 "더 길게 만들어 줘"와 같은 문장으로는 바뀌지 않습니다. API 호출에서 명시적으로 설정하십시오. 그 외의 모든 요소(피사체, 움직임, 조명, 스타일)는 프롬프트로 제어합니다. 자세한 내용은 <a href="https://developers.openai.com/api/docs/guides/video-generation">Sora API 문서</a>를 참조하십시오.</p>
+<h3>영상 해상도</h3>
+<p>영상 해상도는 Sora에서 시각적 충실도와 움직임의 일관성에 직접 영향을 줍니다. 해상도가 높을수록 디테일, 질감, 조명 전환이 더 정확하게 생성되고, 해상도가 낮을수록 시각 정보가 압축되어 화면이 흐릿해지거나 아티팩트가 생기는 경우가 많습니다.</p>
+<h3>영상 길이</h3>
+<p>모델은 일반적으로 짧은 클립에서 지시를 더 안정적으로 따릅니다. 최상의 결과를 얻으려면 간결한 샷을 목표로 하십시오. 프로젝트 여건이 허락한다면 8초짜리 클립 하나를 생성하는 대신 4초짜리 클립 두 개를 편집으로 이어 붙이는 편이 더 나은 결과를 줄 수 있습니다.</p>
+<h2>엔드포인트</h2>
+<p>Sora API는 영상을 생성하고 반복해서 다듬기 위한 여러 엔드포인트를 지원합니다.</p>
+<ul>
+<li>
+<p><strong>영상 생성</strong>: <code>POST /v1/videos</code><br>
+프롬프트로 새 영상을 생성합니다.</p>
+</li>
+<li>
+<p><strong>캐릭터 생성</strong>: <code>POST /v1/videos/characters</code><br>
+짧은 참조 클립을 업로드하여 생성에 재사용할 수 있는 캐릭터를 만듭니다.</p>
+</li>
+<li>
+<p><strong>영상 확장</strong>: <code>POST /v1/videos/extensions</code><br>
+기존 영상을 이어서 생성합니다. 원본 클립 전체가 컨텍스트로 사용됩니다.</p>
+</li>
+<li>
+<p><strong>영상 편집</strong>: <code>POST /v1/videos/{video_id}/edits</code><br>
+새 프롬프트로 기존 영상을 편집합니다.</p>
+</li>
+</ul>
+<h2>효과적인 프롬프트의 구성</h2>
+<p>명확한 프롬프트는 스토리보드에 스케치하듯 샷을 설명합니다. 카메라 구도를 밝히고, 피사계 심도(depth of field)를 언급하고, 동작을 비트(beat) 단위로 묘사하고, 조명과 색감을 정하십시오. 피사체에 눈에 띄는 특징을 몇 가지 부여하면 피사체를 알아보기 쉽게 유지할 수 있고, 그럴듯한 동작을 하나만 지정하면 샷의 흐름을 따라가기 쉬워집니다.</p>
+<p>하나의 프롬프트에 여러 샷을 묘사하는 방식도 시퀀스를 다뤄야 할 때 유효합니다. 이때는 각 샷 블록을 구분하여 한 번에 카메라 설정 하나, 피사체 동작 하나, 조명 구성 하나만 담으십시오. 이렇게 하면 프로젝트에 따라 짧은 독립 클립을 생성할 수도 있고 더 긴 연속 장면을 생성할 수도 있어 유연하게 대응할 수 있습니다. 각 샷을 하나의 창작 단위로 다루면, 편집으로 이어 붙이거나 한 번에 시퀀스로 재생되도록 할 수 있습니다.</p>
+<ul>
+<li>짧은 프롬프트는 모델에 더 많은 창작의 자유를 줍니다. 놀라운 결과를 기대해 보십시오.</li>
+<li>길고 상세한 프롬프트는 모델의 창의성을 제한합니다. 모델은 사용자의 지침을 따르려고 하지만, 항상 안정적으로 따르지는 못할 수 있습니다.</li>
+</ul>
+<p>다음은 짧은 프롬프트의 예시입니다.</p>
+<pre data-lang="text"><code>In a 90s documentary-style interview, an old Swedish man sits in a study and says, "I still remember when I was young."</code></pre>
+<p>이 프롬프트는 좋은 결과를 낼 가능성이 높습니다.</p>
+<ul>
+<li><code>90s documentary</code>는 영상의 스타일을 설정합니다. 모델은 이에 맞춰 카메라 렌즈, 조명, 색보정(color grade) 같은 변수를 선택합니다.</li>
+<li><code>an old Swedish man sits in a study</code>는 피사체와 배경을 아주 간략하게만 묘사하므로, 인물과 배경이 어떤 모습일지는 모델이 창의적으로 정하게 됩니다.</li>
+<li><code>and says, "I still remember when I was young."</code>는 대사를 설명합니다. Sora는 이를 거의 그대로 따를 수 있습니다.</li>
+</ul>
+<p>이 프롬프트는 위 요구 사항에 맞는 영상을 안정적으로 생성합니다. 다만 열어 둔 세부 사항이 많아서 의도한 장면과 정확히 일치하지 않을 수 있습니다. 예를 들어 이 프롬프트에는 시간대, 날씨, 의상, 분위기, 인물의 외모와 나이, 카메라 앵글, 컷 전환, 세트 디자인 등 많은 요소가 빠져 있습니다. 이런 세부 사항을 직접 설명하지 않으면 Sora가 임의로 채워 넣습니다.</p>
+<h3>초정밀 상세 묘사</h3>
+<p>복잡한 시네마틱 샷에서는 표준 프롬프트 구조를 넘어, 룩, 카메라 구성, 색보정, 사운드스케이프, 심지어 샷의 의도까지 전문 제작 용어로 지정할 수 있습니다. 이는 감독이 촬영팀이나 VFX 팀에게 작업을 지시하는 방식과 비슷합니다. 렌즈, 필터, 조명, 색보정, 움직임에 대한 구체적인 단서를 주면 모델이 매우 특정한 미학에 집중하는 데 도움이 됩니다.</p>
+<p>예를 들어 <strong>시청자가 가장 먼저 주목하는 요소</strong>, <strong>카메라 플랫폼과 렌즈</strong>, <strong>조명 방향</strong>, <strong>색상 팔레트</strong>, <strong>질감</strong>, <strong>현장음(diegetic sound)</strong>, <strong>샷의 타이밍</strong>을 묘사할 수 있습니다. 이 방식은 실제 촬영 스타일(예: IMAX 항공 촬영, 35mm 핸드헬드, 빈티지 16mm 다큐멘터리)을 재현하거나 여러 샷에 걸쳐 엄격한 연속성을 유지하고 싶을 때 효과적입니다.</p>
+<h4>예시</h4>
+<pre data-lang="python"><code>Format &amp; Look
+Duration 4s; 180° shutter; digital capture emulating 65 mm photochemical contrast; fine grain; subtle halation on speculars; no gate weave.
+
+Lenses &amp; Filtration
+32 mm / 50 mm spherical primes; Black Pro-Mist 1/4; slight CPL rotation to manage glass reflections on train windows.
+
+Grade / Palette
+Highlights: clean morning sunlight with amber lift.
+Mids: balanced neutrals with slight teal cast in shadows.
+Blacks: soft, neutral with mild lift for haze retention.
+
+Lighting &amp; Atmosphere
+Natural sunlight from camera left, low angle (07:30 AM).
+Bounce: 4×4 ultrabounce silver from trackside.
+Negative fill from opposite wall.
+Practical: sodium platform lights on dim fade.
+Atmos: gentle mist; train exhaust drift through light beam.
+
+Location &amp; Framing
+Urban commuter platform, dawn.
+Foreground: yellow safety line, coffee cup on bench.
+Midground: waiting passengers silhouetted in haze.
+Background: arriving train braking to a stop.
+Avoid signage or corporate branding.
+
+Wardrobe / Props / Extras
+Main subject: mid-30s traveler, navy coat, backpack slung on one shoulder, holding phone loosely at side.
+Extras: commuters in muted tones; one cyclist pushing bike.
+Props: paper coffee cup, rolling luggage, LED departure board (generic destinations).
+
+Sound
+Diegetic only: faint rail screech, train brakes hiss, distant announcement muffled (-20 LUFS), low ambient hum.
+Footsteps and paper rustle; no score or added foley.
+
+Optimized Shot List (2 shots / 4 s total)
+
+0.00–2.40 — “Arrival Drift” (32 mm, shoulder-mounted slow dolly left)
+Camera slides past platform signage edge; shallow focus reveals traveler mid-frame looking down tracks. Morning light blooms across lens; train headlights flare softly through mist. Purpose: establish setting and tone, hint anticipation.
+
+2.40–4.00 — “Turn and Pause” (50 mm, slow arc in)
+Cut to tighter over-shoulder arc as train halts; traveler turns slightly toward camera, catching sunlight rim across cheek and phone screen reflection. Eyes flick up toward something unseen. Purpose: create human focal moment with minimal motion.
+
+Camera Notes (Why It Reads)
+Keep eyeline low and close to lens axis for intimacy.
+Allow micro flares from train glass as aesthetic texture.
+Preserve subtle handheld imperfection for realism.
+Do not break silhouette clarity with overexposed flare; retain skin highlight roll-off.
+
+Finishing
+Fine-grain overlay with mild chroma noise for realism; restrained halation on practicals; warm-cool LUT for morning split tone.
+Mix: prioritize train and ambient detail over footstep transients.
+Poster frame: traveler mid-turn, golden rim light, arriving train soft-focus in background haze.</code></pre>
+<h2>룩을 좌우하는 시각적 단서</h2>
+<p>프롬프트를 작성할 때 <strong>스타일은 원하는 결과로 모델을 유도하는 가장 강력한 수단 중 하나입니다</strong>. <em>“1970년대 영화,”</em> <em>“웅장한 IMAX 규모의 장면,”</em> <em>“16mm 흑백 필름”</em> 같은 전체적인 미학을 설명하면 다른 모든 선택을 아우르는 시각적 톤이 정해집니다. 모델이 일관되게 유지할 수 있도록 스타일은 프롬프트 앞부분에서 정하십시오.</p>
+<p>같은 세부 묘사라도 잘 다듬어진 할리우드 드라마인지, 핸드헬드 스마트폰 영상인지, 거친 질감의 빈티지 광고인지에 따라 전혀 다르게 표현됩니다. 톤이 정해지면 샷, 동작, 조명에 대한 구체적인 내용을 덧붙이십시오.</p>
+<p>명확한 표현이 가장 효과적입니다. <em>“아름다운 거리”</em> 같은 모호한 단서 대신 <em>“젖은 아스팔트, 얼룩말 무늬 횡단보도, 네온사인 반사”</em>라고 쓰십시오. <em>“빠르게 움직인다”</em> 대신 <em>“세 걸음을 달린 뒤 연석에서 멈춘다”</em>라고 구체적으로 지정하십시오. 눈에 보이는 결과를 가리키는 동사와 명사를 쓰면 항상 더 명확하고 일관된 결과물을 얻을 수 있습니다.</p>
+<table>
+<thead>
+<tr>
+<th><strong>약한 프롬프트</strong></th>
+<th><strong>강한 프롬프트</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“밤의 아름다운 거리”</td>
+<td>“젖은 아스팔트, 얼룩말 무늬 횡단보도, 웅덩이에 비치는 네온사인”</td>
+</tr>
+<tr>
+<td>“사람이 빠르게 움직인다”</td>
+<td>“자전거 탄 사람이 페달을 세 번 밟고, 브레이크를 잡고, 횡단보도 앞에서 멈춘다”</td>
+</tr>
+<tr>
+<td>“시네마틱한 룩”</td>
+<td>“아나모픽 2.0x 렌즈, 얕은 피사계 심도(DOF), 볼류메트릭 라이트”</td>
+</tr>
+</tbody>
+</table>
+<p>카메라 방향과 프레이밍은 샷의 느낌을 결정합니다. 위에서 내려다보는 와이드 샷은 공간과 맥락을 강조하고, 눈높이의 클로즈업은 감정에 시선을 집중시킵니다. 피사계 심도(depth of field)는 또 다른 요소입니다. 얕은 초점은 흐릿한 배경 속에서 피사체를 돋보이게 하고, 깊은 초점은 전경과 배경을 모두 선명하게 유지합니다. 조명도 톤을 강하게 좌우합니다. 부드럽고 따뜻한 키 라이트는 포근한 분위기를 만들고, 차가운 가장자리를 가진 단일 하드 라이트는 극적인 분위기로 이끕니다.</p>
+<p>인물을 등장시킬 때는 어느 정도 예측 불가능성을 감안해야 합니다. 표현이 조금만 달라져도 인물의 정체성, 자세, 장면의 초점이 바뀔 수 있습니다. 샷마다 설명을 일관되게 유지하고, 연속성을 위해 같은 표현을 재사용하며, 서로 충돌할 수 있는 특징을 섞지 마십시오.</p>
+<p><strong>약한 프롬프트</strong></p>
+<pre data-lang="text"><code>Camera shot: cinematic look</code></pre>
+<p><strong>강한 프롬프트</strong></p>
+<pre data-lang="text"><code>Camera shot: wide shot, low angle
+Depth of field: shallow (sharp on subject, blurred background)
+Lighting + palette: warm backlight with soft rim</code></pre>
+<p>좋은 프레이밍 지시의 예시는 다음과 같습니다.</p>
+<ul>
+<li>와이드 설정 샷(wide establishing shot), 눈높이</li>
+<li>와이드 샷, 돌격하는 무리와 함께 왼쪽에서 오른쪽으로 트래킹</li>
+<li>항공 와이드 샷, 약간 아래로 향한 앵글</li>
+<li>미디엄 클로즈업 샷, 뒤쪽에서 약간 비스듬한 앵글</li>
+</ul>
+<p>좋은 카메라 움직임 지시의 예시는 다음과 같습니다.</p>
+<ul>
+<li>천천히 틸트하는 카메라</li>
+<li>핸드헬드 ENG 카메라</li>
+</ul>
+<h2>움직임과 타이밍 제어</h2>
+<p>움직임은 제대로 구현하기 가장 어려운 부분이므로 단순하게 유지하십시오. 각 샷에는 명확한 카메라 움직임 하나와 명확한 피사체 동작 하나만 두는 것이 좋습니다. 동작은 작은 걸음, 제스처, 멈춤 같은 비트(beat)나 횟수 단위로 묘사해야 시간 속에 자연스럽게 자리 잡습니다.</p>
+<p>“배우가 방을 가로질러 걷는다”는 모델이 활용할 정보가 많지 않습니다. 반면 “배우가 창문까지 네 걸음을 걷고, 잠시 멈춘 뒤, 마지막 1초에 커튼을 당긴다”라고 쓰면 타이밍이 정확해지고 구현도 가능해집니다.</p>
+<p><strong>약한 프롬프트</strong></p>
+<pre data-lang="text"><code>Actor walks across the room.</code></pre>
+<p><strong>강한 프롬프트</strong></p>
+<pre data-lang="text"><code>Actor takes four steps to the window, pauses, and pulls the curtain in the final second.</code></pre>
+<h2>조명과 색상 일관성</h2>
+<p>조명은 동작이나 배경만큼 분위기를 좌우합니다. 프레임 전체에 퍼지는 확산광은 차분하고 중립적인 느낌을 주고, 하나의 강한 광원은 날카로운 대비와 긴장감을 만듭니다. 여러 클립을 이어 붙일 때는 조명의 논리를 일관되게 유지해야 편집이 매끄럽게 이어집니다.</p>
+<p>빛의 질감과 이를 뒷받침하는 기준 색상을 함께 묘사하십시오. “밝게 비춘 방” 같은 포괄적인 표현 대신 광원과 색조의 조합을 구체적으로 지정하십시오. 예를 들면 “부드러운 창가의 빛, 따뜻한 램프의 보조광, 복도에서 들어오는 차가운 가장자리 빛”과 같은 식입니다. 색상을 세 가지에서 다섯 가지 정도 명시하면 샷 전반에 걸쳐 팔레트를 안정적으로 유지하는 데 도움이 됩니다.</p>
+<p><strong>약한 프롬프트</strong></p>
+<pre data-lang="text"><code>Lighting + palette: brightly lit room</code></pre>
+<p><strong>강한 프롬프트</strong></p>
+<pre data-lang="text"><code>Lighting + palette: soft window light with warm lamp fill, cool rim from hallway 
+Palette anchors: amber, cream, walnut brown</code></pre>
+<h2>이미지 입력으로 더 세밀하게 제어하기</h2>
+<p>샷의 <strong>구도와 스타일</strong>을 더욱 세밀하게 제어하고 싶다면 <strong>이미지 입력</strong>을 시각적 레퍼런스로 사용할 수 있습니다. 사진, 디지털 아트워크, AI가 생성한 이미지 등을 사용할 수 있습니다. 이를 통해 캐릭터 디자인, 의상, 세트 장식, 전체적인 미학 같은 요소를 고정할 수 있습니다. 모델은 이미지를 첫 프레임의 기준(anchor)으로 사용하며, 텍스트 프롬프트는 이후에 일어날 일을 정의합니다.</p>
+<p><strong>사용 방법</strong></p>
+<p>POST /videos 요청에 이미지 파일을 input_reference 파라미터로 포함합니다.</p>
+<ul>
+<li>이미지는 대상 영상의 해상도(크기)와 일치해야 합니다.</li>
+<li>지원하는 파일 형식은 <code>image/jpeg</code>, <code>image/png</code>, <code>image/webp</code>입니다.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th><a href="https://platform.openai.com/docs/guides/image-generation">OpenAI GPT Image</a>로 생성한 입력 이미지</th>
+<th>Sora 2로 생성한 영상 (GIF로 변환)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_woman_skyline_original_2.jpeg" alt=""><p><a href="https://cdn.openai.com/API/docs/images/sora/woman_skyline_original_720p.jpeg">이 이미지 다운로드</a></p></td>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_woman_skyline_video.gif" alt=""><p>프롬프트: <em>“She turns around and smiles, then slowly walks out of the frame.”</em></p></td>
+</tr>
+<tr>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_original_2.jpeg" alt=""><p><a href="https://cdn.openai.com/API/docs/images/sora/monster_original_720p.jpeg">이 이미지 다운로드</a></p></td>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_original.gif" alt=""> <p>프롬프트: <em>“The fridge door opens. A cute, chubby purple monster comes out of it.”</em></p></td>
+</tr>
+</tbody>
+</table>
+<h3>실험 팁</h3>
+<p>시각적 레퍼런스가 아직 없다면 <a href="https://platform.openai.com/docs/guides/image-generation">OpenAI의 이미지 생성 모델</a>을 사용해 만들 수 있습니다. 환경과 장면 디자인을 빠르게 제작한 뒤 Sora에 레퍼런스로 전달하면 됩니다. 이는 미학을 시험해 보고 영상의 멋진 출발점을 만드는 데 효과적인 방법입니다.</p>
+<h2>대사와 오디오</h2>
+<p>대사는 프롬프트에 직접 작성해야 합니다. 모델이 시각적 묘사와 음성 대사를 명확히 구분할 수 있도록, 줄글 묘사 아래에 별도의 블록으로 배치합니다. 대사는 간결하고 자연스럽게 작성하고, 클립 길이에 맞춰 타이밍이 맞도록 대화는 몇 문장 이내로 제한하는 것이 좋습니다. 여러 캐릭터가 등장하는 장면에서는 화자를 일관되게 표기하고 번갈아 말하도록 구성합니다. 이렇게 하면 모델이 각 대사를 올바른 캐릭터의 제스처와 표정에 연결하는 데 도움이 됩니다.
+</p>
+<p>리듬과 타이밍도 고려해야 합니다. 4초 길이의 샷에는 보통 짧은 대화 한두 번이 들어가고, 8초 길이의 클립에는 조금 더 많은 대화를 담을 수 있습니다. 길고 복잡한 대사는 싱크가 잘 맞지 않을 가능성이 높고 진행 속도를 해칠 수 있습니다.</p>
+<p>샷에 소리가 없더라도 “distant traffic hiss”나 “a crisp snap” 같은 작은 소리 하나로 진행 속도를 암시할 수 있습니다. 완전한 사운드트랙이 아니라 리듬을 알려 주는 신호라고 생각하면 됩니다.</p>
+<p>대사가 포함된 프롬프트 예시:</p>
+<pre data-lang="text"><code>A cramped, windowless room with walls the color of old ash. A single bare bulb dangles from the ceiling, its light pooling onto the scarred metal table at the center. Two chairs face each other across it. On one side sits the Detective, trench coat draped across the back of his chair, eyes sharp and unblinking. Across from him, the Suspect slouches, cigarette smoke curling lazily toward the ceiling. The silence presses in, broken only by the faint hum of the overhead light.
+
+Dialogue:
+- Detective: "You’re lying. I can hear it in your silence."
+- Suspect: "Or maybe I’m just tired of talking."
+- Detective: "Either way, you’ll talk before the night’s over."</code></pre>
+<p>배경 소리 묘사 예시:</p>
+<pre data-lang="text"><code>The hum of espresso machines and the murmur of voices form the background.</code></pre>
+<h2>영상 편집으로 반복 개선하기</h2>
+<p>편집은 운에 맡기는 것이 아니라 미세하게 조정하기 위한 기능입니다. 한 번에 하나씩 통제된 변경만 적용하고, 무엇을 바꾸는지 명시하십시오. 예를 들어 “same shot, switch to 85 mm” 또는 “same lighting, new palette: teal, sand, rust”와 같이 작성합니다. 결과가 원하는 모습에 가까워지면 그것을 레퍼런스로 고정하고, 수정할 부분만 설명하십시오. 이렇게 하면 이미 잘 작동하는 요소는 그대로 유지됩니다.</p>
+<p>샷이 계속 의도대로 나오지 않는다면 요소를 덜어내십시오. 카메라를 고정하고, 동작을 단순화하고, 배경을 비웁니다. 잘 작동하게 되면 복잡도를 단계적으로 하나씩 추가합니다.</p>
+<table>
+<thead>
+<tr>
+<th>원본 영상</th>
+<th>편집된 영상</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_original.gif" alt="Original Video 1"><p>원본 영상</p></td>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_orange.gif" alt="Edited Video 1"><p><em>편집 프롬프트: “Change the color of the monster to orange”</em></p></td>
+</tr>
+<tr>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_original.gif" alt="Original Video 1"><p>원본 영상</p></td>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_2monsters.gif" alt="Edited Video 2"><p><em>편집 프롬프트: “A second monster comes out right after”</em></p></td>
+</tr>
+</tbody>
+</table>
+<h2>캐릭터</h2>
+<p>Characters API를 사용하면 짧은 레퍼런스 영상으로 재사용 가능한 캐릭터를 만들 수 있습니다. 한 번 만든 캐릭터는 이후 생성 작업에서 다시 사용하여 외형과 화면 속 정체성을 일관되게 유지할 수 있습니다. 동물이나 사물이라면 무엇이든 캐릭터로 만들 수 있습니다.</p>
+<h3>캐릭터 생성</h3>
+<p>짧은 레퍼런스 클립을 업로드하여 캐릭터를 만듭니다. 요구 사항은 다음과 같습니다.</p>
+<ul>
+<li>MP4 영상</li>
+<li>2~4초</li>
+<li>720p~1080p 해상도</li>
+<li>16:9 또는 9:16 화면 비율</li>
+</ul>
+<h3>캐릭터를 사용한 생성</h3>
+<p>영상을 생성할 때 캐릭터 ID를 포함하고, 프롬프트에서 캐릭터를 이름으로 지칭합니다. 한 번의 생성에 캐릭터를 2개 이하로 사용하는 것을 권장합니다.</p>
+<pre data-lang="bash"><code>{
+  "model": "sora-2",
+  "prompt": "A cinematic shot of Alfie running through wet grass at sunrise",
+  "size": "720x1280",
+  "seconds": "4",
+  "characters": [
+    { "id": "char_123" }
+  ]
+}</code></pre>
+<p>아래는 Alfie라는 이름의 강아지 캐릭터를 업로드하여 생성한 GIF 예시 세 개입니다. 가장 왼쪽 영상은 캐릭터를 만드는 데 사용한 원본 레퍼런스입니다.</p>
+<table>
+<thead>
+<tr>
+<th>입력 캐릭터 영상</th>
+<th>생성 결과 1</th>
+<th>생성 결과 2</th>
+<th>생성 결과 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="https://developers.openai.com/cookbook/assets/examples/sora/gifs/alfie_input.gif"></td>
+<td><img src="https://developers.openai.com/cookbook/assets/examples/sora/gifs/alfie_museum.gif"></td>
+<td><img src="https://developers.openai.com/cookbook/assets/examples/sora/gifs/alfie_f1.gif"></td>
+<td><img src="https://developers.openai.com/cookbook/assets/examples/sora/gifs/alfie_tokyo.gif"></td>
+</tr>
+</tbody>
+</table>
+<h2>영상 확장</h2>
+<p>추가 세그먼트를 생성하여 기존 영상을 확장할 수 있습니다. 모델은 원본 클립 전체를 컨텍스트로 사용하므로 장면의 연속성을 유지하는 데 도움이 됩니다. 이 기능은 짧은 클립으로 더 긴 시퀀스를 만들 때 유용합니다. 한 번에 최대 20초까지 확장할 수 있으며, 하나의 영상은 최대 6번까지 확장하여 총 120초까지 만들 수 있습니다.</p>
+<h1>프롬프트 템플릿과 예시</h1>
+<h2>프롬프트 구조</h2>
+<p>프롬프트를 효과적으로 작성하는 한 가지 방법은 모델이 사용하기를 바라는 정보를 종류별로 나누어 쓰는 것입니다. 이는 <strong>모든 경우에 통하는 성공 공식은 아니지만</strong>, 명확한 틀을 제공하여 일관성을 유지하기 쉽게 해 줍니다. 모든 세부 사항을 포함할 필요는 없으며, 샷에 중요하지 않은 요소는 생략해도 됩니다.</p>
+<p>실제로 <strong>일부 요소를 열어 두면 모델이 더 창의적으로 응답하도록 유도할 수 있습니다</strong>. 모든 시각적 선택을 세세하게 지정하지 않을수록 모델이 해석할 여지가 커지고, 예상하지 못했지만 종종 아름다운 변주로 놀라움을 줄 수 있습니다. 상세하게 묘사한 프롬프트는 더 일관되고 통제된 결과를 만들어 내고, 간결한 프롬프트는 신선하고 상상력 넘치는 다양한 결과를 이끌어 낼 수 있습니다.
+상세 묘사형 프롬프트 템플릿:</p>
+<pre data-lang="text"><code>[Prose scene description in plain language. Describe characters, costumes, scenery, weather and other details. Be as descriptive to generate a video that matches your vision.]
+
+Cinematography:
+Camera shot: [framing and angle, e.g. wide establishing shot, eye level]
+Mood: [overall tone, e.g. cinematic and tense, playful and suspenseful, luxurious anticipation]
+
+Actions:
+- [Action 1: a clear, specific beat or gesture]
+- [Action 2: another distinct beat within the clip]
+- [Action 3: another action or dialogue line]
+
+Dialogue:
+[If the shot has dialogue, add short natural lines here or as part of the actions list. Keep them brief so they match the clip length.]</code></pre>
+<h2>프롬프트 예시</h2>
+<h3>예시 1</h3>
+<pre data-lang="text"><code>Style: Hand-painted 2D/3D hybrid animation with soft brush textures, warm tungsten lighting, and a tactile, stop-motion feel. The aesthetic evokes mid-2000s storybook animation — cozy, imperfect, full of mechanical charm. Subtle watercolor wash and painterly textures; warm–cool balance in grade; filmic motion blur for animated realism.
+
+Inside a cluttered workshop, shelves overflow with gears, bolts, and yellowing blueprints. At the center, a small round robot sits on a wooden bench, its dented body patched with mismatched plates and old paint layers. Its large glowing eyes flicker pale blue as it fiddles nervously with a humming light bulb. The air hums with quiet mechanical whirs, rain patters on the window, and the clock ticks steadily in the background.
+
+Cinematography:
+Camera: medium close-up, slow push-in with gentle parallax from hanging tools
+Lens: 35 mm virtual lens; shallow depth of field to soften background clutter
+Lighting: warm key from overhead practical; cool spill from window for contrast
+Mood: gentle, whimsical, a touch of suspense
+
+Actions:
+- The robot taps the bulb; sparks crackle.
+- It flinches, dropping the bulb, eyes widening.
+- The bulb tumbles in slow motion; it catches it just in time.
+- A puff of steam escapes its chest — relief and pride.
+- Robot says quietly: "Almost lost it… but I got it!"
+
+Background Sound:
+Rain, ticking clock, soft mechanical hum, faint bulb sizzle.</code></pre>
+<h3>예시 2</h3>
+<pre data-lang="text"><code>Style: 1970s romantic drama, shot on 35 mm film with natural flares, soft focus, and warm halation. Slight gate weave and handheld micro-shake evoke vintage intimacy. Warm Kodak-inspired grade; light halation on bulbs; film grain and soft vignette for period authenticity.
+
+At golden hour, a brick tenement rooftop transforms into a small stage. Laundry lines strung with white sheets sway in the wind, catching the last rays of sunlight. Strings of mismatched fairy bulbs hum faintly overhead. A young woman in a flowing red silk dress dances barefoot, curls glowing in the fading light. Her partner — sleeves rolled, suspenders loose — claps along, his smile wide and unguarded. Below, the city hums with car horns, subway tremors, and distant laughter.
+
+Cinematography:
+Camera: medium-wide shot, slow dolly-in from eye level
+Lens: 40 mm spherical; shallow focus to isolate the couple from skyline
+Lighting: golden natural key with tungsten bounce; edge from fairy bulbs
+Mood: nostalgic, tender, cinematic
+
+Actions:
+- She spins; her dress flares, catching sunlight.
+- Woman (laughing): "See? Even the city dances with us tonight."
+- He steps in, catches her hand, and dips her into shadow.
+- Man (smiling): "Only because you lead."
+- Sheets drift across frame, briefly veiling the skyline before parting again.
+
+Background Sound:
+Natural ambience only: faint wind, fabric flutter, street noise, muffled music. No added score.</code></pre></article>
+  <article class="prose lang-en" hidden lang="en"><h1>Crafting a successful video prompt</h1>
+<h2>Updated - March 2026</h2>
+<p>This guide has been updated to reflect the latest Sora API capabilities, including:</p>
+<ul>
+<li><strong>Character references (objects and animals)</strong> – Upload a character once and reuse it across videos with consistent appearance.</li>
+<li><strong>Higher-resolution exports</strong> – Generate videos in 1920×1080 or 1080×1920.</li>
+<li><strong>Longer videos</strong> – Maximum duration increased from 12s to 20s.</li>
+<li><strong>Video extension</strong> – Extend an existing video using the full initial clip as context, not just the last frame.</li>
+<li><strong>Batch API for video</strong> – Run asynchronous video generation jobs for larger production workflows.</li>
+</ul>
+<h2>Before you prompt</h2>
+<p>Think of prompting like briefing a cinematographer who has never seen your storyboard. If you leave out details, they’ll improvise – and you may not get what you envisioned. By being specific about what the “shot” should achieve, you give the model more control and consistency to work with.</p>
+<p>But leaving some details open can be just as powerful. Giving the model more creative freedom can lead to surprising variations and unexpected, beautiful interpretations. Both approaches are valid: <strong>detailed prompts give you control and consistency, while lighter prompts open space for creative outcomes.</strong> The right balance depends on your goals and the result you’re aiming for.
+Treat your prompt as a creative wish list, not a contract. Like with ChatGPT, using <strong>the same prompt multiple times will lead to different results</strong> – this is a feature, not a bug. Each generation is a fresh take, and sometimes the second or third option is better.</p>
+<p>Most importantly, be prepared to iterate. Small changes to camera, lighting, or action can shift the outcome dramatically. Collaborate with the model: you provide direction, and the model delivers creative variations.</p>
+<p>This isn’t an exact science—think of the guidance below as helpful suggestions we’ve learned from working with the model.</p>
+<h2>API Parameters</h2>
+<p>The prompt controls the content of the video, but certain attributes are governed only by API parameters. You cannot request them in prose, they must be set explicitly in your API call:</p>
+<ul>
+<li><strong>model</strong>: <code>sora-2</code> or <code>sora-2-pro</code>.</li>
+<li><strong>size</strong>: a string in the form {width}x{height}. Supported resolutions are dependent on the model selection:
+<ul>
+<li>sora-2
+<ul>
+<li>720x1280, 1280x720,</li>
+</ul>
+</li>
+<li>sora-2-pro
+<ul>
+<li>720x1280, 1280x720</li>
+<li>1024x1792, 1792x1024</li>
+<li>1080x1920, 1920x1080</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>seconds</strong>: the clip length, supported values: “4”, “8”, “12”, “16”, “20”. Default value is “4”.</li>
+<li><strong>characters</strong> <em>(optional)</em>: reference up to <strong>two uploaded characters</strong> in a generation. Each entry should include the character ID returned from the Characters API.</li>
+</ul>
+<p>These parameters are the video’s container: resolution, duration, and character references will not change based on prose like “make it longer.” Set them explicitly in the API call; your prompt controls everything else (subject, motion, lighting, style). For more details, see the <a href="https://developers.openai.com/api/docs/guides/video-generation">Sora API docs</a>.</p>
+<h3>Video Resolution</h3>
+<p>Video resolution directly influences visual fidelity and motion consistency in Sora. Higher resolutions generate detail, texture, and lighting transitions more accurately, while lower resolutions compress visual information, often introducing softness or artifacts.</p>
+<h3>Video Length</h3>
+<p>The model generally follows instructions more reliably in shorter clips. For best results, aim for concise shots. If your project allows, you may see better results by stitching together two 4 second clips in editing instead of generating a single 8 second clip.</p>
+<h2>Endpoints</h2>
+<p>The Sora API supports several endpoints for generating and iterating on videos:</p>
+<ul>
+<li>
+<p><strong>Create video</strong> — <code>POST /v1/videos</code><br>
+Generate a new video from a prompt.</p>
+</li>
+<li>
+<p><strong>Create character</strong> — <code>POST /v1/videos/characters</code><br>
+Upload a short reference clip to create a reusable character for generation.</p>
+</li>
+<li>
+<p><strong>Extend video</strong> — <code>POST /v1/videos/extensions</code><br>
+Continue an existing video. The full original clip is used as context.</p>
+</li>
+<li>
+<p><strong>Edit video</strong> — <code>POST /v1/videos/{video_id}/edits</code><br>
+Edit an existing video with a new prompt.</p>
+</li>
+</ul>
+<h2>Prompt anatomy that works</h2>
+<p>A clear prompt describes a shot as if you were sketching it onto a storyboard. State the camera framing, note depth of field, describe the action in beats, and set the lighting and palette. Anchoring your subject with a few distinctive details keeps it recognizable, while a single, plausible action makes the shot easier to follow.</p>
+<p>Describing multiple shots in a single prompt is also valid if you need to cover a sequence. When you do this, keep each shot block distinct: one camera setup, one subject action, and one lighting recipe at a time. This gives you flexibility to generate short standalone clips or longer, continuous moments, depending on your project. Treat each shot as a creative unit, and you can either stitch them together in an edit or let them play out as a sequence in one go.</p>
+<ul>
+<li>Shorter prompts give the model more creative freedom. Expect surprising results.</li>
+<li>Longer, more detailed prompts restrict the model’s creativity. It will try to follow your guidance, but might not always do so reliably.</li>
+</ul>
+<p>Here’s an example for a short prompt:</p>
+<pre data-lang="text"><code>In a 90s documentary-style interview, an old Swedish man sits in a study and says, "I still remember when I was young."</code></pre>
+<p>This prompt will likely work well:</p>
+<ul>
+<li><code>90s documentary</code> sets the style of the video. The model will choose variables like camera lens, lighting and color grade accordingly.</li>
+<li><code>an old Swedish man sits in a study</code> describes subject and setting in minor detail, letting the model take creative liberties in what the person and setting should look like.</li>
+<li><code>and says, "I still remember when I was young."</code> describes the dialogue. Sora will likely be able to follow this exactly.</li>
+</ul>
+<p>This prompt will reliably produce videos that match these requirements. However, it might not match your vision exactly as many details are left open. For example, the prompt does not describe the time of day, weather, outfits, tone, look and age of the character, camera angles, cuts, set design and many other factors. Unless you describe these details, Sora will make them up.</p>
+<h3>Going Ultra-Detailed</h3>
+<p>For complex, cinematic shots, you can go beyond the standard prompt structure and specify the look, camera setup, grading, soundscape, and even shot rationale in professional production terms. This is similar to how a director briefs a camera crew or VFX team. Detailed cues for lensing, filtration, lighting, grading, and motion help the model lock onto a very specific aesthetic.</p>
+<p>For example, you might describe <strong>what the viewer notices first</strong>, the <strong>camera platform and lens</strong>, <strong>lighting direction</strong>, <strong>color palette</strong>, <strong>texture qualities</strong>, <strong>diegetic sound</strong>, and <strong>shot timing</strong>. This approach works well when you want to match real cinematography styles (e.g., IMAX aerials, 35mm handheld, vintage 16mm documentary) or maintain strict continuity across shots.</p>
+<h4>Example</h4>
+<pre data-lang="python"><code>Format &amp; Look
+Duration 4s; 180° shutter; digital capture emulating 65 mm photochemical contrast; fine grain; subtle halation on speculars; no gate weave.
+
+Lenses &amp; Filtration
+32 mm / 50 mm spherical primes; Black Pro-Mist 1/4; slight CPL rotation to manage glass reflections on train windows.
+
+Grade / Palette
+Highlights: clean morning sunlight with amber lift.
+Mids: balanced neutrals with slight teal cast in shadows.
+Blacks: soft, neutral with mild lift for haze retention.
+
+Lighting &amp; Atmosphere
+Natural sunlight from camera left, low angle (07:30 AM).
+Bounce: 4×4 ultrabounce silver from trackside.
+Negative fill from opposite wall.
+Practical: sodium platform lights on dim fade.
+Atmos: gentle mist; train exhaust drift through light beam.
+
+Location &amp; Framing
+Urban commuter platform, dawn.
+Foreground: yellow safety line, coffee cup on bench.
+Midground: waiting passengers silhouetted in haze.
+Background: arriving train braking to a stop.
+Avoid signage or corporate branding.
+
+Wardrobe / Props / Extras
+Main subject: mid-30s traveler, navy coat, backpack slung on one shoulder, holding phone loosely at side.
+Extras: commuters in muted tones; one cyclist pushing bike.
+Props: paper coffee cup, rolling luggage, LED departure board (generic destinations).
+
+Sound
+Diegetic only: faint rail screech, train brakes hiss, distant announcement muffled (-20 LUFS), low ambient hum.
+Footsteps and paper rustle; no score or added foley.
+
+Optimized Shot List (2 shots / 4 s total)
+
+0.00–2.40 — “Arrival Drift” (32 mm, shoulder-mounted slow dolly left)
+Camera slides past platform signage edge; shallow focus reveals traveler mid-frame looking down tracks. Morning light blooms across lens; train headlights flare softly through mist. Purpose: establish setting and tone, hint anticipation.
+
+2.40–4.00 — “Turn and Pause” (50 mm, slow arc in)
+Cut to tighter over-shoulder arc as train halts; traveler turns slightly toward camera, catching sunlight rim across cheek and phone screen reflection. Eyes flick up toward something unseen. Purpose: create human focal moment with minimal motion.
+
+Camera Notes (Why It Reads)
+Keep eyeline low and close to lens axis for intimacy.
+Allow micro flares from train glass as aesthetic texture.
+Preserve subtle handheld imperfection for realism.
+Do not break silhouette clarity with overexposed flare; retain skin highlight roll-off.
+
+Finishing
+Fine-grain overlay with mild chroma noise for realism; restrained halation on practicals; warm-cool LUT for morning split tone.
+Mix: prioritize train and ambient detail over footstep transients.
+Poster frame: traveler mid-turn, golden rim light, arriving train soft-focus in background haze.</code></pre>
+<h2>Visual cues that steer the look</h2>
+<p>When writing prompts, <strong>style is one of the most powerful levers for guiding the model</strong> toward your desired outcome. Describing the overall aesthetic – for example, <em>“1970s film,”</em> <em>“epic, IMAX-scale scene,”</em> or <em>“16mm black-and-white film”</em> – sets a visual tone that frames all other choices. Establish this style early so the model can carry it through consistently.</p>
+<p>The same details will read very differently depending on whether you call for a polished Hollywood drama, a handheld smartphone clip, or a grainy vintage commercial. Once the tone is set, layer in specifics with shot, action, and light.</p>
+<p>Clarity wins. Instead of vague cues like <em>“a beautiful street,”</em> write <em>“wet asphalt, zebra crosswalk, neon sign reflection.”</em> Instead of <em>“moves quickly,”</em> specify <em>“jogs three steps and stops at the curb.”</em> Verbs and nouns that point to visible results will always give you a clearer, more consistent output.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Weak prompt</strong></th>
+<th><strong>Strong prompt</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“A beautiful street at night”</td>
+<td>“Wet asphalt, zebra crosswalk, neon signs reflecting in puddles”</td>
+</tr>
+<tr>
+<td>“Person moves quickly”</td>
+<td>“Cyclist pedals three times, brakes, and stops at crosswalk”</td>
+</tr>
+<tr>
+<td>“Cinematic look”</td>
+<td>“Anamorphic 2.0x lens, shallow DOF, volumetric light”</td>
+</tr>
+</tbody>
+</table>
+<p>Camera direction and framing shape how a shot feels. A wide shot from above will emphasize space and context, while a close-up at eye level will focus attention on emotion. Depth of field adds another layer: shallow focus can make a subject stand out against a blurred background, while deep focus keeps both foreground and background sharp. Lighting sets tone just as strongly. A soft, warm key creates something inviting, while a single hard light with cool edges pushes toward drama.</p>
+<p>When introducing characters, expect some unpredictability—small changes in phrasing can alter identity, pose, or the focus of the scene itself. Keep descriptions consistent across shots, reuse phrasing for continuity, and avoid mixing traits that may compete.</p>
+<p><strong>Weak</strong></p>
+<pre data-lang="text"><code>Camera shot: cinematic look</code></pre>
+<p><strong>Strong</strong></p>
+<pre data-lang="text"><code>Camera shot: wide shot, low angle
+Depth of field: shallow (sharp on subject, blurred background)
+Lighting + palette: warm backlight with soft rim</code></pre>
+<p>Some examples for good framing instructions:</p>
+<ul>
+<li>wide establishing shot, eye level</li>
+<li>wide shot, tracking left to right with the charge</li>
+<li>aerial wide shot, slight downward angle</li>
+<li>medium close-up shot, slight angle from behind</li>
+</ul>
+<p>Some examples for good camera motion instructions:</p>
+<ul>
+<li>slowly tilting camera</li>
+<li>handheld eng camera</li>
+</ul>
+<h2>Control motion and timing</h2>
+<p>Movement is often the hardest part to get right, so keep it simple. Each shot should have one clear camera move and one clear subject action. Actions work best when described in beats or counts – small steps, gestures, or pauses – so they feel grounded in time.</p>
+<p>“Actor walks across the room” doesn’t give much to work with. A line like “Actor takes four steps to the window, pauses, and pulls the curtain in the final second” makes the timing precise and achievable.</p>
+<p><strong>Weak</strong></p>
+<pre data-lang="text"><code>Actor walks across the room.</code></pre>
+<p><strong>Strong</strong></p>
+<pre data-lang="text"><code>Actor takes four steps to the window, pauses, and pulls the curtain in the final second.</code></pre>
+<h2>Lighting and color consistency</h2>
+<p>Light determines mood as much as action or setting. Diffuse light across the frame feels calm and neutral, while a single strong source creates sharp contrast and tension. When you want to cut multiple clips together, keeping lighting logic consistent is what makes the edit seamless.</p>
+<p>Describe both the quality of the light and the color anchors that reinforce it. Instead of a broad note like “brightly lit room,” specify the mix of sources and tones: “soft window light with a warm lamp fill and a cool edge from the hallway.” Naming three to five colors helps keep the palette stable across shots.</p>
+<p><strong>Weak</strong></p>
+<pre data-lang="text"><code>Lighting + palette: brightly lit room</code></pre>
+<p><strong>Strong</strong></p>
+<pre data-lang="text"><code>Lighting + palette: soft window light with warm lamp fill, cool rim from hallway 
+Palette anchors: amber, cream, walnut brown</code></pre>
+<h2>Use image input for more control</h2>
+<p>For even more fine-grained control over the <strong>composition and style</strong> of a shot, you can use an <strong>image input</strong> as a visual reference. You can use photos, digital artwork or AI generated visuals. This locks in elements like character design, wardrobe, set dressing, or overall aesthetic. The model uses the image as an anchor for the first frame, while your text prompt defines what happens next.</p>
+<p><strong>How to use it</strong></p>
+<p>Include an image file as the input_reference parameter in your POST /videos request.</p>
+<ul>
+<li>The image must match the target video’s resolution (size).</li>
+<li>Supported file formats are: <code>image/jpeg</code>, <code>image/png</code>, and <code>image/webp</code>.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Input image generated with <a href="https://platform.openai.com/docs/guides/image-generation">OpenAI GPT Image</a></th>
+<th>Generated video using Sora 2 (converted to GIF)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_woman_skyline_original_2.jpeg" alt=""><p><a href="https://cdn.openai.com/API/docs/images/sora/woman_skyline_original_720p.jpeg">Download this image</a></p></td>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_woman_skyline_video.gif" alt=""><p>Prompt: <em>“She turns around and smiles, then slowly walks out of the frame.”</em></p></td>
+</tr>
+<tr>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_original_2.jpeg" alt=""><p><a href="https://cdn.openai.com/API/docs/images/sora/monster_original_720p.jpeg">Download this image</a></p></td>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_original.gif" alt=""> <p>Prompt: <em>“The fridge door opens. A cute, chubby purple monster comes out of it.”</em></p></td>
+</tr>
+</tbody>
+</table>
+<h3>Experimentation tip</h3>
+<p>If you don’t already have visual references, <a href="https://platform.openai.com/docs/guides/image-generation">OpenAI’s image generation model</a> is a powerful way to create them.  You can quickly produce environments and scene designs and then pass them into Sora as references. This is a great way to test aesthetics and generate beautiful starting points for your videos.</p>
+<h2>Dialogue and Audio</h2>
+<p>Dialogue must be described directly in your prompt. Place it in a  block below your prose description so the model clearly distinguishes visual description from spoken lines. Keep lines concise and natural, and try to limit exchanges to a handful of sentences so the timing can match your clip length. For multi-character scenes, label speakers consistently and use alternating turns; this helps the model associate each line with the correct character’s gestures and expressions.
+</p><p>You should also think about rhythm and timing: a 4-second shot will usually accommodate one or two short exchanges, while an 8-second clip can support a few more. Long, complex speeches are unlikely to sync well and may break pacing.</p>
+<p>If your shot is silent, you can still suggest pacing with one small sound, such as “distant traffic hiss” or “a crisp snap.” Think of it as a rhythm cue rather than a full soundtrack.</p>
+<p>Example prompt with dialogue:</p>
+<pre data-lang="text"><code>A cramped, windowless room with walls the color of old ash. A single bare bulb dangles from the ceiling, its light pooling onto the scarred metal table at the center. Two chairs face each other across it. On one side sits the Detective, trench coat draped across the back of his chair, eyes sharp and unblinking. Across from him, the Suspect slouches, cigarette smoke curling lazily toward the ceiling. The silence presses in, broken only by the faint hum of the overhead light.
+
+Dialogue:
+- Detective: "You’re lying. I can hear it in your silence."
+- Suspect: "Or maybe I’m just tired of talking."
+- Detective: "Either way, you’ll talk before the night’s over."</code></pre>
+<p>Example description of background sound:</p>
+<pre data-lang="text"><code>The hum of espresso machines and the murmur of voices form the background.</code></pre>
+<h2>Iterate with video edits</h2>
+<p>Editing is for nudging, not gambling. Use it to make controlled changes – one at a time – and say what you’re changing: “same shot, switch to 85 mm,” or “same lighting, new palette: teal, sand, rust.” When a result is close, pin it as a reference and describe only the tweak. That way, everything that already works stays locked.</p>
+<p>If a shot keeps misfiring, strip it back: freeze the camera, simplify the action, clear the background. Once it works, layer additional complexity step by step.</p>
+<table>
+<thead>
+<tr>
+<th>Original Video</th>
+<th>Edited Video</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_original.gif" alt="Original Video 1"><p>Original Video</p></td>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_orange.gif" alt="Edited Video 1"><p><em>Edit prompt: “Change the color of the monster to orange”</em></p></td>
+</tr>
+<tr>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_original.gif" alt="Original Video 1"><p>Original Video</p></td>
+<td><img src="https://cdn.openai.com/API/docs/images/sora/sora_monster_2monsters.gif" alt="Edited Video 2"><p><em>Edit prompt: “A second monster comes out right after”</em></p></td>
+</tr>
+</tbody>
+</table>
+<h2>Characters</h2>
+<p>The Characters API lets you create reusable characters from short reference videos. Once created, a character can be reused in future generations to keep appearance and on-screen identity consistent. You can create characters out of any animals or objects.</p>
+<h3>Create a character</h3>
+<p>Upload a short reference clip to create a character. Requirements:</p>
+<ul>
+<li>MP4 video</li>
+<li>2–4 seconds</li>
+<li>720p–1080p resolution</li>
+<li>16:9 or 9:16 aspect ratio</li>
+</ul>
+<h3>Generate using a character</h3>
+<p>When creating a video, include the character ID and refer to the character by name in the prompt. We recommend no more than 2 characters per generation.</p>
+<pre data-lang="bash"><code>{
+  "model": "sora-2",
+  "prompt": "A cinematic shot of Alfie running through wet grass at sunrise",
+  "size": "720x1280",
+  "seconds": "4",
+  "characters": [
+    { "id": "char_123" }
+  ]
+}</code></pre>
+<p>Below are three generated GIF examples using an uploaded character of a dog named Alfie. The leftmost video is the original reference used to create the character</p>
+<table>
+<thead>
+<tr>
+<th>Input character video</th>
+<th>Generation 1</th>
+<th>Generation 2</th>
+<th>Generation 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="https://developers.openai.com/cookbook/assets/examples/sora/gifs/alfie_input.gif"></td>
+<td><img src="https://developers.openai.com/cookbook/assets/examples/sora/gifs/alfie_museum.gif"></td>
+<td><img src="https://developers.openai.com/cookbook/assets/examples/sora/gifs/alfie_f1.gif"></td>
+<td><img src="https://developers.openai.com/cookbook/assets/examples/sora/gifs/alfie_tokyo.gif"></td>
+</tr>
+</tbody>
+</table>
+<h2>Extend a video</h2>
+<p>You can extend an existing video by generating an additional segment. The model uses the full original clip as context, which helps maintain scene continuity. This is useful for building longer sequences from shorter clips. Individual extensions of up to 20 seconds are supported. A video can be extended up to 6 times, for a total of 120s.</p>
+<h1>Prompt Templates and Examples</h1>
+<h2>Prompt Structure</h2>
+<p>One effective way to write prompts is to separate the different kinds of information you want the model to use. This is <strong>not a one-size-fits-all recipe for success</strong>, but it gives you a clear framework and makes it easier to be consistent. Not every detail needs to be included – if something doesn’t matter for the shot, you can leave it out.</p>
+<p>In fact, <strong>leaving certain elements open-ended will encourage the model to be more creative</strong>. The less tightly you specify every visual choice, the more room the model has to interpret and surprise you with unexpected but often beautiful variations. Highly descriptive prompts yield more consistent, controlled results, while lighter prompts can unlock diverse outcomes that feel fresh and imaginative.
+Descriptive Prompt Template:</p>
+<pre data-lang="text"><code>[Prose scene description in plain language. Describe characters, costumes, scenery, weather and other details. Be as descriptive to generate a video that matches your vision.]
+
+Cinematography:
+Camera shot: [framing and angle, e.g. wide establishing shot, eye level]
+Mood: [overall tone, e.g. cinematic and tense, playful and suspenseful, luxurious anticipation]
+
+Actions:
+- [Action 1: a clear, specific beat or gesture]
+- [Action 2: another distinct beat within the clip]
+- [Action 3: another action or dialogue line]
+
+Dialogue:
+[If the shot has dialogue, add short natural lines here or as part of the actions list. Keep them brief so they match the clip length.]</code></pre>
+<h2>Prompt Examples</h2>
+<h3>Example 1</h3>
+<pre data-lang="text"><code>Style: Hand-painted 2D/3D hybrid animation with soft brush textures, warm tungsten lighting, and a tactile, stop-motion feel. The aesthetic evokes mid-2000s storybook animation — cozy, imperfect, full of mechanical charm. Subtle watercolor wash and painterly textures; warm–cool balance in grade; filmic motion blur for animated realism.
+
+Inside a cluttered workshop, shelves overflow with gears, bolts, and yellowing blueprints. At the center, a small round robot sits on a wooden bench, its dented body patched with mismatched plates and old paint layers. Its large glowing eyes flicker pale blue as it fiddles nervously with a humming light bulb. The air hums with quiet mechanical whirs, rain patters on the window, and the clock ticks steadily in the background.
+
+Cinematography:
+Camera: medium close-up, slow push-in with gentle parallax from hanging tools
+Lens: 35 mm virtual lens; shallow depth of field to soften background clutter
+Lighting: warm key from overhead practical; cool spill from window for contrast
+Mood: gentle, whimsical, a touch of suspense
+
+Actions:
+- The robot taps the bulb; sparks crackle.
+- It flinches, dropping the bulb, eyes widening.
+- The bulb tumbles in slow motion; it catches it just in time.
+- A puff of steam escapes its chest — relief and pride.
+- Robot says quietly: "Almost lost it… but I got it!"
+
+Background Sound:
+Rain, ticking clock, soft mechanical hum, faint bulb sizzle.</code></pre>
+<h3>Example 2</h3>
+<pre data-lang="text"><code>Style: 1970s romantic drama, shot on 35 mm film with natural flares, soft focus, and warm halation. Slight gate weave and handheld micro-shake evoke vintage intimacy. Warm Kodak-inspired grade; light halation on bulbs; film grain and soft vignette for period authenticity.
+
+At golden hour, a brick tenement rooftop transforms into a small stage. Laundry lines strung with white sheets sway in the wind, catching the last rays of sunlight. Strings of mismatched fairy bulbs hum faintly overhead. A young woman in a flowing red silk dress dances barefoot, curls glowing in the fading light. Her partner — sleeves rolled, suspenders loose — claps along, his smile wide and unguarded. Below, the city hums with car horns, subway tremors, and distant laughter.
+
+Cinematography:
+Camera: medium-wide shot, slow dolly-in from eye level
+Lens: 40 mm spherical; shallow focus to isolate the couple from skyline
+Lighting: golden natural key with tungsten bounce; edge from fairy bulbs
+Mood: nostalgic, tender, cinematic
+
+Actions:
+- She spins; her dress flares, catching sunlight.
+- Woman (laughing): "See? Even the city dances with us tonight."
+- He steps in, catches her hand, and dips her into shadow.
+- Man (smiling): "Only because you lead."
+- Sheets drift across frame, briefly veiling the skyline before parting again.
+
+Background Sound:
+Natural ambience only: faint wind, fabric flutter, street noise, muffled music. No added score.</code></pre></article>
+
+  <p class="art-back"><a href="../../s/openai-learn/index.html">← OpenAI Learn 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

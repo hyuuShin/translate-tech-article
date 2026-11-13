@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>우리의 경제적 미래는 어떤 모습일까요? · Anthropic Research</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-anthropic">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html" class="on">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/anthropic-research/index.html">Anthropic Research</a> / Economics</p>
+    <h1 class="lang-ko">우리의 경제적 미래는 어떤 모습일까요?</h1>
+    <h1 class="lang-en" hidden lang="en">What will our economic future look like?</h1>
+    
+    <p class="art-sum lang-ko">Anthropic 경제팀(Anthropic Economics Team)이 2030년 경제에 AI가 미치는 영향을 모델링합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">The Anthropic Economics Team models the effects of AI on the economy of 2030.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 9월 9일</dd></div>
+      
+      
+      
+      <div><dt>원문</dt><dd><a href="https://www.anthropic.com/institute/econ-scenarios">https://www.anthropic.com/institute/econ-scenarios</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>면책 조항 및 검토자 감사 인사<br>Econ Scenario Explorer v1.0, 2026년 9월</p>
+<p>경제 시나리오 탐색기(economic scenario explorer)는 현재 버전 1.0입니다. 모든 모델이 그렇듯 이 탐색기도 복잡한 현실을 극단적으로 단순화한 것입니다. 몇 가지 핵심 요인만 분리해 다루며, 앞으로 중요해질 수 있는 여러 요인은 포함하지 않습니다. 예를 들어 정책 대응, 경기 변동, 총수요나 금융시장의 교란 가능성, 파국적 위험은 반영하지 않았습니다. 이 시나리오 탐색기는 현재 개발 중이며, 저희가 더 많은 시간을 투입하고 경제학 연구 자체도 발전함에 따라 계속 개선될 것으로 기대합니다.</p>
+<p>탐색기의 기반이 되는 프레임워크를 설명한 기술 보고서 <a href="https://www-cdn.anthropic.com/files/4zrzovbb/website/cf58f84d46a4a76bf5a5b039ac695fba6b80041c.pdf">Economic Scenarios for Transformative AI</a>의 초안을 읽고 상세한 의견을 주신 경제학자 분들께 감사드립니다. Daron Acemoglu, Lukas Althoff, David Autor, Tom Cunningham, Lukas Freund, Joe Hazell, Ben Jones, Pete Klenow, Danial Lashkari, Kurt Mitman, Ben Moll, Emi Nakamura, Pascual Restrepo, David Romer, Jón Steinsson, Chris Tonetti, Ludo Visschers, David Wiczer 님입니다. 이분들은 아낌없이 솔직하게 의견을 주셨고, 그 덕분에 모델이 이미 개선되었습니다. 두 가지 예를 들겠습니다. 여러 검토자가 AI의 발전으로 자본 수익률이 높아져 그 이익이 자본 소유자에게 더 많이 돌아갈 수 있다고 지적했습니다. 또한 여러 검토자가 AI의 영향을 가장 크게 받는 직업의 임금이 거의 영향을 받지 않는 직업의 임금과 벌어질 수 있다고 지적했습니다. 이 두 경로는 이제 시나리오에 반영되어 있습니다. 외부 검토자에게 저희의 결론에 대한 동의를 요청하지는 않았으며, 남아 있는 오류는 모두 저희의 책임입니다.</p>
+<p>아직 해결되지 않은 다른 비판도 있으며, 그중 상당수는 향후 버전에서 다룰 계획입니다. 검토자들은 이 모델이 개별 근로자를 추적하지 않기 때문에 일자리 대체(job displacement)의 비용을 매우 거칠게만 보여 줄 수 있다고 지적했습니다. 일부는 AI에 노출된 직업이 과연 성장하지 않고 줄어들기는 할지 의문을 제기했습니다. 일부는 가장 극단적인 시나리오가 시나리오라기보다 사고 실험으로 읽는 편이 낫다고 보았고, 다른 일부는 가장 온건한 시나리오가 이미 데이터에서 확인되는 현실을 과소평가한다고 보았습니다. 여러 검토자는 이 모델이 데이터센터 건설 확대에 따른 총수요 효과를 포함하지 않는다는 점을 더 분명히 밝혀 달라고 요청했습니다. 또한 둘 이상의 검토자가 AI가 기술 진보 자체를 얼마나 가속할 수 있는지를 저희가 과소평가하고 있을 수 있다고 주장했습니다. 이 중 상당수가 현재 모델의 한계라는 데 저희도 동의합니다. 이 시나리오 탐색기는 서로 다른 기술 발전이 경제에 어떤 의미를 가질지 생각해 보기 위한 도구로 보아야 하며, 실제 결과는 크게 다를 수 있습니다.</p>
+<p>Anton Korinek, Chad Jones, Szymon Sacher, Tess Cotter, Peter McCrory가 경제 모델을 개발하고 함께 제공되는 기술 보고서를 공동 집필했습니다. Santi Ruiz가 이들과 함께 이 글을 작성했으며, Sarah Pollack과 Adam Farina가 편집을 지원했습니다. Kelsey Nanan이 인터랙티브 경험을 설계하고 구축했으며, 비주얼 디자인과 아트 디렉션은 Nikki Makagiansar와 Monika Tuchowska가 맡았습니다. Kyle Turman과 Szymon Sacher가 시나리오 탐색기를 구축하고 모델을 인터랙티브 형태로 옮기는 작업을 이끌었습니다. Fayaz Ashraf와 Ryan Heller가 엔지니어링에 기여했고, Kim Withee와 Maria Gonzalez가 제작을 지원했습니다. Szymon Sacher와 Tess Cotter가 Ben Fowler의 지원을 받아 Morning Consult와 함께 관련 설문조사를 설계하고 실시했습니다. Peter McCrory, Anton Korinek, Charles Yang이 프로젝트를 조율했으며, Jack Clark가 전 과정에서 방향을 제시했습니다. Miriam Chaum, Jack Clark, Saffron Huang, Maxim Massenkoff, Peter McCrory가 이 프로젝트의 시작을 도왔습니다. Jim Baker, Shan Carter, Johannes Hermle, Zoë Hitzig, Eva Lyubich가 의견을 주었습니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>Disclaimer and thanks to reviewers<br>v1.0 of the Econ Scenario Explorer, September 2026</p><p>The economic scenario explorer is currently Version 1.0. Like every model, it is a stark simplification of a complex reality: it isolates a few key forces and omits many others that may become relevant and important in the coming years. For example, it leaves out policy responses, business cycles, potential aggregate demand or financial market disruptions, and possible catastrophic risks. The scenario explorer is a work in progress, and we expect it to evolve both as we invest more time and as economic research itself develops.</p><p>We are grateful to the economists who read an early draft of the technical report that lays out the framework behind the explorer, <a href="https://www-cdn.anthropic.com/files/4zrzovbb/website/cf58f84d46a4a76bf5a5b039ac695fba6b80041c.pdf">Economic Scenarios for Transformative AI</a>, and gave us detailed comments: Daron Acemoglu, Lukas Althoff, David Autor, Tom Cunningham, Lukas Freund, Joe Hazell, Ben Jones, Pete Klenow, Danial Lashkari, Kurt Mitman, Ben Moll, Emi Nakamura, Pascual Restrepo, David Romer, Jón Steinsson, Chris Tonetti, Ludo Visschers, and David Wiczer. Their feedback was generous and candid, and it has already improved our model. Two examples: several reviewers noted that advances in AI may raise the returns to capital, so that more of the gains flow to the owners of capital; and several noted that the wages of workers in the occupations AI affects most may diverge from those in occupations it barely affects. Both channels are now part of the scenarios. External reviewers were not asked to endorse our conclusions, and any remaining errors are ours.</p><p>Other criticisms are still open, and we plan to address many of them in future versions. Reviewers pointed out that the model does not follow individual workers, so it can only paint a very coarse picture of the costs of job displacement. Some questioned whether occupations exposed to AI will shrink at all rather than grow. Some felt the most extreme scenario is better read as a thought experiment than a scenario, while others felt the most modest one understates what is already visible in the data. Several asked us to be clearer that the model does not include the aggregate demand effects driven by the data center buildout. And more than one reviewer argued that we may be underestimating how much AI could accelerate technological progress itself. We agree that many of these are limitations of the current model. The scenario explorer should be viewed as a tool for thinking about what different technological developments would imply for the economy—actual outcomes may differ materially.</p><p>Anton Korinek, Chad Jones, Szymon Sacher, Tess Cotter, and Peter McCrory developed the economic model and co-authored the companion technical report. Santi Ruiz wrote this piece with them, with editorial support from Sarah Pollack and Adam Farina. Kelsey Nanan designed and built the interactive experience, with visual design and art direction by Nikki Makagiansar and Monika Tuchowska; Kyle Turman and Szymon Sacher built the scenario explorer and led the translation of the model into interactive form; Fayaz Ashraf and Ryan Heller contributed engineering, and Kim Withee and Maria Gonzalez supported production. Szymon Sacher and Tess Cotter designed and fielded the accompanying surveys with Morning Consult, with support from Ben Fowler. Peter McCrory, Anton Korinek, and Charles Yang coordinated the project, and Jack Clark provided direction throughout. Miriam Chaum, Jack Clark, Saffron Huang, Maxim Massenkoff, and Peter McCrory helped originate this effort. Jim Baker, Shan Carter, Johannes Hermle, Zoë Hitzig, and Eva Lyubich provided feedback.</p></article>
+
+  <p class="art-back"><a href="../../s/anthropic-research/index.html">← Anthropic Research 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

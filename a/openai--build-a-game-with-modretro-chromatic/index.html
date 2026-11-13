@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Codex와 ModRetro Chromatic으로 레트로 휴대용 게임 만들기 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">Codex와 ModRetro Chromatic으로 레트로 휴대용 게임 만들기</h1>
+    <h1 class="lang-en" hidden lang="en">Building a retro handheld game with Codex and ModRetro Chromatic</h1>
+    
+    <p class="art-sum lang-ko">Codex용 ModRetro Chromatic 플러그인을 사용하면 상상하는 어떤 게임이든 만들어 ModRetro Chromatic에서 플레이할 수 있습니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">Using the ModRetro Chromatic plugin for Codex, you can build any game you can imagine and play it on a ModRetro Chromatic.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 11월 9일</dd></div>
+      <div><dt>저자</dt><dd>Kevin Whinnery</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/build-a-game-with-modretro-chromatic">https://developers.openai.com/blog/build-a-game-with-modretro-chromatic</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>아이폰에는 미안하지만, 역대 가장 상징적인 휴대용 기기는 Game Boy일지도 모릅니다. 한 세대의 아이들은 버스에서 쿠파 병사(Koopa)를 밟고, 통신 케이블로 친구들과 포켓몬 대결을 벌였으며, 이 모든 것을 주머니에 들어가는 기기 하나로 즐겼습니다. 정확히는 백팩의 주머니에 들어가는 크기였습니다.</p>
+<p>오늘날에는 강력한 코딩 모델과 Codex 같은 도구 덕분에 나만의 게임을 만드는 일이 그 어느 때보다 쉬워졌고, 제 생각에는 더 재미있어졌습니다. 하지만 Game Boy Color 같은 전용 하드웨어에서 게임이 돌아가는 경험에는 다른 무엇으로도 대체하기 어려운 특별함이 있습니다. 그래서 <a href="https://developers.openai.com/modretro">Codex용 ModRetro 플러그인</a>으로 Game Boy Color 게임을 만들고 Chromatic에서 플레이할 수 있게 되었다는 소식을 전하게 되어 <em>정말 기쁩니다</em>.</p>
+<p><a href="https://openai.com/supply/shop/">스페셜 에디션 ModRetro Chromatic 주문하기</a></p>
+<p>바로 어떻게 작동하는지 살펴보겠습니다.</p>
+<h2>플러그인 설치</h2>
+<ol>
+<li>ChatGPT 데스크톱 앱의 <strong>ChatGPT</strong> 드롭다운에서 <strong>Codex</strong>를 선택합니다.</li>
+<li><strong>Plugins</strong>를 열고 <strong>ModRetro Chromatic</strong>을 검색합니다. ModRetro가 제공하는 <strong>ModRetro Chromatic Plugin</strong>을 선택한 후 <strong>Install</strong>을 클릭합니다.</li>
+<li>로컬 프로젝트 폴더를 열고 채팅을 시작합니다. <strong>@</strong>를 입력하고 플러그인을 선택하면 Codex가 어떤 도구를 사용해야 하는지 알 수 있습니다.</li>
+<li>Codex에 플러그인을 설정하고 누락된 빌드 도구가 있는지 확인해 달라고 요청합니다. 그러면 컴퓨터에서 첫 번째 게임을 빌드하고 플레이할 수 있습니다.</li>
+</ol>
+<h2>첫 번째 게임 프롬프트 작성</h2>
+<p>Codex 채팅에서 플러그인을 선택한 상태로, 만들고 싶은 게임을 설명합니다. 영상을 따라 해 보려면 다음 예시 프롬프트를 사용하십시오.</p>
+<blockquote>
+<p>Lodge Podge라는 이름의 탑다운 어드벤처 게임을 만들어 주세요. 픽셀 아트 비버가 작은 나무를 갉아 쓰러뜨려 막대기를 모으고, 이를 이용해 레벨 중앙에 롯지(lodge)를 짓는 게임입니다.</p>
+</blockquote>
+<p>다음으로 Codex에 게임을 빌드하고 미리보기를 열어 달라고 요청합니다. GB Studio 프로젝트 폴더에서 다음 파일의 위치를 알려 달라고 요청할 수도 있습니다.</p>
+<ul>
+<li>GB Studio에서 <code>.gbsproj</code> 파일을 열어 장면(scene), 액터(actor), 이벤트를 편집합니다.</li>
+<li><code>assets/</code>에서 프로젝트에 사용된 스프라이트 시트, 배경, 오디오를 확인합니다.</li>
+<li>컴파일된 <code>.gbc</code> 파일을 에뮬레이터에서 실행하거나 카트리지에 설치합니다.</li>
+</ul>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/lodge-podge.webp" alt="연못 옆에 있는 비버와 롯지의 픽셀 아트를 보여 주는 세 개의 게임 화면.">
+<p>그다음에는 몇 판 플레이해 보고, 게임을 더 재미있게 만들 방법을 Codex에 알려 주십시오. Lodge Podge에서는 비버를 더 통통하게(최대한 귀엽게) 만들고, 롯지를 지으려면 막대기뿐 아니라 진흙과 나뭇잎도 필요하도록 해 달라고 요청했습니다.</p>
+<h2>플러그인 구성</h2>
+<p>ModRetro Chromatic 플러그인에는 모델이 사용자를 대신해 활용할 수 있는 개발자 도구가 들어 있습니다.</p>
+<h3>캐릭터 애니메이션</h3>
+<p>Codex에 스프라이트 시트를 만들고 프레임을 나란히 보여 달라고 요청합니다. 애니메이션을 수정하려면 바꾸고 싶은 포즈나 방향을 지정한 후, Codex에 미리보기를 다시 만들어 달라고 요청합니다.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/walk-cycle.webp" alt="앞, 뒤, 옆을 향한 비버 포즈 여섯 개가 담긴 스프라이트 시트.">
+<h3>플레이어가 걸어 다닐 수 있는 맵 만들기</h3>
+<p>Codex에 장면의 배경과 충돌 맵(collision map)을 나란히 보여 달라고 요청합니다. 충돌 맵은 어떤 타일이 이동을 막는지 표시합니다. 배경을 보고 원하는 영역을 특정한 후, 어떤 타일을 이동 불가 또는 이동 가능으로 표시할지 Codex에 알려 주십시오.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/room-collisions.webp" alt="장면 배경과, 이동이 막힌 타일을 빨간색으로 강조한 같은 장면이 나란히 놓여 있는 모습.">
+<h3>Codex에서 ROM 플레이</h3>
+<p>Codex에 내장 브라우저에서 게임 미리보기를 열어 달라고 요청합니다. Game Boy의 방향 패드(D-pad)에는 방향키를, <strong>A</strong>에는 <strong>Z</strong>를, <strong>B</strong>에는 <strong>X</strong>를, <strong>Start</strong>에는 <strong>Enter</strong>를 사용합니다. 에뮬레이터 위의 툴바에서 일시 정지하거나 다시 시작할 수 있습니다.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/playable-preview.webp" alt="Codex의 Chromatic 미리보기에서 실행 중인 Lodge Podge.">
+<h3>변경하고 싶은 부분 가리키기</h3>
+<p>미리보기 툴바에서 <strong>Annotate game</strong>을 선택한 후 게임 화면을 클릭해 프레임을 고정합니다. 바꾸고 싶은 스프라이트, 타일 또는 영역을 선택하고 수정 내용을 설명합니다. <strong>Resume game</strong>을 선택하면 에뮬레이터로 돌아갑니다. Codex가 변경을 마치면 ROM을 다시 빌드하고 미리보기를 다시 열어 달라고 요청합니다.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/annotate-preview.webp" alt="툴바에서 주석 도구가 선택된 채 일시 정지된 에뮬레이터.">
+<h3>Codex로 일련의 동작 테스트</h3>
+<p>채팅에서 에뮬레이터를 직접 제어할 수도 있습니다. Codex에 ROM을 실행하고, 버튼 입력을 순서대로 보내고, 각 단계 후에 프레임을 캡처해 달라고 요청합니다. 프레임을 나란히 보여 달라고 하면 한눈에 비교해 검토할 수 있습니다.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/playtest-frames.webp" alt="각각 프레임 번호가 표시된 에뮬레이터 프레임 세 개가 나란히 배열된 모습.">
+<h2>GB Studio에서 편집</h2>
+<p>GB Studio는 Game Boy 게임을 만들기 위한 비주얼 에디터입니다. 프로젝트의 <code>.gbsproj</code> 파일을 열고 <strong>Game World</strong>를 선택합니다. 내비게이터에서 장면을 선택하면 사이드바에 해당 장면의 속성이 표시됩니다. 액터를 새로운 타일로 드래그하거나, 장면에서 직접 충돌을 편집할 수 있습니다. 프로젝트를 저장한 후 Codex 채팅으로 돌아가 다시 빌드하고 미리보기를 열어 달라고 요청합니다. <a href="https://www.gbstudio.dev/docs/project-editor/scenes/">장면에 대한 GB Studio 가이드</a>에서 배경, 액터, 트리거가 서로 어떻게 맞물리는지 설명합니다.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/gb-studio-game-world.webp" alt="GB Studio의 Game World에 Lodge Podge의 Survey stakes 장면과 Woven walls 장면이 표시된 모습.">
+<h3>그 외 개발 옵션</h3>
+<ul>
+<li><strong>GB Studio 게임 확장하기.</strong> 기본 제공 이벤트로 원하는 메커니즘을 구현할 수 없다면, GB Studio의 가상 머신 언어인 GBVM으로 커스텀 이벤트를 추가하거나 C로 엔진을 확장할 수 있습니다. 자세한 내용은 <a href="https://www.gbstudio.dev/docs/extending-gbstudio/plugins/">GB Studio 플러그인 가이드</a>를 참고하십시오.</li>
+<li><strong>GBDK-2020으로 C 게임 작성하기.</strong> ModRetro 플러그인은 GBDK의 <code>lcc</code> 컴파일러로 독립 실행형 C 코드를 컴파일할 수 있습니다. GBDK의 <a href="https://gbdk.org/docs/api/">Game Boy API</a>를 사용하면 버튼, 스프라이트, 타일, 팔레트를 다룰 수 있습니다. Codex에게 D-pad 입력을 읽고 스프라이트 하나를 움직이는 게임 루프부터 만들어 달라고 요청해 보십시오.</li>
+<li><strong>자체 엔진 작성하기.</strong> Codex에게 게임 루프, 스크롤링, 충돌 처리를 처음부터 구현하도록 맡길 수 있습니다. 어셈블리 프로젝트라면 <a href="https://rgbds.gbdev.io/">RGBDS</a>와 같이 별도로 설치한 툴체인으로 ROM을 빌드하십시오. 그런 다음 생성된 <code>.gb</code> 또는 <code>.gbc</code> 파일을 플러그인에 전달하여 검사하고 플레이 테스트를 진행합니다.</li>
+</ul>
+<h2>기기에 배포하기</h2>
+<p>Chromatic, 호환되는 재기록 가능 홈브류 카트리지, USB 데이터 케이블이 필요합니다. 휴대용 기기에 연결할 컴퓨터에서 <a href="https://support.modretro.com/en_us/chromatic-devday-edition-quickstart-guid-By1iOlcMg">ModRetro 퀵스타트</a>를 따라 펌웨어를 업데이트하고 개발자 모드(Developer Mode)를 활성화하십시오.</p>
+<ol>
+<li>카트리지를 삽입하고 Chromatic을 컴퓨터에 연결한 다음, 로컬 Codex 채팅에서 게임 미리보기를 엽니다.</li>
+<li><strong>Install on Chromatic</strong>을 선택하고 연결된 기기를 지정한 뒤 <strong>Install</strong>을 클릭합니다. 확인 메시지를 주의 깊게 읽으십시오. 새 ROM을 기록하면 해당 카트리지에 있던 게임이 삭제되며, 저장 데이터도 삭제될 수 있습니다. 설치 프로그램은 카트리지를 백업하지 않습니다.</li>
+<li>준비가 되면 <strong>Confirm Install</strong>을 선택합니다. 플러그인이 성공을 알릴 때까지 케이블을 연결한 상태로 두었다가, 성공하면 Chromatic에서 게임을 실행합니다.</li>
+</ol>
+<h2>"The Power of Science is Staggering!"</h2>
+<p>Codex용 ModRetro 플러그인을 사용하면 프롬프트만으로 오리지널 Game Boy Color 게임을 만들 수 있으며, 활발한 GBC 홈브류 개발 생태계의 모든 도구를 활용할 수 있습니다. 정말 정말 재미있을 것입니다. <a href="https://openai.com/supply/shop/">ModRetro Chromatic을 직접 주문</a>하고 <a href="https://modretro.com/">ModRetro의 다른 프로젝트</a>도 살펴보십시오. 즐거운 Game Boy 해킹이 되시길 바랍니다!</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>With all due respect to the iPhone, the Game Boy might be the most iconic handheld device of all time. A generation of kids stomped Koopas on the bus and battled their friends in Pokémon over a link cable, all on a device that fit in your pocket. Or at least a pocket of your backpack.</p>
+<p>With today’s powerful coding models and tools like Codex, building your own games has never been easier (or, in my opinion, more fun). But there’s something special about a game running on purpose-built hardware, like the Game Boy Color, that’s hard to replace. That’s why I am <em>sooo excited</em> to share that the <a href="https://developers.openai.com/modretro">ModRetro plugin for Codex</a> lets you build Game Boy Color games and play them on a Chromatic.</p>
+<p><a href="https://openai.com/supply/shop/">Order the special edition ModRetro Chromatic</a>.</p>
+<p>Let’s jump right in and explain how it works.</p>
+   
+<h2>Install the plugin</h2>
+<ol>
+<li>In the ChatGPT desktop app, select <strong>Codex</strong> from the <strong>ChatGPT</strong> dropdown.</li>
+<li>Open <strong>Plugins</strong> and search for <strong>ModRetro Chromatic</strong>. Select <strong>ModRetro Chromatic Plugin</strong> by ModRetro, then click <strong>Install</strong>.</li>
+<li>Open a local project folder and start a chat. Type <strong>@</strong> and choose the plugin so Codex knows which tools to use.</li>
+<li>Ask Codex to set up the plugin and check for any missing build tools. You can build and play your first game on your computer.</li>
+</ol>
+   
+<h2>Prompt your first game</h2>
+<p>With the plugin selected in your Codex chat, describe the game you want to build. To follow along with the video, use this example prompt.</p>
+<blockquote>
+<p>Build a top-down adventure game called Lodge Podge where a pixel beaver must chew down small trees to gather sticks to build a lodge in the center of the level.</p>
+</blockquote>
+   
+<p>Next, ask Codex to build the game and open the preview. You can also ask it to point you to these files in your GB Studio project folder.</p>
+<ul>
+<li>Open the <code>.gbsproj</code> file in GB Studio to edit scenes, actors, and events.</li>
+<li>Look in <code>assets/</code> for the sprite sheets, backgrounds, and audio used by the project.</li>
+<li>Run the compiled <code>.gbc</code> file in an emulator or install it on a cartridge.</li>
+</ul>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/lodge-podge.webp" alt="Three game screens showing pixel art of a beaver and a lodge beside a pond.">
+<p>From there, play a few rounds and tell Codex what would make the game more fun. In Lodge Podge, I asked Codex to make the beaver chonkier (for maximum cuteness) and to require mud and leaves as well as sticks to build the lodge.</p>
+<h2>What’s in the plugin</h2>
+<p>The ModRetro Chromatic plugin contains developer tools the model can use on your behalf.</p>
+<h3>Animate a character</h3>
+<p>Ask Codex to create a sprite sheet and show you the frames side by side. To revise the animation, identify the pose or direction you want to change, then ask Codex to rebuild the preview.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/walk-cycle.webp" alt="A sprite sheet with six front-, back-, and side-facing beaver poses.">
+<h3>Build a map the player can walk through</h3>
+<p>Ask Codex to show you a scene’s background and collision map side by side. The collision map marks which tiles block movement. Use the background to identify the area you mean, then tell Codex which tiles to mark as blocked or walkable.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/room-collisions.webp" alt="A scene background beside the same scene with blocked tiles highlighted in red.">
+<h3>Play the ROM in Codex</h3>
+<p>Ask Codex to open the game preview in its built-in browser. Use the arrow keys for the Game Boy’s D-pad, <strong>Z</strong> for <strong>A</strong>, <strong>X</strong> for <strong>B</strong>, and <strong>Enter</strong> for <strong>Start</strong>. Use the toolbar above the emulator to pause or resume.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/playable-preview.webp" alt="Lodge Podge running in the Chromatic preview in Codex.">
+<h3>Point to the part you want to change</h3>
+<p>Choose <strong>Annotate game</strong> in the preview toolbar, then click the game display to freeze a frame. Select the sprite, tile, or area you want to change and describe the edit. Choose <strong>Resume game</strong> to return to the emulator. After Codex makes the change, ask it to rebuild the ROM and reopen the preview.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/annotate-preview.webp" alt="The emulator paused with the annotation tool selected in the toolbar.">
+<h3>Have Codex test a sequence of moves</h3>
+<p>You can also control the emulator from chat. Ask Codex to run the ROM, send a sequence of button presses, and capture a frame after each step. Ask for the frames side by side so you can inspect them together.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/playtest-frames.webp" alt="Three emulator frames arranged side by side, each labeled with its frame number.">
+<h2>Edit in GB Studio</h2>
+<p>GB Studio is a visual editor for building Game Boy games. Open your project’s <code>.gbsproj</code> file and choose <strong>Game World</strong>. Select a scene in the navigator to see its properties in the sidebar. You can drag an actor to a new tile or edit collisions directly on the scene. Save the project, then return to your Codex chat and ask it to rebuild and open the preview. The <a href="https://www.gbstudio.dev/docs/project-editor/scenes/">GB Studio guide to scenes</a> explains how backgrounds, actors, and triggers fit together.</p>
+<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/gb-studio-game-world.webp" alt="GB Studio’s Game World shows the Survey stakes and Woven walls scenes for Lodge Podge.">
+<h3>Other development options</h3>
+<ul>
+<li><strong>Extend a GB Studio game.</strong> If the built-in events don’t cover a mechanic, you can add a custom event in GBVM, GB Studio’s virtual-machine language, or extend the engine in C. See the <a href="https://www.gbstudio.dev/docs/extending-gbstudio/plugins/">GB Studio plugin guide</a>.</li>
+<li><strong>Write the game in C with GBDK-2020.</strong> The ModRetro plugin can compile standalone C with GBDK’s <code>lcc</code> compiler. GBDK’s <a href="https://gbdk.org/docs/api/">Game Boy APIs</a> give you access to buttons, sprites, tiles, and palettes. Ask Codex to start with a game loop that reads the D-pad and moves a single sprite.</li>
+<li><strong>Write your own engine.</strong> You can have Codex implement the game loop, scrolling, and collisions from scratch. For an assembly project, build the ROM with a separately installed toolchain such as <a href="https://rgbds.gbdev.io/">RGBDS</a>. Then give the resulting <code>.gb</code> or <code>.gbc</code> file to the plugin to inspect and playtest.</li>
+</ul>
+<h2>Deploy to device</h2>
+<p>You’ll need a Chromatic, a compatible rewritable homebrew cartridge, and a USB data cable. Follow <a href="https://support.modretro.com/en_us/chromatic-devday-edition-quickstart-guid-By1iOlcMg">ModRetro’s quickstart</a> to update the firmware and activate Developer Mode using the computer you’ll connect to the handheld.</p>
+<ol>
+<li>Insert the cartridge, connect the Chromatic to your computer, and open the game preview in your local Codex chat.</li>
+<li>Choose <strong>Install on Chromatic</strong>, select your connected device, and click <strong>Install</strong>. Read the confirmation carefully. Writing the new ROM erases the game on that cartridge and can erase its saves. The installer doesn’t back up the cartridge.</li>
+<li>Choose <strong>Confirm Install</strong> when you’re ready. Leave the cable connected until the plugin reports success, then start the game on the Chromatic.</li>
+</ol>
+   
+<h2>“The Power of Science is Staggering!”</h2>
+<p>With the ModRetro plugin for Codex, you can prompt your way to original Game Boy Color games and use all the tools in the thriving GBC homebrew development ecosystem. This is going to be so, so much fun. You can <a href="https://openai.com/supply/shop/">order your own ModRetro Chromatic</a> and <a href="https://modretro.com/">explore ModRetro’s other projects</a>. Happy Game Boy hacking!</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>

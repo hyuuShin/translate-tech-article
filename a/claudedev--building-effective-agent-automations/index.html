@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>효과적인 에이전트 자동화 구축 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Agents</p>
+    <h1 class="lang-ko">효과적인 에이전트 자동화 구축</h1>
+    <h1 class="lang-en" hidden lang="en">Building effective agent automations</h1>
+    
+    <p class="art-sum lang-ko">일반적인 실패 유형을 포함한 참조 구현 단계별 설명</p>
+    <p class="art-sum lang-en" hidden lang="en">A reference implementation walkthrough with common failure modes</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 10월 8일</dd></div>
+      <div><dt>저자</dt><dd>Lance Martin, CJ Avilla</dd></div>
+      <div><dt>분량</dt><dd>9분</dd></div>
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/building-effective-agent-automations/">https://claude.dev/blog/building-effective-agent-automations/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>AI가 업무 속도를 높이면서 변화를 따라가기가 점점 어려워지고 있습니다. Anthropic에서는 이를 돕기 위해 <a href="https://claude.com/resources/articles/how-an-anthropic-japan-business-development-representative-runs-his-day">간단한 에이전트 자동화</a>를 자주 활용합니다. 이러한 자동화는 대개 <a href="https://claude.com/resources/articles/whats-new-in-claude-managed-agents">일정에 따라 실행</a>되어 백그라운드에서 컨텍스트를 수집하고, 우리가 알아야 할 내용을 먼저 알려 줍니다. 하지만 효과적인 에이전트 자동화를 만들기는 어렵습니다. 아무도 모르는 사이에 소스에 대한 접근 권한을 잃거나, 우리의 선호를 따르지 못할 수 있기 때문입니다.</p>
+<p><a href="https://platform.claude.com/docs/en/managed-agents/overview">Claude Managed Agents</a>(베타)를 사용하여 참조 구현(reference implementation)을 만들었습니다. 이 구현은 일정에 따라 사용자 지정 소스(예: Slack과 GitHub 저장소)를 읽고, 지난 실행 이후 달라진 점을 추적하며, 알아야 할 내용을 (예: Slack에) 게시합니다. 이 글에서는 각 단계를 차례로 살펴보고, 참조 구현을 공유하며, 에이전트를 대신 구성해 주는 <a href="https://claude.com/product/claude-code">Claude Code</a> 실행 명령도 제공합니다.</p>
+<h2>코드 받기</h2>
+<p>참조 구현은 <a href="https://github.com/anthropics/claude-quickstarts/tree/main/managed-agents/daily-brief">여기</a>에서 확인할 수 있습니다. 대화형으로 안내를 받으려면 Claude Code에서 아래 명령을 실행하십시오. <code>claude-api</code> 스킬이 이 글의 안내에 따라 에이전트 설정을 도와줍니다.</p>
+PROMPT
+<pre><code>/claude-api managed-agents-onboard https://claude.dev/blog/building-effective-agent-automations/</code></pre>
+<p>이 참조 구현에는 Slack 앱(<a href="https://api.slack.com/apps?new_app=1&amp;manifest_yaml=display_information%3A%0A%20%20name%3A%20Daily%20brief%0A%20%20description%3A%20Posts%20one%20short%20brief%20each%20weekday%20morning.%0Afeatures%3A%0A%20%20bot_user%3A%0A%20%20%20%20display_name%3A%20Daily%20brief%0A%20%20%20%20always_online%3A%20false%0A%20%20app_home%3A%0A%20%20%20%20home_tab_enabled%3A%20false%0A%20%20%20%20messages_tab_enabled%3A%20true%0A%20%20%20%20messages_tab_read_only_enabled%3A%20true%0Aoauth_config%3A%0A%20%20scopes%3A%0A%20%20%20%20bot%3A%0A%20%20%20%20%20%20-%20channels%3Ahistory%0A%20%20%20%20%20%20-%20chat%3Awrite%0Asettings%3A%0A%20%20org_deploy_enabled%3A%20false%0A%20%20socket_mode_enabled%3A%20false%0A%20%20token_rotation_enabled%3A%20false%0A">매니페스트로 생성</a>)과 <a href="https://github.com/settings/personal-access-tokens/new">GitHub 토큰</a>이 필요합니다. 아래에 나오는 제공 파일은 에이전트, 환경, 메모리 저장소, 볼트, 배포를 포함한 Claude API 리소스의 구성 파일입니다.</p>
+CODEText
+<pre><code>daily-brief/
+├── agent.md                        model, tools, instructions
+├── deployment.md                   schedule, time zone, budget, input message
+├── environment.yaml                network allowlist
+├── memory_store_preferences.yaml   user preferences
+├── memory_store_state.yaml         the agent's bookmarks, ledger, notes, and run records
+├── vault.yaml                      the vault that holds the credentials
+├── claude-lock.json                resource IDs, written by ant apply
+└── slack/manifest.yaml             one bot app</code></pre>
+<p>ant CLI의 명령인 <a href="https://platform.claude.com/docs/en/cli-sdks-libraries/cli/apply"><code>ant apply</code></a>는 이 파일들을 읽어 Claude API 워크스페이스(플랫폼이 리소스를 저장하고 실행하는 곳)에 리소스를 생성하고, 해당 ID를 <code>claude-lock.json</code>에 기록합니다.</p>
+<p>아래 각 절에서 이 명령을 사용합니다. 구성을 마치면 자동화는 Anthropic 인프라에서 일정에 따라 실행되므로, <a href="https://claude.dev/blog/claude-code-in-the-cloud/">사용자의 컴퓨터에서 계속 실행해 둘 필요가 없습니다</a>.</p>
+<h2>개요</h2>
+<p>이 글에서 만들 에이전트는 여섯 가지 구성 요소로 이루어져 있으며, 다음 순서로 설명합니다.</p>
+<ul>
+<li>소스: 읽을 위치를 이름으로 나열한 목록</li>
+<li>대상: 에이전트가 쓸 수 있는 단 하나의 위치</li>
+<li>에이전트: 모델, 도구, 그리고 agent.md에 정의된 실행 단계</li>
+<li>일정: cron 일정</li>
+<li>메모리: 사용자의 선호와 에이전트 자체의 메모리</li>
+<li>가드레일: 에이전트가 읽기만 하는 모든 곳에 적용하는 읽기 전용 접근 권한, 그리고 실행당 지출 한도</li>
+</ul>
+<figure><img src="https://claude.dev/media/fdbe45db5e3ce9afbb00bf62f87e64078a683800bc492d4ac6cf716a2d313a00.png" alt="에이전트의 아키텍처: 일정이 에이전트를 깨우면 에이전트는 소스에서 내용을 읽고 독자를 위한 브리프를 하나의 대상에 게시합니다. 메모리에는 에이전트의 상태와 독자의 선호가 저장되며, 가드레일이 에이전트를 둘러싸고 있습니다."></figure>
+<h2>소스</h2>
+<p>에이전트는 기본적으로 Slack 채널과 GitHub 풀 리퀘스트라는 두 가지 소스를 읽습니다. 채널과 저장소는 <code>preferences</code> 파일에 나열합니다. 이 템플릿은 다른 소스를 사용하도록 확장할 수 있습니다.</p>
+<figure><img src="https://claude.dev/media/d8508de61bb90f3bfccf6184dd3d7cbe9c65e2e76bd00477efd1620e3910dae7.png" alt="소스가 강조 표시된 아키텍처 다이어그램. 소스는 읽기 전용이며 볼트의 자격 증명을 사용해 MCP 또는 HTTPS로 접근하고, 에이전트에 데이터를 공급합니다."></figure>
+<h3>에이전트에 범위가 제한된 전용 자격 증명 부여</h3>
+<p><a href="https://platform.claude.com/docs/en/managed-agents/overview">Managed Agents</a>에서는 자격 증명이 <a href="https://platform.claude.com/docs/en/managed-agents/vaults">볼트(vault)</a>에 저장됩니다. 에이전트는 이러한 자격 증명을 참조할 수 있지만, 실제 값은 Claude의 코드가 실행되는 <a href="https://claude.com/resources/articles/giving-companies-more-control-over-their-ai-agents-with-nvidia">샌드박스 외부</a>의 볼트에 남아 있습니다(<a href="https://www.anthropic.com/engineering/managed-agents">여기</a>와 <a href="https://x.com/katelyn_lesse/status/2099315903884415400">여기</a>를 참고하십시오).</p>
+<ul>
+<li>
+<p><strong>MCP 서버(GitHub).</strong> 에이전트는 샌드박스 외부에서 실행되는 프록시를 통해 MCP 도구를 호출합니다. 프록시는 서버의 URL과 일치하는 URL을 가진 볼트 자격 증명을 찾습니다.</p>
+</li>
+<li>
+<p><strong>셸(Slack).</strong> 에이전트는 샌드박스 내부에서 bash 도구로 curl을 사용해 Slack API를 호출합니다. 샌드박스에는 불투명한 플레이스홀더인 <code>$SLACK_BOT_TOKEN</code>만 들어 있습니다. 요청이 샌드박스를 떠날 때, 플랫폼이 사용자가 허용한 호스트에 대해서만 이 플레이스홀더를 실제 토큰으로 교체합니다.</p>
+</li>
+</ul>
+<p>저장소의 템플릿 파일과 <code>ant</code> CLI를 사용해 볼트를 생성합니다.</p>
+CODEShell
+<pre><code>ant apply vault.yaml</code></pre>
+<p>이 명령은 플랫폼이 볼트를 저장하는 Claude API 워크스페이스에 볼트를 생성하고, 해당 ID를 <code>claude-lock.json</code>에 기록합니다. 그런 다음 <a href="https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript">TypeScript SDK</a>로 각 자격 증명을 볼트에 추가합니다. 다음은 Slack 자격 증명을 추가하는 예시입니다.</p>
+CODETypeScript
+<pre><code>const vaultId = process.env.VAULT_ID!; // the vault's ID, from claude-lock.json
+
+await client.beta.vaults.credentials.create(vaultId, {
+  display_name: "SLACK_BOT_TOKEN",
+  auth: {
+    type: "environment_variable",
+    secret_name: "SLACK_BOT_TOKEN",
+    secret_value: process.env.SLACK_BOT_TOKEN!,
+    networking: { type: "limited", allowed_hosts: ["slack.com"] },
+    injection_location: { header: true },
+  },
+});</code></pre>
+<p>볼트를 생성하고 각 자격 증명을 추가한 뒤에는 볼트를 배포에 연결합니다. <code>claude-lock.json</code>의 볼트 ID를 배포 파일인 <code>deployment.md</code>의 <code>vault_ids</code>에 복사하십시오.</p>
+<h3>마지막으로 읽은 지점부터 이어서 읽기</h3>
+<p>흔한 실수는 에이전트에 "<em>최근 24시간</em>"처럼 고정된 기간을 읽도록 요청하는 것입니다. 실행이 늦어지면 공백이 생기고, 일찍 실행되면 같은 항목이 반복됩니다. 대신 에이전트에 소스별 북마크를 제공하십시오. 에이전트는 매 실행이 끝날 때 각 소스에서 읽은 가장 최신 항목의 타임스탬프를 하나의 파일인 <code>bookmarks.json</code>에 소스별 항목으로 기록합니다. 예를 들면 <code>"slack": "2026-09-14T13:02:11Z"</code>와 같습니다.</p>
+<p>다음 실행은 이 북마크에서 시작하므로, 읽는 기간이 늘어나거나 줄어들어 지난 실행 이후의 모든 내용을 포괄합니다. 북마크는 <code>state</code>라는 <a href="https://platform.claude.com/docs/en/managed-agents/memory">메모리 저장소(memory store)</a>에 저장됩니다. 이 저장소는 텍스트 파일로 이루어진 폴더로, 플랫폼이 매 실행의 샌드박스 내 <code>/mnt/memory/</code> 아래에 마운트하고 실행 사이에도 유지합니다. 에이전트는 일반 파일 도구로 이 저장소를 읽고 쓰며, 그 방법은 <code>agent.md</code>의 지침에 나와 있습니다.</p>
+<h3>읽기 실패를 한가한 날로 착각하지 않기</h3>
+<p>MCP 서버가 다운되었거나 토큰이 만료되어도 실행 자체는 시작되며, 해당 서버의 도구만 사용할 수 없습니다. <a href="https://claude.com/resources/articles/agent-observability-on-the-claude-platform">세션에는 오류가 기록</a>되지만, 에이전트는 그 소스에서 아무것도 보지 못하므로 "새로운 내용 없음"이라고 보고합니다.</p>
+<p><code>agent.md</code>의 규칙 세 가지가 이 문제를 해결하는 데 도움이 됩니다. 소스 읽기에 실패하면 에이전트는 해당 소스의 북마크를 그대로 두고, 나머지 소스로 브리핑을 작성하며, 읽지 못한 대상을 밝히는 한 줄("이번 실행에서는 풀 리퀘스트를 확인할 수 없음")로 브리핑을 마무리합니다. 이렇게 하면 독자가 이 사실을 알 수 있습니다.</p>
+<h2>목적지</h2>
+<p>이 템플릿은 실행할 때마다 날짜가 표시된 게시물을 Slack 채널 한 곳에 게시합니다.</p>
+<figure><img src="https://claude.dev/media/15481dc4dff01b4a613e8ff36039bc14036ab97781eddeaf749746533b97bd16.png" alt="목적지가 강조된 아키텍처 다이어그램. 오늘의 브리핑이 이미 게시되었는지 확인한 뒤, 에이전트는 하나의 목적지에 게시하고 이 목적지가 독자에게 브리핑을 전달합니다."></figure>
+<p>에이전트는 샌드박스의 bash 도구를 사용해 Slack에 게시하며, 읽기에 사용하는 것과 같은 봇 토큰을 사용합니다.</p>
+<p>게시를 별도로 승인해야 하는 주체는 없습니다. 에이전트가 bash 명령으로 게시물을 전송하며, 기본 제공되는 bash 도구는 기본적으로 승인을 요청하지 않고 실행됩니다. 또한 <code>slack.com</code>은 에이전트가 실행되는 샌드박스인 <a href="https://platform.claude.com/docs/en/managed-agents/environments">환경</a>의 허용 목록(allowlist)에 포함되어 있습니다. 게시는 요청 한 번으로 이루어집니다.</p>
+CODEShell
+<pre><code>curl -s https://slack.com/api/chat.postMessage \
+  -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d '{"channel": "C0123456789", "text": "Daily brief, Tue Sep 15 ..."}'</code></pre>
+<h3>기록하기 전에 게시 성공 여부 확인</h3>
+<p>게시가 확인되면 에이전트는 보고한 항목의 원장(ledger)과 북마크를 갱신합니다. 이 기록이 실제로 게시된 내용과 일치하지 않으면 두 가지 문제가 생길 수 있습니다. 게시되지 않은 내용을 에이전트가 게시된 것으로 기록하면 북마크가 앞으로 넘어가 버려서 해당 항목은 영영 보고되지 않습니다. 첫 번째 게시가 성공했는지 확신하지 못해 다시 게시하면 독자는 같은 브리핑을 두 번 받게 됩니다.</p>
+<p><code>agent.md</code>의 규칙 세 가지가 이를 방지합니다. 첫째, 에이전트는 채널의 최근 메시지에서 오늘 날짜의 제목을 찾아보고, 이미 해당 호가 있으면 게시하지 않습니다. 둘째, Slack이 <code>"ok": true</code>와 메시지 ts를 반환한 경우에만 게시가 전송된 것으로 간주합니다. 셋째, 에이전트는 이 확인이 끝난 뒤에만 원장과 북마크를 갱신합니다. 결과가 불분명하면 해당 실행을 "maybe posted"로 표시하고 다른 항목은 변경하지 않으므로, 손실되는 내용이 없습니다.</p>
+<p>에이전트는 메모리 스토어에 실행 기록(<code>runs/&lt;date&gt;.md</code>)을 남깁니다. 게시하기 전에 해당 실행을 "posting"으로 표시하고, 게시 후에는 메시지 ID와 함께 "posted"로, 불분명한 경우에는 "maybe posted"로 표시합니다.</p>
+<h2>에이전트</h2>
+<p>Claude Managed Agents에서 <a href="https://platform.claude.com/docs/en/managed-agents/agent-setup">에이전트</a>는 모델, 시스템 프롬프트, 도구로 구성된 버전 관리형 설정입니다. 각 실행은 실행 단계를 따라 진행한 뒤 종료됩니다.</p>
+<figure><img src="https://claude.dev/media/8b00d803c6eee8a1c6419c15961f688cba2f6fbff5031e1bd0539725cba1780b.png" alt="에이전트가 강조된 아키텍처 다이어그램. 실행 루프와 판단 규칙을 담은 프롬프트와 모델로 구성됩니다."></figure>
+<p>참조 구현에서 에이전트 설정은 <code>agent.md</code>입니다.</p>
+CODEMarkdown
+<pre><code>---
+name: Daily brief
+model: claude-sonnet-5-5
+mcp_servers:
+  - type: url
+    name: github
+    url: https://api.githubcopilot.com/mcp/
+tools:
+  - type: agent_toolset_20260401
+    configs:
+      - name: web_search
+        enabled: false
+      - name: web_fetch
+        enabled: false
+  - type: mcp_toolset
+    mcp_server_name: github
+    default_config:
+      permission_policy:
+        type: always_allow
+---
+
+[Eight numbered run steps; the full text is in agent.md in the repo.]</code></pre>
+<p>프런트매터(frontmatter)에는 에이전트 이름, 모델, 도구, MCP 서버가 들어 있고, 본문에는 에이전트 지침이 들어 있습니다. MCP 도구는 기본적으로 승인을 요청하는데 승인해 줄 사람이 없으므로, GitHub 도구 세트는 <code>always_allow</code>로 설정하고 GitHub 토큰은 <code>read-only</code>로 설정합니다.</p>
+<h3>브리핑을 짧게 유지</h3>
+<p><code>agent.md</code>는 Claude가 간결하게 작성하도록 유도합니다.</p>
+CODEText
+<pre><code>4. Decide. An item earns a line when the reader would act on it today, or it changes a decision they are about to make. When unsure, leave it out. Most days that is a few items, sometimes none. A count ("12 open reviews") is not an item; link the ones that are blocked. An item already in the ledger and still open is carried as one marked line ("still waiting, day 3"), not re-reported; a closed item is dropped without comment. Do not bring back a topic the preferences file has retired.</code></pre>
+<h3>게시 직전에 아직 열려 있는 항목 재확인</h3>
+<p>에이전트가 소스를 읽은 시점과 게시하는 시점 사이에 항목의 상태가 바뀔 수 있습니다. 그래서 <code>agent.md</code>는 게시 직전에 각 항목의 현재 상태를 다시 확인하도록 에이전트에 지시합니다.</p>
+CODEText
+<pre><code>5. Verify. The world moved while you read. For every item you will report, re-check its live source just before posting: resolved since you read it, drop it; still open but changed, fix the line; cannot confirm, drop it and list it in the run record's cuts. One stale "still waiting on you" costs more trust than ten missing items, so never hedge an item's status: assert it or drop it. Every link is copied from the source's own link field (a pull request's html_url, a Slack permalink), never assembled by hand.</code></pre>
+<h2>스케줄</h2>
+<p><a href="https://claude.com/platform/claude-managed-agents">Claude Managed Agents</a>에서 에이전트는 설정 파일일 뿐이며, 이를 실행하는 것은 <a href="https://platform.claude.com/docs/en/managed-agents/scheduled-deployments">디플로이먼트(deployment)</a>입니다. 디플로이먼트에는 에이전트, 환경, 각 실행의 첫 메시지가 지정되며, 스케줄, 볼트, 메모리 스토어, 예산도 함께 담깁니다. 스케줄이 작동할 때마다 플랫폼은 새로운 에이전트 <a href="https://platform.claude.com/docs/en/managed-agents/sessions">세션</a>을 시작합니다.</p>
+<figure><img src="https://claude.dev/media/a206f78f34b18dcf7a51bc9bca1acaaf3b68df80ee4034ff521cfbf353af7bc5.png" alt="스케줄이 강조된 아키텍처 다이어그램. 예약된 디플로이먼트가 실행할 때마다 에이전트를 깨웁니다."></figure>
+<p>이 템플릿에서 디플로이먼트는 <code>deployment.md</code>에 정의되어 있으며, 첫 메시지가 본문에 들어 있습니다.</p>
+CODEMarkdown
+<pre><code>---
+name: Daily brief
+agent: ./agent.md
+environment_id: ./environment.yaml
+schedule:
+  type: cron
+  expression: "32 7 * * 1-5"
+  timezone: America/New_York
+vault_ids: [vlt_...]   # the vault you create under Sources
+resources:
+  - path: ./memory_store_preferences.yaml
+    access: read_only
+    instructions: The reader's preferences. Re-read them every run. Never write here.
+  - path: ./memory_store_state.yaml
+    access: read_write
+    instructions: Your state. Bookmarks, ledger, notes, proposals, and run records.
+
+---
+
+Write today's brief.
+The reader's time zone is America/New_York. Work out every date in that zone.
+
+Follow your run steps in order. Today's edition is titled "Daily brief, &lt;weekday&gt; &lt;month&gt; &lt;day&gt;".</code></pre>
+<p>이 명령은 경로로 지정된 에이전트, 환경, 메모리 스토어를 사용해 디플로이먼트를 생성합니다.</p>
+CODEShell
+<pre><code>ant apply deployment.md</code></pre>
+<p>스케줄을 기다리지 않고 테스트하려면 <code>claude-lock.json</code>의 ID를 사용해 <code>ant beta:deployments run --deployment-id &lt;id&gt;</code>로 직접 실행을 시작하십시오.</p>
+<h3>날짜는 사용자의 시간대 기준으로 계산</h3>
+<p>흔히 발생하는 버그로, 에이전트가 서버의 시간대를 기준으로 날짜를 계산해서 오늘 아침을 "어제"라고 부르는 경우가 있습니다. <code>deployment.md</code>에서는 <code>timezone</code> 필드가 실행 시점을 정하고, 본문의 두 번째 줄이 날짜 계산에 사용할 시간대를 에이전트에 알려 줍니다.</p>
+<h2>메모리</h2>
+<p>각 실행은 이전 실행에 대한 기억이 없는 새로운 샌드박스에서 시작합니다. 메모리가 없으면 피드백이 반영되지 않습니다. 하지만 오래된 메모리는 에이전트를 혼란스럽게 할 수 있습니다. 이미 해결된 항목을 아직 대기 중인 것으로 보고하거나, "이미 보고했다"는 이유로 아직 열려 있는 항목을 누락하는 경우입니다.</p>
+<figure><img src="https://claude.dev/media/30e51eab0381bb583fe355fe412162b4e8868643b8d58b2c76c4aa2d0eafea57.png" alt="메모리가 강조된 아키텍처 다이어그램. 상태(State)는 에이전트가 읽고 쓰는 영역이고, 선호 설정(Preferences)은 독자가 작성하고 에이전트는 읽기만 하는 영역입니다."></figure>
+<p>이 템플릿은 /mnt/memory/ 아래에 마운트되는 폴더인 <a href="https://platform.claude.com/docs/en/managed-agents/memory">메모리 스토어(memory store)</a>를 두 개 사용합니다(Sources 참조).</p>
+<ul>
+<li>
+<p><strong>preferences</strong>(사용자가 관리하며 에이전트는 읽기 전용): 읽을 채널과 저장소, 제외할 내용, 길이 제한, 목적지, 중단 시점을 담습니다.</p>
+</li>
+<li>
+<p><strong>state</strong>(에이전트가 관리하며 읽기·쓰기 가능): 북마크, 보고한 내용의 원장, 실행당 하나의 기록, 에이전트가 제안하는 선호 설정 변경 사항, 각 소스의 동작 방식에 대한 메모("최신 항목 50개만 반환함")를 담습니다.</p>
+</li>
+</ul>
+<p><code>ant apply deployment.md</code>는 preferences 스토어를 생성하지만, 그 안의 파일까지 만들지는 않습니다. 첫 실행 전에 저장소의 <code>scripts/seed-preferences.sh</code>로 preferences.md를 작성해 두십시오.</p>
+<h3>매 실행을 시작할 때 선호 설정 다시 읽기</h3>
+<p>흔히 발생하는 문제는 선호 설정(preferences)의 사본이 프롬프트에 그대로 포함되어, 이미 변경한 규칙이 계속 적용되는 경우입니다. 에이전트가 실행할 때마다 파일을 새로 읽도록 하십시오. 파일을 읽을 수 없으면 기본값으로 실행하지 말고, 작업을 중단하고 그 사실을 알려야 합니다.</p>
+<h3>보고한 항목의 원장(ledger) 유지와 변경 사항 보고</h3>
+<p>에이전트는 보고한 모든 항목을 <code>ledger.md</code>라는 원장에 기록하여, 브리프가 같은 내용을 반복하지 않게 합니다. 각 줄에는 항목을 보고한 시점, 출처, 변하지 않는 ID(Slack 메시지 타임스탬프 또는 pull request 번호), 마지막으로 확인된 상태가 기록됩니다:</p>
+CODEText
+<pre><code>2026-09-09 slack:C0123456789 1788963600.000100 refund thread: customer waiting on a decision
+2026-09-11 github 481 review blocked, day 2 (still waiting)
+2026-09-11 slack:C0234567891 1789117333.000300 enterprise escalation: owner named, in progress</code></pre>
+<h2>가드레일(Guardrails)</h2>
+<p>이 자동화는 일정에 따라 "백그라운드"에서 실행되므로, 에이전트가 할 수 있는 일과 사용할 수 있는 비용에 한도를 설정합니다.</p>
+<figure><img src="https://claude.dev/media/746533f20f4e2bf093d08a04f368a8c5eca739de6579c384e9742b86d5385f50.png" alt="The architecture diagram with Guardrails highlighted: a boundary around the agent with caps on turns, time and spend, and a heartbeat that someone watches."></figure>
+<h3>에이전트가 할 수 있는 일에 대한 제한</h3>
+<p>에이전트는 다른 사람이 작성한 메시지와 이슈를 읽으며, 그 텍스트가 지시문으로 해석될 수 있습니다. 에이전트가 그런 지시를 따르더라도 할 수 있는 일이 제한되도록 하십시오. 이 예시에서는 GitHub 토큰과 <code>preferences</code> 저장소가 읽기 전용이고, 실행 환경은 허용 목록(allowlist)에 있는 호스트에만 접근할 수 있습니다. 그래도 심어진 지시문이 브리프의 내용을 바꿀 수는 있으며, 에이전트가 실행 사이에 보관하는 메모를 통해서도 가능합니다. 하지만 GitHub에 쓰기를 하거나 사용자의 규칙을 수정할 수는 없습니다.</p>
+<p>Slack은 예외입니다. 같은 토큰으로 게시도 할 수 있으므로, 읽거나 게시해야 하는 곳에만 봇을 초대하십시오.</p>
+<h3>실제 실행 결과를 기준으로 한 비용 상한 설정</h3>
+<p>비용 상한은 비용이 통제 불능으로 늘어나는 상황을 막아 줍니다. 일반적인 실행 1회 비용의 3~5배에서 시작하고, 실제 수치를 확인하면서 점차 낮추십시오. 상한에 도달한 실행은 실패하지 않고 일시 중지되므로, 상한을 너무 낮게 설정하면 브리프가 조용해진 것처럼 보입니다. 이 상한은 <code>deployment.md</code>의 <a href="https://platform.claude.com/docs/en/managed-agents/budgets"><code>budget</code></a>입니다. 모든 실행은 전체 금액을 할당받으며, 이에 도달한 실행은 <code>budget_reached</code> 중단 사유(stop reason)와 함께 일시 중지됩니다:</p>
+CODEYAML
+<pre><code>budget:
+  type: limit
+  max_list_cost:
+    amount: "500" # a string, in cents: "500" is $5.00
+    currency: USD</code></pre>
+<h2>시작하기</h2>
+<p>이 참조 구현(reference implementation)은 여섯 가지 규칙으로 요약됩니다:</p>
+<ul>
+<li>각 소스는 고정된 시간 범위가 아니라 북마크(bookmark)를 기준으로 읽습니다.</li>
+<li>읽기에 실패한 경우 읽을 수 없다고 보고하고, 조용한 하루로 보고하지 않습니다.</li>
+<li>게시 직전에 모든 항목을 다시 확인합니다.</li>
+<li>Slack이 확인한 경우에만 게시가 전송된 것으로 간주하고, 그다음에 북마크와 원장을 업데이트합니다.</li>
+<li>에이전트가 수정할 수 없는 저장소에서 매 실행마다 선호 설정을 다시 읽습니다.</li>
+<li>읽기만 하는 곳에는 읽기 전용 권한만 부여하고, 각 실행이 사용할 수 있는 비용에 상한을 둡니다.</li>
+</ul>
+<p>Claude Code를 사용하면 이 글에서 제공하는 안내를 단계별로 따라갈 수 있습니다. 먼저 업데이트합니다:</p>
+CODEShell
+<pre><code>claude update</code></pre>
+<p>그런 다음 claude-api 스킬을 사용합니다:</p>
+PROMPT
+<pre><code>/claude-api managed-agents-onboard https://claude.dev/blog/building-effective-agent-automations/</code></pre>
+<p>claude-api 스킬은 이 글을 읽고, 구성을 제안하며, 프로젝트의 agents/ 폴더에 파일을 작성하고, ant apply로 리소스를 생성합니다. 이를 출발점으로 삼아, 소스, 게시 대상, 메모리 설정에 맞게 에이전트를 맞춤 구성하십시오.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>As AI accelerates our work, it's getting harder to keep up. At Anthropic, <a href="https://claude.com/resources/articles/how-an-anthropic-japan-business-development-representative-runs-his-day">simple agent automations</a> are frequently used to help. They often <a href="https://claude.com/resources/articles/whats-new-in-claude-managed-agents">run on a schedule</a>, gather context in the background, and proactively tell us what we need to know. But it’s difficult to build effective agent automations: they can lose access to a source without anyone noticing or fail to follow our preferences.</p>
+<p>Using <a href="https://platform.claude.com/docs/en/managed-agents/overview">Claude Managed Agents</a> (beta), we built a reference implementation that reads custom sources (e.g., Slack and GitHub repos) on a schedule, tracks what changed since the last run, and posts what you need to know (e.g., to Slack). In this article, we walk through each step, share a reference implementation, and provide a command to run in <a href="https://claude.com/product/claude-code">Claude Code</a> that configures the agent for you.</p>
+<h2>GET THE CODE</h2>
+<p>The reference implementation is <a href="https://github.com/anthropics/claude-quickstarts/tree/main/managed-agents/daily-brief">here</a>. For an interactive walkthrough, run the command below in Claude Code. The <code>claude-api</code> skill can help set up the agent following the guidance in this article:</p>
+PROMPT<pre><code>/claude-api managed-agents-onboard https://claude.dev/blog/building-effective-agent-automations/</code></pre>
+<p>For this reference implementation, you need a Slack app (<a href="https://api.slack.com/apps?new_app=1&amp;manifest_yaml=display_information%3A%0A%20%20name%3A%20Daily%20brief%0A%20%20description%3A%20Posts%20one%20short%20brief%20each%20weekday%20morning.%0Afeatures%3A%0A%20%20bot_user%3A%0A%20%20%20%20display_name%3A%20Daily%20brief%0A%20%20%20%20always_online%3A%20false%0A%20%20app_home%3A%0A%20%20%20%20home_tab_enabled%3A%20false%0A%20%20%20%20messages_tab_enabled%3A%20true%0A%20%20%20%20messages_tab_read_only_enabled%3A%20true%0Aoauth_config%3A%0A%20%20scopes%3A%0A%20%20%20%20bot%3A%0A%20%20%20%20%20%20-%20channels%3Ahistory%0A%20%20%20%20%20%20-%20chat%3Awrite%0Asettings%3A%0A%20%20org_deploy_enabled%3A%20false%0A%20%20socket_mode_enabled%3A%20false%0A%20%20token_rotation_enabled%3A%20false%0A">create it from the manifest</a>) and a <a href="https://github.com/settings/personal-access-tokens/new">GitHub token</a>. The provided files (shown below) are configuration for Claude API resources, including the agent, its environment, memory stores, vault, and deployment.</p>
+CODEText<pre><code>daily-brief/
+├── agent.md                        model, tools, instructions
+├── deployment.md                   schedule, time zone, budget, input message
+├── environment.yaml                network allowlist
+├── memory_store_preferences.yaml   user preferences
+├── memory_store_state.yaml         the agent's bookmarks, ledger, notes, and run records
+├── vault.yaml                      the vault that holds the credentials
+├── claude-lock.json                resource IDs, written by ant apply
+└── slack/manifest.yaml             one bot app</code></pre>
+<p><a href="https://platform.claude.com/docs/en/cli-sdks-libraries/cli/apply"><code>ant apply</code></a>, a command in the ant CLI, reads these files, creates the resources in your Claude API workspace (where the platform stores and runs them), and records the IDs in <code>claude-lock.json</code>.</p>
+<p>We'll use this command in the sections below. Once configured, the automation runs on a schedule on Anthropic's infrastructure, so <a href="https://claude.dev/blog/claude-code-in-the-cloud/">nothing has to stay running on your machine</a>.</p>
+<h2>OVERVIEW</h2>
+<p>The agent we’ll build has six components, covered in this order:</p>
+<ul>
+<li>Sources - A named list of places to read</li>
+<li>Destination - One place the agent may write</li>
+<li>Agent - The model, tools, and run steps in agent.md</li>
+<li>Schedule - A cron schedule</li>
+<li>Memory - Your preferences and the agent's own memory</li>
+<li>Guardrails - Read-only access wherever the agent only reads, and a spending cap per run</li>
+</ul>
+<figure><img src="https://claude.dev/media/fdbe45db5e3ce9afbb00bf62f87e64078a683800bc492d4ac6cf716a2d313a00.png" alt="Architecture of the agent: a schedule wakes the agent, which reads from its sources and posts a brief to one destination for the reader. Memory holds the agent's state and the reader's preferences, and guardrails surround the agent."></figure>
+<h2>SOURCES</h2>
+<p>The agent reads two default sources: Slack channels and GitHub pull requests. The channels and repos are listed in your <code>preferences</code> file. The template can be extended to use other sources.</p>
+<figure><img src="https://claude.dev/media/d8508de61bb90f3bfccf6184dd3d7cbe9c65e2e76bd00477efd1620e3910dae7.png" alt="The architecture diagram with Sources highlighted. The sources are read-only, reached through MCP or HTTPS with credentials from a vault, and feed the agent."></figure>
+<h3>Give the agent its own, scoped credentials</h3>
+<p>With <a href="https://platform.claude.com/docs/en/managed-agents/overview">Managed Agents</a>, credentials live in <a href="https://platform.claude.com/docs/en/managed-agents/vaults">vaults</a>. The agent can reference these credentials but the real values stay in the vault, <a href="https://claude.com/resources/articles/giving-companies-more-control-over-their-ai-agents-with-nvidia">outside the sandbox</a> where Claude's code runs (see <a href="https://www.anthropic.com/engineering/managed-agents">here</a> and <a href="https://x.com/katelyn_lesse/status/2099315903884415400">here</a>):</p>
+<ul>
+<li>
+<p><strong>MCP servers (GitHub).</strong> The agent calls MCP tools through a proxy that runs outside the sandbox. The proxy finds the vault credential whose URL matches the server’s.</p>
+</li>
+<li>
+<p><strong>The shell (Slack).</strong> The agent calls the Slack API with curl using the bash tool inside the sandbox. The sandbox only holds an opaque placeholder, <code>$SLACK_BOT_TOKEN</code>. As the request leaves the sandbox, the platform swaps in the real token for hosts you allow.</p>
+</li>
+</ul>
+<p>Create the vault using the <code>ant</code> CLI and the template file in the repo:</p>
+CODEShell<pre><code>ant apply vault.yaml</code></pre>
+<p>This creates the vault in your Claude API workspace, where the platform stores it, and records its ID in <code>claude-lock.json</code>. Then add each credential to the vault with the <a href="https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript">TypeScript SDK</a>. Here is an example showing addition of the Slack credential:</p>
+CODETypeScript<pre><code>const vaultId = process.env.VAULT_ID!; // the vault's ID, from claude-lock.json
+
+await client.beta.vaults.credentials.create(vaultId, {
+  display_name: "SLACK_BOT_TOKEN",
+  auth: {
+    type: "environment_variable",
+    secret_name: "SLACK_BOT_TOKEN",
+    secret_value: process.env.SLACK_BOT_TOKEN!,
+    networking: { type: "limited", allowed_hosts: ["slack.com"] },
+    injection_location: { header: true },
+  },
+});</code></pre>
+<p>After creating the vault and adding each credential, attach the vault to the deployment. Copy the vault ID from <code>claude-lock.json</code> into <code>vault_ids</code> in the deployment file, <code>deployment.md</code>.</p>
+<h3>Read from where you left off</h3>
+<p>A common mistake is asking the agent to read a fixed window like "<em>the last 24 hours</em>." A late run leaves a gap and an early run repeats items. Instead, give the agent a bookmark per source. At the end of each run, the agent writes the timestamp of the newest item it read from each source to one file, <code>bookmarks.json</code>, with an entry per source: <code>"slack": "2026-09-14T13:02:11Z"</code>.</p>
+<p>The next run starts from those bookmarks, so its window stretches or shrinks to cover everything since the last run. The bookmarks live in the <a href="https://platform.claude.com/docs/en/managed-agents/memory">memory store</a> called <code>state</code>: a folder of text files that the platform mounts into every run's sandbox under <code>/mnt/memory/</code> and keeps between runs. The agent reads and writes it with its ordinary file tools, and the instructions in <code>agent.md</code> tell it how.</p>
+<h3>Don't mistake a failed read for a quiet day</h3>
+<p>If an MCP server is down or its token has expired, the run still starts, just without that server's tools. The <a href="https://claude.com/resources/articles/agent-observability-on-the-claude-platform">session logs an error</a>, but the agent sees nothing from that source and reports "nothing new."</p>
+<p>Three rules in <code>agent.md</code> help fix this. When a source fails, the agent will: keep the source’s bookmark where it is, write the brief from the other sources, and end the brief with one line naming what it couldn't read ("pull requests unavailable this run"), so the reader is made aware.</p>
+<h2>DESTINATION</h2>
+<p>Our template posts to one Slack channel, with a dated post each time it runs.</p>
+<figure><img src="https://claude.dev/media/15481dc4dff01b4a613e8ff36039bc14036ab97781eddeaf749746533b97bd16.png" alt="The architecture diagram with Destination highlighted. After a check that today's brief isn't already posted, the agent posts to one destination, which delivers the brief to the reader."></figure>
+<p>The agent posts to Slack using the bash tool in its sandbox, using the same bot token it reads with.</p>
+<p>Nothing has to approve the post. The agent sends it with a bash command, and the built-in bash tool runs without asking for approval by default. <code>slack.com</code> is also on the allowlist of the agent's <a href="https://platform.claude.com/docs/en/managed-agents/environments">environment</a>, the sandbox it runs in. The post is one request:</p>
+CODEShell<pre><code>curl -s https://slack.com/api/chat.postMessage \
+  -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d '{"channel": "C0123456789", "text": "Daily brief, Tue Sep 15 ..."}'</code></pre>
+<h3>Confirm the post landed before recording it</h3>
+<p>Once a post is confirmed, the agent updates its ledger of reported items and its bookmarks. If those records don't match what was actually posted, two things can go wrong. If the agent records a post that never landed, the bookmarks move on and those items are never reported. If it posts again because it isn't sure the first post landed, readers get the same brief twice.</p>
+<p>Three rules in <code>agent.md</code> prevent this. First, the agent looks for today's title in the channel's recent messages and doesn't post if the edition is already there. Second, the post counts as sent only if Slack returns <code>"ok": true</code> and a message ts. Third, the agent updates the ledger and bookmarks only after that confirmation. If the result is unclear, it marks the run "maybe posted" and changes nothing else, so nothing is lost.</p>
+<p>The agent keeps a run record in its memory store (<code>runs/&lt;date&gt;.md</code>). It marks the run "posting" before the post, then "posted" with the message ID, or "maybe posted."</p>
+<h2>AGENT</h2>
+<p>In Claude Managed Agents, an <a href="https://platform.claude.com/docs/en/managed-agents/agent-setup">agent</a> is a versioned configuration: a model, a system prompt, and tools. Each run follows its run steps and stops.</p>
+<figure><img src="https://claude.dev/media/8b00d803c6eee8a1c6419c15961f688cba2f6fbff5031e1bd0539725cba1780b.png" alt="The architecture diagram with the Agent highlighted: a model plus a prompt that holds the run loop and the judgement rules."></figure>
+<p>In our reference implementation, the agent configuration is <code>agent.md</code>:</p>
+CODEMarkdown<pre><code>---
+name: Daily brief
+model: claude-sonnet-5-5
+mcp_servers:
+  - type: url
+    name: github
+    url: https://api.githubcopilot.com/mcp/
+tools:
+  - type: agent_toolset_20260401
+    configs:
+      - name: web_search
+        enabled: false
+      - name: web_fetch
+        enabled: false
+  - type: mcp_toolset
+    mcp_server_name: github
+    default_config:
+      permission_policy:
+        type: always_allow
+---
+
+[Eight numbered run steps; the full text is in agent.md in the repo.]</code></pre>
+<p>The frontmatter supplies the agent name, model, tools, and MCP servers. The body provides the agent instructions. MCP tools ask for approval by default and nobody is there to give it, so the GitHub toolset is set to <code>always_allow</code> and the GitHub token is <code>read-only</code>.</p>
+<h3>Keep the brief short</h3>
+<p><code>agent.md</code> steers Claude toward brevity:</p>
+CODEText<pre><code>4. Decide. An item earns a line when the reader would act on it today, or it changes a decision they are about to make. When unsure, leave it out. Most days that is a few items, sometimes none. A count ("12 open reviews") is not an item; link the ones that are blocked. An item already in the ledger and still open is carried as one marked line ("still waiting, day 3"), not re-reported; a closed item is dropped without comment. Do not bring back a topic the preferences file has retired.</code></pre>
+<h3>Re-check anything still open right before posting</h3>
+<p>Items can change between when the agent reads sources and when it posts. Just before posting, <code>agent.md</code> instructs the agent to re-check the live status of each item:</p>
+CODEText<pre><code>5. Verify. The world moved while you read. For every item you will report, re-check its live source just before posting: resolved since you read it, drop it; still open but changed, fix the line; cannot confirm, drop it and list it in the run record's cuts. One stale "still waiting on you" costs more trust than ten missing items, so never hedge an item's status: assert it or drop it. Every link is copied from the source's own link field (a pull request's html_url, a Slack permalink), never assembled by hand.</code></pre>
+<h2>SCHEDULE</h2>
+<p>With <a href="https://claude.com/platform/claude-managed-agents">Claude Managed Agents</a>, the agent is only a configuration file; a <a href="https://platform.claude.com/docs/en/managed-agents/scheduled-deployments">deployment</a> runs it. The deployment names the agent, environment, and the first message of each run. It also holds the schedule, vault, memory stores, and budget. Each time the schedule fires, the platform starts a fresh agent <a href="https://platform.claude.com/docs/en/managed-agents/sessions">session</a>.</p>
+<figure><img src="https://claude.dev/media/a206f78f34b18dcf7a51bc9bca1acaaf3b68df80ee4034ff521cfbf353af7bc5.png" alt="The architecture diagram with Schedule highlighted: a scheduled deployment that wakes the agent for each run."></figure>
+<p>In our template, the deployment is captured in <code>deployment.md</code>, with the first message as its body:</p>
+CODEMarkdown<pre><code>---
+name: Daily brief
+agent: ./agent.md
+environment_id: ./environment.yaml
+schedule:
+  type: cron
+  expression: "32 7 * * 1-5"
+  timezone: America/New_York
+vault_ids: [vlt_...]   # the vault you create under Sources
+resources:
+  - path: ./memory_store_preferences.yaml
+    access: read_only
+    instructions: The reader's preferences. Re-read them every run. Never write here.
+  - path: ./memory_store_state.yaml
+    access: read_write
+    instructions: Your state. Bookmarks, ledger, notes, proposals, and run records.
+
+---
+
+Write today's brief.
+The reader's time zone is America/New_York. Work out every date in that zone.
+
+Follow your run steps in order. Today's edition is titled "Daily brief, &lt;weekday&gt; &lt;month&gt; &lt;day&gt;".</code></pre>
+<p>This creates the deployment with the agent, environment and memory stores it names by path.</p>
+CODEShell<pre><code>ant apply deployment.md</code></pre>
+<p>To test it without waiting for the schedule, start a run by hand with <code>ant beta:deployments run --deployment-id &lt;id&gt;</code>, using the ID from <code>claude-lock.json</code>.</p>
+<h3>Compute dates in your time zone</h3>
+<p>A common bug is the agent calling this morning "yesterday" because it computes dates in the server's time zone. In <code>deployment.md</code>, the <code>timezone</code> field sets when the run fires and the second line of the body tells the agent which zone to use for dates.</p>
+<h2>MEMORY</h2>
+<p>Each run starts in a fresh sandbox with no memory of the last one. Without memory, feedback doesn't stick. However, stale memory can confuse the agent: it reports an item as still waiting after it was resolved, or drops one that's still open because it was "already reported."</p>
+<figure><img src="https://claude.dev/media/30e51eab0381bb583fe355fe412162b4e8868643b8d58b2c76c4aa2d0eafea57.png" alt="The architecture diagram with Memory highlighted. State is what the agent reads and writes, and Preferences is what the reader writes and the agent only reads."></figure>
+<p>Our template keeps two <a href="https://platform.claude.com/docs/en/managed-agents/memory">memory stores</a>, the folders mounted under /mnt/memory/ (see Sources):</p>
+<ul>
+<li>
+<p><strong>preferences</strong> (yours, read-only to the agent): which channels and repos to read, what to leave out, the length cap, the destination, and when to stop.</p>
+</li>
+<li>
+<p><strong>state</strong> (the agent's, read-write): the bookmarks, a ledger of what it reported, one record per run, changes it proposes to your preferences, and notes on how each source behaves ("returns only the newest 50 items").</p>
+</li>
+</ul>
+<p><code>ant apply deployment.md</code> creates the preferences store, but not the file in it. Before the first run, write your preferences.md there with the repo's <code>scripts/seed-preferences.sh</code>.</p>
+<h3>Re-read your preferences at the start of every run</h3>
+<p>A common problem occurs when a copy of the preferences is baked into the prompt, which keeps applying rules you've already changed. Have the agent read the file fresh every run. If it can't read the file, it should stop and say so instead of running on defaults.</p>
+<h3>Keep a ledger of what you've already reported, and report the change</h3>
+<p>The agent keeps a ledger, <code>ledger.md</code>, of every item it has reported, so the brief doesn't repeat itself. Each line records when the item was reported, where it came from, an ID that doesn't change (a Slack message timestamp or a pull request number), and its last known status:</p>
+CODEText<pre><code>2026-09-09 slack:C0123456789 1788963600.000100 refund thread: customer waiting on a decision
+2026-09-11 github 481 review blocked, day 2 (still waiting)
+2026-09-11 slack:C0234567891 1789117333.000300 enterprise escalation: owner named, in progress</code></pre>
+<h2>GUARDRAILS</h2>
+<p>Because our automation runs in the “background” on a schedule, we set limits on what the agent can do and what it can spend.</p>
+<figure><img src="https://claude.dev/media/746533f20f4e2bf093d08a04f368a8c5eca739de6579c384e9742b86d5385f50.png" alt="The architecture diagram with Guardrails highlighted: a boundary around the agent with caps on turns, time and spend, and a heartbeat that someone watches."></figure>
+<h3>Limits on what it can do</h3>
+<p>The agent reads messages and issues that other people wrote, and that text can be interpreted as instructions. Limit what the agent could do if it followed them. In our example, the GitHub token and the <code>preferences</code> store are read-only, and the environment only reaches the hosts on its allowlist. A planted instruction can still change what the brief says, including through the notes the agent keeps between runs. It can't write to GitHub or edit your rules.</p>
+<p>Slack is the exception: the same token posts, so invite the bot only where it needs to read or post.</p>
+<h3>Set the spending cap from real runs</h3>
+<p>A spending cap protects you from runaway costs. Start at three to five times the cost of a normal run, then tighten it as you see real numbers. A run that hits its cap pauses instead of failing, so a cap set too low looks like a brief that went quiet. The cap is the <a href="https://platform.claude.com/docs/en/managed-agents/budgets"><code>budget</code></a> in <code>deployment.md</code>. Every run gets the full amount, and a run that reaches it pauses with a <code>budget_reached</code> stop reason:</p>
+CODEYAML<pre><code>budget:
+  type: limit
+  max_list_cost:
+    amount: "500" # a string, in cents: "500" is $5.00
+    currency: USD</code></pre>
+<h2>GETTING STARTED</h2>
+<p>Our reference implementation comes down to six rules:</p>
+<ul>
+<li>Read each source from a bookmark, not a fixed time window.</li>
+<li>Report a failed read as unreadable, never as a quiet day.</li>
+<li>Re-check every item right before posting.</li>
+<li>Count a post as sent only when Slack confirms it, then update bookmarks and ledger.</li>
+<li>Re-read your preferences every run, from a store the agent can't edit.</li>
+<li>Give the agent read-only access wherever it only reads, and cap what each run can spend.</li>
+</ul>
+<p>Claude Code can walk you through the guidance provided in this article. First, update:</p>
+CODEShell<pre><code>claude update</code></pre>
+<p>Then, use the claude-api skill:</p>
+PROMPT<pre><code>/claude-api managed-agents-onboard https://claude.dev/blog/building-effective-agent-automations/</code></pre>
+<p>The claude-api skill reads this post, proposes a setup, writes the files to an agents/ folder in your project, and creates the resources with ant apply. Treat this as a starting point, and customize the agent for your sources, destination, or memory preferences.</p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  <p>마지막 수집 2026-11-13 09:37 · 사이트 생성 2026-11-13 09:38</p>
+</footer>
+</body>
+</html>
