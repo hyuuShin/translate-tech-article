@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>&#34;카오스 루프(chaos loop)&#34;로 Claude Docs 출시를 견고하게 만들기: 수십억 건의 요청에서 발생한 서버 오류 60건 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Engineering</p>
+    <h1 class="lang-ko">&#34;카오스 루프(chaos loop)&#34;로 Claude Docs 출시를 견고하게 만들기: 수십억 건의 요청에서 발생한 서버 오류 60건</h1>
+    <h1 class="lang-en" hidden lang="en">Using a &#34;chaos loop&#34; to harden the Claude Docs launch: 60 server errors across billions of requests</h1>
+    
+    <p class="art-sum lang-ko">Claude Docs는 사용자, 팀원, 그리고 Claude가 함께 작업하는 문서 편집기입니다. 흥미로운 점은 채팅부터 Claude Code까지 어디에서든 Claude 세션이 같은 문서를 열어 바로 옆에서 실시간으로 읽고, 쓰고, 댓글을 남길 수 있다는 것입니다. Docs는 2026년 9월 16일에 출시되었습니다. 이 글에서는 Docs를 뒷받침하는 서비스에 대해 이야기합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">Claude Docs is a doc editor that you, your teammates, and Claude all work in together. The interesting part is that a Claude session anywhere, from chat to Claude Code, can open the same doc and read, write, and comment in it live, right next to you. We released Docs on September 16, 2026. This post is about the service that runs underneath it.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 11월 17일</dd></div>
+      <div><dt>저자</dt><dd>Vivek Nair</dd></div>
+      <div><dt>분량</dt><dd>9분</dd></div>
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/chaos-loop-claude-docs-launch/">https://claude.dev/blog/chaos-loop-claude-docs-launch/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>Claude Docs가 일반에 공개되기 3주 전까지, 이 서비스는 단일 노드에서 개념 증명(proof of concept) 형태로 운영되고 있었고, Anthropic 내부의 수천 명이 사용하고 있었습니다. 저희는 야심 찬 출시일을 목표로 달리고 있었고, 자체 추정으로는 출시 후 처음 며칠 안에 수백만 개의 문서가 생성될 것으로 예상했습니다.</p>
+<p>저희는 9월 16일에 출시했습니다. 9월 22일까지 사용자들은 460만 개가 넘는 문서를 만들었습니다. 20억 건의 요청 중 서버 오류는 단 60건에 불과했고, 롤백한 적도 한 번도 없었습니다. Docs 서비스 전체는 메모리 최적화 파드 약 50개에서 구동되었습니다.</p>
+<p>이 결과는 두 가지 결정 덕분에 가능했습니다.</p>
+<ul>
+<li><strong>출시 규모의 카오스 루프(chaos loop).</strong> 저희는 스테이징 환경에 테스트 하네스를 구축하고, 2주 동안 Claude가 쉬지 않고 서비스를 망가뜨리려 시도하도록 했습니다. Claude는 인프라의 모든 부분에 부하 테스트를 수행하고, 무너지는 부분은 모두 수정했습니다.</li>
+<li><strong>Claude가 파악하기 쉬운 구조로 개선.</strong> Claude는 매 반복마다 시스템이 정확한 텔레메트리(telemetry)를 내놓아야만 수정 작업의 루프를 효과적으로 닫을 수 있었습니다. 그래서 저희는 초기에 메모리나 CPU를 코드로 쉽게 제어할 수 없는 방식으로 사용하는 런타임(예: 가비지 컬렉션이 있는 런타임)을 쓰지 않기로 결정했습니다. 텔레메트리 신호가 우려스러워 보일 때, Claude는 그 원인을 버그나 특정 설계 결정까지 쉽게 추적할 수 있었습니다.</li>
+</ul>
+<p>다만 솔직히 말하면, 이 방식이 통한 것은 최근 프런티어 모델이 크게 좋아졌기 때문입니다. 저는 Claude Fable 5.2와 대략 비슷한 수준의 내부 연구용 모델을 사용했습니다. 저희 경험으로는 이제 모델이 이런 작업을 몇 주 동안 하나의 목표를 유지한 채 수행할 수 있으며, 이 점이 촉박한 일정 안에 출시 규모에 도달하는 데 도움이 되었습니다.</p>
+<h2>카오스 루프</h2>
+<p>단일 머신에서 수천 명의 내부 사용자가 쓰는 것만으로는 서비스가 출시를 버텨낼 수 있을지 알 수 없었고, 출시 트래픽으로 테스트할 수도 없었습니다.</p>
+<p>저희는 롤아웃 속도를 얼마나 높일 수 있을지 판단하기 위한 실제 근거가 필요했습니다. 그래서 출시 약 2주 전인 9월 4일에, 프로덕션과 동일하게 구성한 스테이징 클러스터를 Claude가 운영하도록 했습니다. 이 클러스터에는 하루 100만 개가 넘는 합성 문서를 생성하는 부하를 걸었고, Claude는 핵심 컴포넌트를 일부러 망가뜨렸습니다. 그리고 그대로 두고 자리를 떠났습니다(전체 비용은 이 글 끝에 정리해 두었습니다).</p>
+<p>구성은 꽤 단순했습니다. 루프는 제가 계속 실행해 둔 Claude Code 세션이었고, 시나리오를 고르고, 하네스를 실행하고, 텔레메트리를 읽고, 수정안을 제안하고, 스테이징에 반영하고, 이를 반복했습니다. 이 세션은 코디네이터 역할을 하며 대부분의 작업을 서브에이전트에 넘겼습니다. 가장 바쁜 주에는 보통 동시에 약 11개, 최대 30개의 서브에이전트가 실행되었습니다. 코디네이터는 Slack MCP를 통해 Claude Tag(베타)의 내부 변형 버전과도 대화하며, 비슷한 서비스를 확장해 본 Anthropic의 다른 인프라 팀들에게서 배웠습니다. 그 팀들의 에이전트는 이미 겪은 함정이 저희 확장 방식에 있는지 점검해 주었습니다.</p>
+<p>가장 재미있었던 부분은 제가 보기에 다소 편집증적인 시나리오를 고르는 일이었습니다.</p>
+<ul>
+<li>하루 만에 1,000만 개의 새 문서 생성</li>
+<li>22,000개의 라이브 연결이 동시에 재연결</li>
+<li>수백 명이 보고 있는 인기 문서 하나, 문서를 로드하는 도중에 서버가 종료되는 상황, 그리고 데이터베이스 정지</li>
+</ul>
+<p>각 반복은 모두 같은 방식으로 진행되었습니다. 테스트 하네스가 문서 생성 같은 기능을 선택해 포화 상태에 이를 때까지 부하를 걸었습니다. 그러면 Claude는 Datadog MCP로 텔레메트리를 읽고, 몇 가지 선택지와 권장안을 간단히 정리해 돌아왔습니다.</p>
+<p>권장안을 쉽게 되돌릴 수 있는 경우에는 Claude가 변경 사항을 작성해 스테이징에 배포하고 테스트를 다시 실행했습니다. 서비스가 수행하는 모든 작업에는 텔레메트리가 있었습니다. 예를 들어 모든 데이터베이스 쿼리는 이름과 함께 스캔한 행 수와 반환한 행 수를 보고했기 때문에, Claude는 문제가 있는 쿼리를 찾아 다시 작성할 수 있었습니다.</p>
+<figure><img src="https://claude.dev/media/060110fce9da51e6293c9864b9db6c21d7a0585613d133ec7ce05a74f22fffea.png" alt="A loop of eight steps, with a legend marking the steps Claude does and the ones you do. Top row, left to right: the harness adds load, Claude reads the telemetry, Claude proposes options, and you pick one. Bottom row, right to left: Claude writes the change, Claude reviews it in a separate session, you approve, and Claude deploys to staging, which leads back to the harness. Inside the loop: opens instantly, and check that no confirmed edit was lost."><figcaption><b>FIG 1</b>사람이 두 가지 결정을 내리는 루프의 한 번의 반복</figcaption></figure>
+<p>루프를 시작하기 전에, 저는 어떤 결정에 제 승인이 필요한지 Claude에게 알려 두었습니다. 기본적으로 데이터베이스 스키마나 키 구조 변경, 문서를 저장하고 구체화(materialize)하는 방식의 변경처럼 되돌리기 어려운 모든 것이 해당했습니다.</p>
+<p>Claude는 이런 상황을 만나면 멈추고 저에게 물었고, 대개 권장안을 함께 제시했으며 저는 대부분 그 안을 승인했습니다. 스키마 변경은 제가 상의를 받고 싶었던 전형적인 사례입니다. 합리적인 답이 보통 여러 가지이고, 방향을 바꾸는 일은 대체로 고통스럽기 때문입니다.</p>
+<p>그리고 전체 테스트 과정에서 Claude는 두 가지 불변 조건(invariant)을 지켜야 했습니다.</p>
+<ol>
+<li>문서는 (이력이 긴 문서라도) 거의 즉시 열려야 합니다.</li>
+<li>서버가 편집을 확인(acknowledge)하고 나면, 테스트에서 그 편집이 그대로 남아 있음을 확인할 수 있어야 합니다.</li>
+</ol>
+<h2>Claude가 파악하기 쉬운 서비스 만들기</h2>
+<p>제 동료 Felix Rieseberg는 최근 <a href="https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/">모델을 더 야심 차게 활용하는 방법에 대한 튜토리얼</a>을 썼습니다. 핵심 아이디어는 Claude에게 프롬프트를 주는 "고도(altitude)"를 높이라는 것입니다. 개별 작업이 아니라 원하는 <em>결과</em>를 요청하라는 뜻입니다.</p>
+<p>예를 들어 개별 크래시를 고쳐 달라고 요청하는 대신, 앱에서 크래시가 없도록 만들어 달라고 요청하는 것입니다(저희 앱이 아직 그 수준까지 도달한 것은 아니지만, 이런 방식으로 실제 진전을 이루고 있습니다). 다만 이 고도에서 작업하려면, Claude가 스스로 크래시 리포트를 가져오고, 각 크래시를 재현하고 수정 사항을 검증하는 하네스를 실행할 수 있도록 코드를 구성해 두어야 합니다.</p>
+<p>저희에게 원하는 결과는 출시를 감당할 수 있는 서비스였습니다. 이를 위해 서비스를 Claude가 최대한 파악하기 쉽게 만드는 두 가지 작업을 했습니다.</p>
+<ul>
+<li><strong>진단 루프.</strong> Claude는 매 반복마다 텔레메트리(telemetry)를 읽고, 부족하다고 판단한 것은 무엇이든 추가했습니다.</li>
+<li><strong>추적 가능한 기술 선택.</strong> 측정된 모든 수치가 우리가 작성한 코드로 거슬러 올라가 확인되도록 런타임과 의존성을 골랐습니다.</li>
+</ul>
+<h3>진단 루프</h3>
+<p>Claude는 매 반복마다 텔레메트리를 읽고, 부족하다고 판단한 것은 무엇이든 추가했습니다. 텔레메트리를 손으로 작성하는 일은 번거롭기 때문에, 실제로는 대부분 문제가 터진 뒤에야 텔레메트리를 넣게 됩니다. 이제는 Claude가 작업하면서 바로바로 작성합니다.</p>
+<p>메모리가 가장 좋은 예입니다.</p>
+<p>하네스(harness)를 돌리던 초기에, 큰 문서 하나가 파드(pod)에서 약 3GB를 사용하고 있었습니다(보고 싶지 않은 숫자였습니다). Claude가 처음 시도한 해결책은 캐시 하나의 크기를 줄여서 서버가 문서를 더 일찍 축출(evict)하게 만드는 것이었습니다. 다음 하네스 실행에서 메모리는 사실 의존성 중 하나 내부의 <em>별도</em> 캐시에 있다는 것이 드러났고, Claude는 그 변경을 철회했습니다.</p>
+<p>그 후 Claude는 더 세밀한 메모리 프로파일링으로 원인을 계속 좁혀 갔습니다. 결국 키 입력이 있을 때마다 문서가 여러 데이터 구조로 복사되며, 매번 수 MB씩 늘어난다는 사실을 찾아냈습니다. Claude는 이 구조들을 쓰기 시 복사(copy-on-write) 방식으로 바꿨고, 이제 각자 사본을 따로 갖지 않고 하나의 참조를 공유합니다.</p>
+<p>약 3일간 반복한 끝에 해당 문서의 메모리 사용량은 최대 180MB 정도로 줄었고, 출시에 필요하다고 추정한 규모도 메모리 최적화 파드 500개 이상에서 약 50개로 감소했습니다.</p>
+<figure><img src="https://claude.dev/media/a02f11262eb83a0c3bd3938e08015db1f9d520db1220dd90b4205f05559d6cc7.png" alt="Claude adds telemetry as it goes. A loop of six steps: the harness stresses the service, the service reports telemetry, and Claude reads it and traces it to a cause. Then Claude adds what's missing, which is highlighted, Claude fixes it or drops a wrong guess, and Claude deploys and reruns, with hard-to-undo changes going to you first, which leads back to the harness."><figcaption><b>FIG 2</b>진단 루프</figcaption></figure>
+<h3>추적 가능한 기술 선택</h3>
+<p>우리는 서비스의 런타임과 의존성을 까다롭게 골랐습니다. Claude가 측정한 모든 수치가 우리가 작성한 코드로 거슬러 올라가 확인되기를 원했기 때문입니다.</p>
+<p>모델은 깨끗한 신호가 있을 때 힐 클라이밍(hill climbing)을 가장 잘 수행하기 때문입니다. 가비지 컬렉터(garbage collector)는 메모리와 지연 시간이 컬렉터의 일정에 따라 변동하므로 노이즈를 더할 것이라고 예상했습니다.</p>
+<p>가장 도움이 된 선택은 두 가지입니다.</p>
+<ol>
+<li><strong>서비스를 Rust로 작성했습니다</strong>. 가비지 컬렉터가 없으면 문서의 모든 메모리가 우리가 정의한 구조 안에 있으므로, 메모리가 늘어났을 때 Claude가 원인이 되는 구조를 정확히 짚어 수정하고, 다음 반복에서 메모리가 줄었는지 확인할 수 있었습니다. Anthropic에도 훌륭한 Go 도구가 있고 두 언어를 비교 평가(bake-off)해 본 것은 아니므로, 이는 어디까지나 Rust를 사용한 경험입니다. 과거에 Go로 작업했던 입장에서 특히 좋았던 점은, 코드가 쓰고 난 메모리가 계속 남아 있는 상황을 거의 신경 쓰지 않아도 된다는 것이었습니다.</li>
+<li><strong>의존성도 최소한으로 유지했습니다</strong>. 라이브러리는 모두 우리가 작성하지 않았고 쉽게 계산에 넣을 수도 없는 데이터 구조를 함께 들여옵니다. 꼭 필요했던 소수의 라이브러리는 코드를 직접 포함(vendoring)하여 우리가 직접 읽고 측정할 수 있게 했습니다.</li>
+</ol>
+<p>Rust는 사람이 작성하기 어려운 언어이며, 몇 년 전이었다면 이 점이 선택에 큰 부담으로 작용했을 것입니다. Claude는 Rust를 비롯한 대부분의 언어를 무리 없이 작성하므로, 지금은 그 중요성이 훨씬 줄었습니다.</p>
+<figure><img src="https://claude.dev/media/9168b5a755c326966403a7bee480d1d1a60f1f1a6979ab959ece5a8993fb9930.png" alt="We wanted every number to trace back to code we wrote, so we used Rust and kept dependencies to a minimum. Two lanes. What we chose: Rust and few dependencies, so memory sits in our own structures, then Claude finds the cause, then fixes are easy to check. What we avoided, a bet and not a test: garbage collection and libraries we didn't write, then memory we can't account for, then a noisier signal that is harder to trace to our code."><figcaption><b>FIG 3</b>추적 가능한 기술 선택: 우리 코드로 설명할 수 있는 메모리와 설명할 수 없는 메모리</figcaption></figure>
+<h2>출시 주간</h2>
+<p>서비스는 출시 규모에서도 안정적으로 유지되었습니다. 첫 100만 개의 문서는 약 30시간 만에 들어왔고, 9월 22일에는 460만 개를 넘어섰습니다. 9월 한 달 동안 프로덕션(prod)에 629회 배포했으며, 롤백은 단 한 번도 없었습니다.</p>
+<p>출시 주간은 이상할 만큼 익숙하게 느껴졌습니다. Claude는 서비스가 실패할 수 있는 시나리오를 상상하는 데 뛰어나며, 출시 훨씬 전에 대부분의 경우에 대비해 두었습니다. 스테이징(staging)에서 리허설한 열 가지 시나리오 중 일곱 가지가 실제로 프로덕션에서 발생했습니다. 그 무렵 하네스가 이미 스테이징에서 대부분의 상황을 겪게 했고, Claude는 그 수정 사항을 런타임 플래그 뒤에 두고 배포해 둔 상태였습니다. 인프라 일부에 부하가 걸렸을 때는 대개 플래그만 전환하면 되었습니다.</p>
+<h2>지금은 이것이 통하는 이유</h2>
+<p>몇 달 전이었다면 이 방식은 아마 통하지 않았을 것입니다. 이전 모델들도 MCP 서버를 통해 텔레메트리를 읽는 일은 문제없이 수행했지만, 긴 루프에서 열 번에서 스무 번쯤 반복하고 나면 무엇을 최적화하고 있는지 잊기 시작했고, 결국 제가 목표를 다시 말해 줘야 했습니다. Anthropic의 다른 직원들은 이를 <a href="https://claude.dev/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code/#why-dynamic-workflows">목표 이탈(goal drift)</a>이라고 불렀습니다.</p>
+<p>새로운 최신 모델은 장시간 작업을 위해 만들어졌습니다. Claude는 여러 번의 컨텍스트 압축(compaction)을 거치면서도 모든 불변 조건(invariant)을 유지했고, 저는 이를 다시 말할 필요가 없었습니다.</p>
+<p>이런 시도를 하는 곳은 우리뿐만이 아닙니다. Vercel은 우리와 매우 비슷한, 감독형 에이전트 루프를 사용해 <a href="https://vercel.com/blog/making-turborepo-ninety-six-percent-faster-with-agents-sandboxes-and-humans">Turborepo를 최대 96% 더 빠르게 만들었습니다</a>.</p>
+<h2>비용</h2>
+<p>Claude Fable 5.2의 API 정가(2026년 11월 기준)로 계산하면, 저는 8월 말부터 출시일까지 약 125,000달러어치의 추론을 사용했습니다. 몇 년 전이라면 이 정도 규모의 작업에는 엔지니어 팀이 약 6개월은 필요했을 것으로 짐작합니다.</p>
+<p>비용의 대부분은 텔레메트리 읽기, 제안서 작성, 수정 사항 생성, 코드 리뷰에 사용되었습니다.</p>
+<p>비용에 관해 몇 가지 말씀드릴 점이 있습니다.</p>
+<ul>
+<li><strong>출시 규모가 특히 컸습니다.</strong> 비용의 상당 부분은 그 정도 규모에서만 의미가 있는 인프라에 들어갔고, 이 인프라는 추론(inference)량이 더 많이 필요했습니다. Claude는 점점 늘어나는 서비스들이 서로 어떻게 맞물리는지, 그리고 어떤 방식으로 장애가 발생할 수 있는지를 훨씬 더 깊이 고민해야 했습니다.</li>
+<li><strong>또한 프로세스를 정립하는 과정에서도 토큰을 많이 소비했습니다.</strong> 구성을 실험하는 동안 루프가 쉬지 않고 돌아갔습니다. 지금 알고 있는 내용을 기준으로 보면, 비용을 절반 정도로 줄일 수 있었을 것입니다.</li>
+</ul>
+<h2>직접 시도해 보기</h2>
+<p>이 방식은 훨씬 작은 서비스에도 적용할 수 있으며, 비용도 크게 줄어들 것입니다.</p>
+<p>대략적인 금액을 가늠하기 위해, 일반적인 소규모 팀 스택의 비용을 산정했습니다. 적당한 크기의 Kubernetes 노드 몇 대와 Postgres 인스턴스 하나로 구성한 스택입니다. 그런 다음 8월 말부터 출시일까지 반영한 변경 사항을 살펴보고, 이 구성에서는 필요하지 않은 작업을 제외했습니다.</p>
+<ul>
+<li>사내 다른 서비스와의 연동</li>
+<li>규모 확장 작업과 뒤섞여 있던 클라이언트 및 제품 작업</li>
+<li>여러 파드(pod)에 걸친 실행</li>
+<li>세밀한 요청 제한(rate limiting)</li>
+</ul>
+<p>남은 변경 사항은 전체의 약 3분의 1이었습니다.</p>
+<p>지출을 그 3분의 1 수준으로 줄이고, 구성을 파악하던 시기에 제가 저지른 실수에 들어간 비용도 제외하면, 이번과 같은 2주짜리 집중 작업은 동일한 정가 기준으로 3,000달러에서 10,000달러 정도가 들 것으로 봅니다. 실제로 실행해 본 것은 아니므로 대략적인 감으로만 참고해 주십시오.</p>
+<p>아래 단계는 Claude Code를 쓰는 엔지니어 한 명, 스테이징 환경, 그리고 관측성(observability) 제공 업체가 있다고 가정합니다. 코디네이터와 서브 에이전트는 작업 속도를 높이는 데 도움이 되었지만, 시간당 토큰 소모가 너무 많다고 느껴진다면 단일 에이전트로 돌아가도 충분히 잘 동작할 것입니다. 직접 시도해 보시려면 다음과 같이 하십시오.</p>
+<ol>
+<li>Claude가 텔레메트리(telemetry)에 접근할 수 있도록 하십시오. 대부분의 관측성 제공 업체는 Claude가 사용할 수 있는 MCP 서버를 제공합니다.</li>
+<li>Claude에게 실제 트래픽의 열 배를 서비스의 스테이징 복제본에 쏟아붓고 의도적으로 장애를 일으키는 부하 스크립트를 작성하게 하십시오. 인스턴스 강제 종료, 데이터베이스 지연, 트래픽 급증 도중의 배포가 시작하기 좋은 시나리오입니다. 그런 다음 Claude가 무너지는 부분을 계속 고치도록 하십시오.</li>
+<li>스택을 고를 때는 Claude가 가장 쉽게 측정할 수 있는 쪽을 택하십시오. 저희의 경우 Rust와 최소한의 의존성이었습니다.</li>
+<li>시작하기 전에 가장 중요한 기술적 불변 조건(invariant)을 정리해 Claude에게 전달하십시오.</li>
+<li>되돌리기 어려운 작업은 Claude가 멈추고, 명확한 권장안과 함께 몇 가지 선택지를 제시하도록 하십시오.</li>
+</ol>
+<p><em>같은 3주 동안 수천 건의 에디터 수정을 반영해 준 Docs 팀과, 이 모든 것의 기반을 만들어 준 플랫폼 팀 및 스토리지 팀에 깊이 감사드립니다.</em></p>
+<p><strong>더 읽어볼 글.</strong> <a href="https://claude.dev/blog/how-we-made-claude-ai-faster/">How we made claude.ai 3x faster in two weeks</a> (claude.dev) · <a href="https://claude.dev/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code/">A harness for every task: dynamic workflows in Claude Code</a> (claude.dev), 목표 이탈(goal drift)에 관한 글입니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>Three weeks before Claude Docs opened to the public, it was running as a proof of concept on a single node, used by a few thousand people inside Anthropic. We were racing toward an ambitious launch date, and our own estimate said we'd see millions of docs within the first few days.</p>
+<p>We launched on September 16. By September 22, people had created over 4.6 million docs. Across 2 billion requests we saw only 60 server errors, and we never had to roll back. The whole Docs service ran on about 50 memory-optimized pods.</p>
+<p>Two decisions got us there:</p>
+<ul>
+<li><strong>A chaos loop at launch scale.</strong> We set up a test harness on our staging environment where Claude ran constantly for two weeks to try and break the service. It load tested every part of our infrastructure and fixed whatever fell over.</li>
+<li><strong>Improving legibility to Claude.</strong> Claude could only close the loop effectively on fixes if our system produced accurate telemetry every iteration. We made a call early to avoid any runtime that uses memory or CPU in ways our code can't easily control (e.g. runtimes with garbage collection). When a telemetry signal looked concerning, Claude could easily trace it to a bug or a specific design decision.</li>
+</ul>
+<p>But honestly, this only worked because our frontier models have gotten much better recently (I used an internal research model roughly comparable to Claude Fable 5.2). In our experience, they can now stick with one goal through a run like this for weeks, which is what helped us hit launch scale in a tight timeline.</p>
+<h2>THE CHAOS LOOP</h2>
+<p>A few thousand internal users on one machine told us nothing about whether the service would survive launch, and we obviously didn't have launch traffic to test with.</p>
+<p>We wanted real evidence to decide how fast we could roll out. So on September 4, about two weeks before launch, I had Claude drive a staging cluster that mirrored production at over a million synthetic docs a day and break core components on purpose. And then... I just left it running (I've included the full cost at the end of this article).</p>
+<p>My setup was pretty simple. The loop was a session in Claude Code that I left running: pick a scenario, run the harness, read the telemetry, propose a fix, ship it to staging, repeat. That session acted as a coordinator and handed most of the work to sub-agents. In the busiest week, that usually meant about 11 sub-agents running at a time, and 30 at the peak. The coordinator also talked to our internal variant of Claude Tag (beta) via the Slack MCP to learn from other infrastructure teams at Anthropic who had scaled similar services. Their agents checked our scaling approach for pitfalls they’d already hit.</p>
+<p>The fun part was picking scenarios I thought were paranoid:</p>
+<ul>
+<li>10M new docs created in a single day</li>
+<li>22,000 live connections reconnecting at once</li>
+<li>One hot doc with hundreds of viewers, a server killed while it was still loading a doc, and the database stalling</li>
+</ul>
+<p>Each iteration looked the same. Our testing harness selected a feature like document creation and pushed creation to saturation. Claude then read telemetry using the Datadog MCP and came back with a short menu of options and a recommendation.</p>
+<p>If the recommendation was easy to undo, Claude wrote and deployed the change to staging and reran the test. We had telemetry on every operation the service ran. Every database query, for example, reported its name and how many rows it scanned versus how many it returned, so Claude could spot a bad query and rewrite it.</p>
+<figure><img src="https://claude.dev/media/060110fce9da51e6293c9864b9db6c21d7a0585613d133ec7ce05a74f22fffea.png" alt="A loop of eight steps, with a legend marking the steps Claude does and the ones you do. Top row, left to right: the harness adds load, Claude reads the telemetry, Claude proposes options, and you pick one. Bottom row, right to left: Claude writes the change, Claude reviews it in a separate session, you approve, and Claude deploys to staging, which leads back to the harness. Inside the loop: opens instantly, and check that no confirmed edit was lost."><figcaption><b>FIG 1</b>One iteration of the loop, with two decisions made by a person</figcaption></figure>
+<p>Before the loop started, I told Claude which decisions needed my approval; basically anything hard to undo, like changing the database schema or key layout, or changing how a doc is stored and materialized.</p>
+<p>When Claude ran into one of those, it stopped and asked me, usually with a recommendation that I ended up approving. Schema changes were the classic case where I wanted to be consulted: there are usually a few reasonable answers, and changing directions is often painful.</p>
+<p>And during the whole testing process, Claude had to conform to two invariants:</p>
+<ol>
+<li>Docs had to open almost instantly (even ones with a long history)</li>
+<li>Once the server acknowledged an edit, tests had to show the edit was still there</li>
+</ol>
+<h2>MAKING THE SERVICE LEGIBLE TO CLAUDE</h2>
+<p>My colleague Felix Rieseberg recently wrote <a href="https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/">a tutorial on being more ambitious with models</a>. His main idea is to raise the "altitude" you prompt Claude at: ask for the <em>outcome</em> you want, not the individual task.</p>
+<p>So instead of asking Claude to fix individual crashes, you ask it to make your app crash-free. (Our own apps aren't all the way there yet, but this is how we're making real progress.) To work at that altitude, though, you have to set up your code so Claude can pull crash reports on its own and run a harness that reproduces each crash and checks the fix.</p>
+<p>For us, the outcome was a service that could handle launch. To get there, we did two things to make the service as legible to Claude as we could:</p>
+<ul>
+<li><strong>A diagnostic loop.</strong> Claude read the telemetry on every iteration and added whatever it thought was missing.</li>
+<li><strong>Legible technology choices.</strong> We picked a runtime and dependencies so any number Claude measured traced back to code we wrote.</li>
+</ul>
+<h3>A diagnostic loop</h3>
+<p>Every iteration, Claude read the telemetry and added whatever it thought was missing. Writing telemetry by hand is tedious, so in practice most telemetry would go in after something broke. Now Claude just writes it as it goes.</p>
+<p>Memory is the best example.</p>
+<p>Early in the harness run, one large doc was using about 3 GB on its pod (not a fun number to see). Claude’s first stab at fixing it was to shrink one of our caches so our server would evict docs sooner. The next harness run showed the memory was actually in a <em>separate</em> cache inside one of our dependencies, so Claude dropped the change.</p>
+<p>From there Claude kept narrowing it down with finer-grained memory profiling. Eventually it found that every keystroke was copying the doc into several different data structures, adding a few MB each time. Claude switched those structures to copy-on-write, so they now share one reference instead of each holding its own copy.</p>
+<p>After about three days of iterating, that doc topped out around 180 MB, and our estimate of what we’d need for launch dropped from more than 500 memory-optimized pods to about 50.</p>
+<figure><img src="https://claude.dev/media/a02f11262eb83a0c3bd3938e08015db1f9d520db1220dd90b4205f05559d6cc7.png" alt="Claude adds telemetry as it goes. A loop of six steps: the harness stresses the service, the service reports telemetry, and Claude reads it and traces it to a cause. Then Claude adds what's missing, which is highlighted, Claude fixes it or drops a wrong guess, and Claude deploys and reruns, with hard-to-undo changes going to you first, which leads back to the harness."><figcaption><b>FIG 2</b>The diagnostic loop</figcaption></figure>
+<h3>Legible technology choices</h3>
+<p>We were picky about the service’s runtime and dependencies. We wanted any number Claude measured to trace back to code we wrote.</p>
+<p>This is because our models hill climb best with a clean signal. We expected a garbage collector to add noise, because memory and latency shift on the collector’s schedule.</p>
+<p>Two choices helped the most.</p>
+<ol>
+<li><strong>We wrote the service in Rust</strong>. With no garbage collector, all of a doc’s memory sits in structures we defined, so when it grew, Claude could point to the one responsible, change it, and see whether memory came down on the next iteration. We have great Go tooling at Anthropic too, and we didn’t bake off the two languages, so this is our experience with Rust. What I did appreciate, coming from past work in Go, was how little I had to think about memory sticking around after my code was done with it.</li>
+<li><strong>We also kept dependencies to a minimum</strong>. Every library brings data structures we didn’t write and can’t easily account for. For the few we really needed, we vendored the code so we could read and measure it ourselves.</li>
+</ol>
+<p>Rust is hard for people to write, and a few years ago that would have weighed heavily on the choice. Claude writes it and most other languages fine, so that matters a lot less now.</p>
+<figure><img src="https://claude.dev/media/9168b5a755c326966403a7bee480d1d1a60f1f1a6979ab959ece5a8993fb9930.png" alt="We wanted every number to trace back to code we wrote, so we used Rust and kept dependencies to a minimum. Two lanes. What we chose: Rust and few dependencies, so memory sits in our own structures, then Claude finds the cause, then fixes are easy to check. What we avoided, a bet and not a test: garbage collection and libraries we didn't write, then memory we can't account for, then a noisier signal that is harder to trace to our code."><figcaption><b>FIG 3</b>Legible technology choices: memory our code can explain, and memory it can't</figcaption></figure>
+<h2>LAUNCH WEEK</h2>
+<p>The service held at launch scale. The first million docs showed up in about 30 hours, and we were past 4.6 million by September 22. We rolled prod 629 times in September and never once rolled back.</p>
+<p>Launch week felt weirdly familiar. Claude is great at imagining ways a service can fail and had planned for most of them well before launch. Seven of the ten scenarios we’d rehearsed on staging actually happened in prod. By then the harness had already put staging through most of it, and Claude had shipped the fixes behind runtime flags. When part of the infra ran into pressure, we usually just flipped a flag.</p>
+<h2>WHY THIS WORKS NOW</h2>
+<p>A few months ago this probably wouldn’t have worked. Older models were fine at reading telemetry through an MCP server, but ten or twenty iterations into a long loop, they’d start forgetting what we were optimizing for, and I’d end up restating the goal. Other Anthropic employees have called this <a href="https://claude.dev/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code/#why-dynamic-workflows">goal drift</a>.</p>
+<p>Our newer frontier models are built for long-running work. Claude held all of our invariants across many compactions, and I never had to repeat them.</p>
+<p>We're not the only ones doing this, either. Vercel <a href="https://vercel.com/blog/making-turborepo-ninety-six-percent-faster-with-agents-sandboxes-and-humans">made Turborepo up to 96% faster</a> with a supervised agent loop a lot like ours.</p>
+<h2>WHAT IT COST</h2>
+<p>At Claude Fable 5.2's API list price (as of November 2026), I used roughly $125,000 of inference from the end of August to launch day. A couple of years ago, work on this scale I'd guess would have taken a team of engineers about six months.</p>
+<p>Most of that went to reading telemetry, writing proposals, generating fixes, and reviewing code.</p>
+<p>A couple of things about the cost:</p>
+<ul>
+<li><strong>Our launch was particularly massive.</strong> A good chunk of the money went into infrastructure that only makes sense at that scale, and that infrastructure took more inference to reason about. Claude had to think a lot harder about how a growing set of services fit together and all the ways they could fail.</li>
+<li><strong>I also burned a lot of tokens figuring out the process.</strong> The loop ran nonstop while I was experimenting with the setup. Knowing what I know now, I think we could have spent about half as much.</li>
+</ul>
+<h2>TRYING THIS OUT</h2>
+<p>This works for much smaller services too, and it should cost a lot less.</p>
+<p>To get a rough number, I priced out a classic small team stack: a couple of reasonably sized Kubernetes nodes and a Postgres instance. Then I went through the changes I landed between the end of August and launch day and removed the work that setup wouldn’t need:</p>
+<ul>
+<li>Fitting in with our other internal services</li>
+<li>Client and product work that was intermixed with the scale work</li>
+<li>Running across many pods</li>
+<li>Fine-grained rate limiting</li>
+</ul>
+<p>About a third of the changes were left.</p>
+<p>Scaling our spend down to that third and taking out the mistakes I made while I was still figuring out the setup, I’d put a two week push like this one at $3,000 to $10,000 at the same list price (I haven’t actually run this, so it’s only a rough sense).</p>
+<p>The steps below assume one engineer with Claude Code, a staging environment, and an observability provider. The coordinator and sub-agents helped speed up the process, but if you find they’re burning too many tokens per hour, going back to a single agent should also work quite well. If you want to try it:</p>
+<ol>
+<li>Give Claude access to your telemetry. Most observability providers have an MCP server that Claude can use.</li>
+<li>Have Claude write a load script that throws ten times your real traffic at the staging copy of the service and breaks things on purpose. Killing an instance, stalling the database, and deploying in the middle of a spike are good places to start. Then let Claude keep fixing whatever falls over.</li>
+<li>When you’re picking your stack, lean toward whatever Claude can measure most easily. For us that was Rust and as few dependencies as possible.</li>
+<li>Before you start, write down your most important technical invariants and give them to Claude.</li>
+<li>For anything that’s hard to undo, have Claude stop and give you a few options with a clear recommendation.</li>
+</ol>
+<p><em>Huge thanks to the Docs team, who landed thousands of editor fixes in the same three weeks, and to the platform and storage teams who built everything this sits on.</em></p>
+<p><strong>Further reading.</strong> <a href="https://claude.dev/blog/how-we-made-claude-ai-faster/">How we made claude.ai 3x faster in two weeks</a> (claude.dev) · <a href="https://claude.dev/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code/">A harness for every task: dynamic workflows in Claude Code</a> (claude.dev), on goal drift.</p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  
+  
+</footer>
+</body>
+</html>
