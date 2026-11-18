@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -53,7 +53,7 @@
 <p>얼핏 보면 휴대폰에서 코딩 채팅의 진행 상황을 확인하는 기능처럼 보입니다. 그것도 유용하지만, 더 큰 핵심을 놓친 시각입니다. Remote의 진짜 힘은 iPhone을 작은 터미널처럼 쓰려고 하지 않으면서도, 개발 머신에서 실행 중인 작업을 시작하고, 지시하고, 검토하고, 정리할 수 있다는 점에 있습니다.</p>
 <p>지난 두 달 동안 저희는 이 흐름에 놀라울 만큼 많은 기능을 더했습니다. 원격 호스트 연결, 워크트리(worktree), 목표(goal), 사이드 채팅(side chat), 인라인 코드 리뷰, 대기 및 조정 프롬프트, 첨부 파일, 스킬과 플러그인, 보관된 채팅, 보안 제어, 그리고 앱을 실무에 쓸 만하게 만드는 수많은 세부 개선이 포함됩니다.</p>
 <p>이 글은 모든 신규 파워 유저에게 나눠 주고 싶었던 현장 가이드입니다.</p>
-<p><img src="https://developers.openai.com/images/blog/mastering-codex-remote-for-engineering.jpg" alt="Remote project picker in the ChatGPT mobile app"></p>
+<p><a href="../../assets/images/b095d09bd651b8a86edb62e8c163acfd8c83526bf1ff0fe3d381dd4b7a28b878.jpg"><img src="../../assets/images/b095d09bd651b8a86edb62e8c163acfd8c83526bf1ff0fe3d381dd4b7a28b878.jpg" alt="Remote project picker in the ChatGPT mobile app" loading="lazy" decoding="async"></a></p>
 <h2>올바른 사고 모델: 휴대폰은 컨트롤 플레인(control plane)</h2>
 <p>코드는 여전히 있어야 할 곳에서 실행됩니다. 바로 Mac, Windows 머신, devbox 또는 연결된 다른 호스트입니다. ChatGPT 모바일 앱에서 Remote는 그 작업을 제어하기 위한 네이티브 인터페이스를 제공합니다.</p>
 <p>이 구분은 중요합니다. 작은 화면에서 터미널의 모든 기능을 재현하는 것이 목표가 아닙니다. 어디서든 에이전트의 막힌 부분을 풀어 주는 판단을 쉽게 내릴 수 있게 하는 것이 목표입니다.</p>
@@ -68,7 +68,7 @@
 <p>앱을 이런 방식으로 사용하기 시작하면 원격 데스크톱 소프트웨어처럼 느껴지지 않고, 엔지니어링 컨트롤 플레인처럼 느껴지기 시작합니다.</p>
 <h2>1. 올바른 경계 설정으로 채팅 시작하기</h2>
 <p>좋은 에이전트 작업은 범위가 정확히 설정된 환경에서 시작됩니다. Remote에서는 첫 프롬프트를 보내기 전에 연결된 호스트와 워크스페이스를 선택할 수 있습니다. 새 채팅에서는 브랜치를 고르고, 별도의 워크트리를 만들고, 그에 연결된 환경 설정(setup)을 실행할 수도 있습니다.</p>
-<img src="https://developers.openai.com/images/blog/mastering-codex-remote-worktree-branch.jpg" alt="Remote controls for choosing a host, repository, worktree, and environment">
+<a href="../../assets/images/b87d93d5f3374cbd698ab1b0625dc8b6150b7791c0778c1f2b969294342c9ef4.jpg"><img src="../../assets/images/b87d93d5f3374cbd698ab1b0625dc8b6150b7791c0778c1f2b969294342c9ef4.jpg" alt="Remote controls for choosing a host, repository, worktree, and environment" loading="lazy" decoding="async"></a>
 <p>덕분에 다음과 같은 유용한 패턴이 가능해집니다.</p>
 <ul>
 <li>빠른 조사에는 현재 체크아웃을 사용합니다.</li>
@@ -78,7 +78,7 @@
 </ul>
 <p>이것은 파워 유저에게 가장 중요한 습관 중 하나입니다. 올바른 실행 컨텍스트를 고르는 데 10초를 쓰면, 나중에 정리하는 데 드는 10분을 아낄 수 있습니다.</p>
 <p>컴포저(composer)에는 일반 텍스트보다 더 많은 컨텍스트를 담을 수 있습니다. 파일, 사진, 또는 방금 촬영한 카메라 이미지를 첨부할 수 있습니다. 스킬과 플러그인은 인라인으로 표시되므로, 프롬프트가 의도한 기능을 호출하고 있는지 훨씬 쉽게 확인할 수 있습니다.</p>
-<img src="https://developers.openai.com/images/blog/mastering-codex-remote-skills-plugins.jpg" alt="Remote composer with multiple skills and plugins added inline">
+<a href="../../assets/images/9b110d77a4527d089e524cfb811541adc823f4ec344f1bbef2ef586e74c3fdc2.jpg"><img src="../../assets/images/9b110d77a4527d089e524cfb811541adc823f4ec344f1bbef2ef586e74c3fdc2.jpg" alt="Remote composer with multiple skills and plugins added inline" loading="lazy" decoding="async"></a>
 <p>제 규칙은 간단합니다. 스크린샷, 파일, 이름이 있는 스킬로 모호함을 없앨 수 있다면, 첫 턴 전에 첨부하거나 언급하십시오.</p>
 <h2>2. Queue와 Steer의 차이 이해하기</h2>
 <p>Remote에서 효과가 크지만 가장 눈에 띄지 않는 설정은 아마 이것일 것입니다.</p>
@@ -104,7 +104,7 @@
 <p>오래 이어지는 코딩 채팅에는 가치 있는 컨텍스트가 쌓입니다. 사이드 질문이 생길 때마다 그 채팅을 끊으면 메인 대화 기록이 어수선해지고, 에이전트가 목표에서 벗어날 수도 있습니다.</p>
 <p>사이드 채팅은 바로 이 문제를 해결합니다.</p>
 <p><code>/side</code>를 사용하면 현재 채팅과 연결된 가벼운 대화를 열 수 있습니다. <code>/side &lt;prompt&gt;</code>를 사용하면 질문이 미리 입력된 상태로 대화를 열 수 있습니다. 더 좋은 방법은 대화 기록에서 텍스트를 선택하고 <strong>Ask in side chat</strong>을 고르는 것입니다. 선택한 구절이 새 대화의 시작 컨텍스트가 됩니다.</p>
-<img src="https://developers.openai.com/images/blog/mastering-codex-remote-side-chat.jpg" alt="Selected transcript text with the Ask in side chat action">
+<a href="../../assets/images/09114d4b660e06c5b53caa4e7d578d001f2717049b177d9ee5fcdd2f62efab9f.jpg"><img src="../../assets/images/09114d4b660e06c5b53caa4e7d578d001f2717049b177d9ee5fcdd2f62efab9f.jpg" alt="Selected transcript text with the Ask in side chat action" loading="lazy" decoding="async"></a>
 <p>저는 사이드 채팅을 다음과 같은 질문에 사용합니다.</p>
 <ul>
 <li>Codex는 왜 이 아키텍처를 선택했습니까?</li>
@@ -129,7 +129,7 @@
 <h2>5. 대화를 떠나지 않고 코드 리뷰하기</h2>
 <p>리뷰 루프는 Remote가 단순히 편리한 도구를 넘어 엔지니어링에 실제로 유용해지는 지점입니다.</p>
 <p>완료된 턴에서는 변경된 파일의 요약을 볼 수 있습니다. 여기서 diff를 열고, 개별 파일을 살펴보고, 섹션을 펼치거나 접고, 긴 줄을 줄바꿈하고, 구문 강조가 적용된 소스 파일을 열 수 있습니다. 관련 줄에 인라인 코멘트를 달고, 그 리뷰 컨텍스트를 Codex에 다시 보낼 수도 있습니다.</p>
-<img src="https://developers.openai.com/images/blog/mastering-codex-remote-inline-review.jpg" alt="인라인 리뷰 코멘트가 달린 Remote diff">
+<a href="../../assets/images/b42a1006ac25f17ff0349fe6f675171e3d71dbe12875291daa7b9e95207de9e2.jpg"><img src="../../assets/images/b42a1006ac25f17ff0349fe6f675171e3d71dbe12875291daa7b9e95207de9e2.jpg" alt="인라인 리뷰 코멘트가 달린 Remote diff" loading="lazy" decoding="async"></a>
 <p>이 워크플로에는 여러 단계가 있습니다.</p>
 <ul>
 <li>변경된 파일 요약을 열어 빠르게 이상 여부를 확인합니다.</li>
@@ -253,7 +253,7 @@
 <p>At first glance, it looks like a way to check on a coding chat from your phone. That is useful, but it misses the bigger idea. The real power of Remote is that it lets you start, direct, review, and organize work running on your development machines without pretending that an iPhone should be a tiny terminal.</p>
 <p>Over the last two months, we have added a surprising amount of depth to that loop: remote host connections, worktrees, goals, side chats, inline code review, queued and steering prompts, attachments, skills and plugins, archived chats, security controls, and a long tail of small details that make the app useful for serious work.</p>
 <p>This is the field guide I wish every new power user had.</p>
-<p><img src="https://developers.openai.com/images/blog/mastering-codex-remote-for-engineering.jpg" alt="Remote project picker in the ChatGPT mobile app"></p>
+<p><a href="../../assets/images/b095d09bd651b8a86edb62e8c163acfd8c83526bf1ff0fe3d381dd4b7a28b878.jpg"><img src="../../assets/images/b095d09bd651b8a86edb62e8c163acfd8c83526bf1ff0fe3d381dd4b7a28b878.jpg" alt="Remote project picker in the ChatGPT mobile app" loading="lazy" decoding="async"></a></p>
 <h2>The right mental model: Your phone is the control plane</h2>
 <p>The code still runs where it belongs: on your Mac, Windows machine, devbox, or other connected host. In the ChatGPT mobile app, Remote gives you a native interface for controlling that work.</p>
 <p>That distinction matters. The goal is not to reproduce every terminal affordance on a small screen. The goal is to make the decisions that unblock an agent easy from anywhere:</p>
@@ -269,7 +269,7 @@
 
 <h2>1. Start the chat with the right boundaries</h2>
 <p>Good agent work starts with a correctly scoped environment. Remote lets you choose the connected host and workspace before the first prompt. For a new chat, you can also choose a branch, create a separate worktree, and run the environment setup associated with it.</p>
-<img src="https://developers.openai.com/images/blog/mastering-codex-remote-worktree-branch.jpg" alt="Remote controls for choosing a host, repository, worktree, and environment">
+<a href="../../assets/images/b87d93d5f3374cbd698ab1b0625dc8b6150b7791c0778c1f2b969294342c9ef4.jpg"><img src="../../assets/images/b87d93d5f3374cbd698ab1b0625dc8b6150b7791c0778c1f2b969294342c9ef4.jpg" alt="Remote controls for choosing a host, repository, worktree, and environment" loading="lazy" decoding="async"></a>
 <p>That makes a few useful patterns possible:</p>
 <ul>
 <li>Use the current checkout for a quick investigation.</li>
@@ -279,7 +279,7 @@
 </ul>
 <p>This is one of the most important power-user habits: Spend 10 seconds choosing the right execution context and save 10 minutes of cleanup later.</p>
 <p>The composer can also carry more context than plain text. You can attach files, photos, or a fresh camera capture. Skills and plugins appear inline, which makes it much easier to confirm that your prompt is invoking the capability you intended.</p>
-<img src="https://developers.openai.com/images/blog/mastering-codex-remote-skills-plugins.jpg" alt="Remote composer with multiple skills and plugins added inline">
+<a href="../../assets/images/9b110d77a4527d089e524cfb811541adc823f4ec344f1bbef2ef586e74c3fdc2.jpg"><img src="../../assets/images/9b110d77a4527d089e524cfb811541adc823f4ec344f1bbef2ef586e74c3fdc2.jpg" alt="Remote composer with multiple skills and plugins added inline" loading="lazy" decoding="async"></a>
 <p>My rule is simple: If a screenshot, file, or named skill can remove ambiguity, attach or mention it before the first turn.</p>
 <h2>2. Learn the difference between Queue and Steer</h2>
 <p>This is probably the least obvious high-leverage setting in Remote.</p>
@@ -305,7 +305,7 @@
 <p>Long-running coding chats accumulate valuable context. Interrupting one with every side question makes the main transcript noisy and can pull the agent away from the objective.</p>
 <p>That is what side chats solve.</p>
 <p>Use <code>/side</code> to open a lightweight conversation connected to the current chat. Use <code>/side &lt;prompt&gt;</code> to open it with a question already prepared. Even better, select text in the transcript and choose <strong>Ask in side chat</strong>. The selected passage becomes the starting context for the new conversation.</p>
-<img src="https://developers.openai.com/images/blog/mastering-codex-remote-side-chat.jpg" alt="Selected transcript text with the Ask in side chat action">
+<a href="../../assets/images/09114d4b660e06c5b53caa4e7d578d001f2717049b177d9ee5fcdd2f62efab9f.jpg"><img src="../../assets/images/09114d4b660e06c5b53caa4e7d578d001f2717049b177d9ee5fcdd2f62efab9f.jpg" alt="Selected transcript text with the Ask in side chat action" loading="lazy" decoding="async"></a>
 <p>I use side chats for questions such as:</p>
 <ul>
 <li>Why did Codex choose this architecture?</li>
@@ -330,7 +330,7 @@
 <h2>5. Review code without leaving the conversation</h2>
 <p>The review loop is where Remote becomes genuinely useful for engineering rather than merely convenient.</p>
 <p>Completed turns can show a summary of changed files. From there, you can open the diff, inspect individual files, expand or collapse sections, wrap long lines, and open a source file with syntax highlighting. You can attach inline comments to the relevant lines and send that review context back to Codex.</p>
-<img src="https://developers.openai.com/images/blog/mastering-codex-remote-inline-review.jpg" alt="Remote diff with an inline review comment">
+<a href="../../assets/images/b42a1006ac25f17ff0349fe6f675171e3d71dbe12875291daa7b9e95207de9e2.jpg"><img src="../../assets/images/b42a1006ac25f17ff0349fe6f675171e3d71dbe12875291daa7b9e95207de9e2.jpg" alt="Remote diff with an inline review comment" loading="lazy" decoding="async"></a>
 <p>There are several levels to the workflow:</p>
 <ul>
 <li>Open the changed-file summary for a quick sanity check.</li>

@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -54,7 +54,7 @@
 <p>따라서 모드는 Claude Code를 자신의 작업 방식에 맞추는 수단이 됩니다. 수시로 확인하는 표시 항목을 추가하거나, 불안한 명령 앞에 안전장치를 두거나, 자신이 변경 사항을 읽는 방식에 맞는 리뷰 화면을 만들 수 있습니다.</p>
 <p>이 가이드에서는 빈 폴더에서 시작해 <strong>Token Weather</strong>라는 모드를 하나 만듭니다. 프롬프트 위에 컨텍스트 윈도우 상태를 실시간 예보처럼 보여 주는 모드이며, 코드는 약 80줄입니다. 이어서 더 큰 모드인 <strong>Blast Radius</strong>와 <strong>Replay Theater</strong>를 살펴보며 API로 할 수 있는 다른 일들을 소개합니다. 세 모드의 완성된 코드는 <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods">anthropics/claude-code-playground</a>에 있습니다.</p>
 <figure><figcaption><b>FIG A</b>터미널 세션에서 차례로 실행한 Token Weather, Blast Radius, Replay Theater</figcaption></figure>
-<figure><img src="https://claude.dev/media/eaee11951bbed827ef89ee535abfbbed7277b67a65044ea277ade9e9acd1d3b5.png" alt="A one-line terminal band cycling through three forecasts, a yellow sun for Clear, a blue umbrella for Showers and a pink lightning bolt for Storm, each with its token count out of 200k and a small bar chart of recent turns."><figcaption><b>FIG B</b>컨텍스트 윈도우가 차오르는 동안의 Token Weather 밴드: 18%에서 Clear, 67%에서 Showers, 81%에서 Storm</figcaption></figure>
+<figure><a href="../../assets/images/64b7f3cbcb97107677757271723ba64b3de406b57df9da0604fb64a6dcf02265.png"><img src="../../assets/images/64b7f3cbcb97107677757271723ba64b3de406b57df9da0604fb64a6dcf02265.png" alt="A one-line terminal band cycling through three forecasts, a yellow sun for Clear, a blue umbrella for Showers and a pink lightning bolt for Storm, each with its token count out of 200k and a small bar chart of recent turns." loading="lazy" decoding="async"></a><figcaption><b>FIG B</b>컨텍스트 윈도우가 차오르는 동안의 Token Weather 밴드: 18%에서 Clear, 67%에서 Showers, 81%에서 Storm</figcaption></figure>
 <p><strong>Claude Code 2.1.287 이상이 필요합니다.</strong> 모드는 기본적으로 켜져 있으므로 따로 켤 필요가 없습니다. API는 릴리스마다 바뀔 수 있습니다. Claude Code는 모드를 로드할 때마다 사용 중인 빌드에 맞는 타입 선언을 모드의 <code>.claude-plugin/types/</code> 폴더에 기록하며, 해당 버전의 기준은 이 선언입니다.</p>
 <h2>모드의 동작 방식</h2>
 <p>모드는 동작이 JavaScript 또는 TypeScript 모듈에 들어 있는 Claude Code 플러그인입니다.</p>
@@ -381,7 +381,7 @@ CODEJavaScript
 <li><strong>단축키가 있는 버튼.</strong> <code>Button({ label: "Proceed", hotkey: "1", onPress })</code>는 클릭, Tab과 Enter, 또는 숫자 키로 동작합니다.</li>
 <li><strong>밴드로 대체 표시.</strong> 터미널 폭이 충분하면 트랜스크립트 옆에 패널이 고정됩니다. <code>$.ui.open</code>이 <code>isPlaced: false</code>로 응답하면 같은 보고서를 프롬프트 위에 그립니다.</li>
 </ul>
-<figure><img src="https://claude.dev/media/ac53d89fc2dbe36603c30639b12fdc7edcfba5072b9b417e656a65a2d196cc37.png" alt="A terminal with no side pane: a yellow-bordered box above the prompt shows the command, the two files with uncommitted changes it would discard, and numbered Proceed and Cancel choices."><figcaption><b>FIG E</b>At 120 columns, Blast Radius draws its report for git reset --hard in the band above the prompt</figcaption></figure>
+<figure><a href="../../assets/images/37da4bfb17e2f8fe4ecb7993f94ff9c227b7bd76c859046680348d7dcd8a5119.png"><img src="../../assets/images/37da4bfb17e2f8fe4ecb7993f94ff9c227b7bd76c859046680348d7dcd8a5119.png" alt="A terminal with no side pane: a yellow-bordered box above the prompt shows the command, the two files with uncommitted changes it would discard, and numbered Proceed and Cancel choices." loading="lazy" decoding="async"></a><figcaption><b>FIG E</b>At 120 columns, Blast Radius draws its report for git reset --hard in the band above the prompt</figcaption></figure>
 <p>이 모드는 권한 시스템이 아니라 안전망입니다. 명령어 텍스트를 읽어 판단하므로 <code>$(…)</code>, 별칭(alias), <code>rm</code>을 호출하는 스크립트는 검사를 통과합니다. 확실하게 차단하려면 권한 규칙을 사용하십시오.</p>
 <h3>Replay Theater: 직전 턴의 편집 내용을 단계별로 재생</h3>
 <p>턴이 실행되는 동안 Replay Theater는 모든 Edit 및 Write 호출을 기록합니다. 기록 대상은 파일, 그리고 변경 전후의 텍스트입니다. 턴이 끝나면 프롬프트 위에 힌트가 나타납니다. <code>r</code>을 누르거나 <code>/replay</code>를 입력하면 패널이 편집 내용을 diff 하나씩 차례로 보여 주며, 번호가 매겨진 단계 막대와 <strong>Prev</strong>, <strong>Next</strong>, <strong>Close</strong> 버튼이 함께 표시됩니다.</p>
@@ -414,7 +414,7 @@ on("command.run", { command: "replay" }, async ($, e) =&gt; ({ text: (await open
 <li><strong>파일 읽기.</strong> Write의 경우 쓰기가 반영되기 직전에 <code>$.fs.read</code>로 기존 내용을 가져오므로 diff가 실제 변경 내용과 일치합니다.</li>
 <li><strong>배치는 화면 표시 계층의 몫.</strong> 전체 화면에서는 패널이 오른쪽에 고정됩니다. 80열에서는 프롬프트 위에 인라인으로 열립니다. 모드는 어느 경우든 같은 트리를 그립니다.</li>
 </ul>
-<figure><img src="https://claude.dev/media/bb2b908077c752f4e43672b5d5e7b0d262756bf27303d0884634cd142487f996.png" alt="프롬프트 위에 마젠타색 테두리의 상자가 표시된 세로로 긴 터미널 창. 상자 안에는 번호가 매겨진 단계 표시줄, greet.js 파일, 한 줄짜리 diff, 이전·다음·닫기 버튼이 있습니다."><figcaption><b>FIG G</b>80열 너비의 Replay Theater, 프롬프트 위에 인라인으로 그려진 모습</figcaption></figure>
+<figure><a href="../../assets/images/7c571e6265500fc8da9ae3eda0cc7c505410c27873cf365b5f5987a5bd795f98.png"><img src="../../assets/images/7c571e6265500fc8da9ae3eda0cc7c505410c27873cf365b5f5987a5bd795f98.png" alt="프롬프트 위에 마젠타색 테두리의 상자가 표시된 세로로 긴 터미널 창. 상자 안에는 번호가 매겨진 단계 표시줄, greet.js 파일, 한 줄짜리 diff, 이전·다음·닫기 버튼이 있습니다." loading="lazy" decoding="async"></a><figcaption><b>FIG G</b>80열 너비의 Replay Theater, 프롬프트 위에 인라인으로 그려진 모습</figcaption></figure>
 <h2>꼭 지킬 만한 네 가지 습관</h2>
 <ul>
 <li><strong>Claude Code가 작성해 주는 타입을 활용하십시오.</strong> Claude Code는 모드를 불러올 때마다 빌드에 필요한 선언을 모드의 <code>.claude-plugin/types/</code> 폴더에 작성하므로, 별도 작업 없이 에디터와 <code>tsc -p</code>에서 바로 사용할 수 있습니다. 이 타입은 모든 이벤트, <code>$</code>의 모든 메서드, 모든 요소의 props에 대한 기준 문서 역할을 합니다.</li>
@@ -438,7 +438,7 @@ on("command.run", { command: "replay" }, async ($, e) =&gt; ({ text: (await open
 <p>That makes mods a way to fit Claude Code to how you work. You can add a readout you check all the time, put a guard in front of the commands that make you nervous, or build a review view for how you like to read changes.</p>
 <p>This guide builds one mod from an empty folder, <strong>Token Weather</strong>, a live forecast of the context window drawn above the prompt. It's about 80 lines. Then it tours two larger mods, <strong>Blast Radius</strong> and <strong>Replay Theater</strong>, to show what else the API can do. The finished code for all three is in <a href="https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods">anthropics/claude-code-playground</a>.</p>
 <figure><figcaption><b>FIG A</b>Token Weather, Blast Radius and Replay Theater, one after another, in a terminal session</figcaption></figure>
-<figure><img src="https://claude.dev/media/eaee11951bbed827ef89ee535abfbbed7277b67a65044ea277ade9e9acd1d3b5.png" alt="A one-line terminal band cycling through three forecasts, a yellow sun for Clear, a blue umbrella for Showers and a pink lightning bolt for Storm, each with its token count out of 200k and a small bar chart of recent turns."><figcaption><b>FIG B</b>Token Weather's band as the context window fills: Clear at 18%, Showers at 67%, Storm at 81%</figcaption></figure>
+<figure><a href="../../assets/images/64b7f3cbcb97107677757271723ba64b3de406b57df9da0604fb64a6dcf02265.png"><img src="../../assets/images/64b7f3cbcb97107677757271723ba64b3de406b57df9da0604fb64a6dcf02265.png" alt="A one-line terminal band cycling through three forecasts, a yellow sun for Clear, a blue umbrella for Showers and a pink lightning bolt for Storm, each with its token count out of 200k and a small bar chart of recent turns." loading="lazy" decoding="async"></a><figcaption><b>FIG B</b>Token Weather's band as the context window fills: Clear at 18%, Showers at 67%, Storm at 81%</figcaption></figure>
 <p><strong>Claude Code 2.1.287 or later.</strong> Mods are on by default, so there's nothing to turn on. The API can change between releases. Each time Claude Code loads a mod, it writes the type declarations for your build into the mod's <code>.claude-plugin/types/</code> folder, and those are the authority for your version.</p>
 <h2>HOW A MOD WORKS</h2>
 <p>A mod is a Claude Code plugin whose behavior lives in a JavaScript or TypeScript module:</p>
@@ -746,7 +746,7 @@ CODEJavaScript<pre><code>on("tool.call", { tool: "Bash" }, async ($, e, next) =&
 <li><strong>Buttons with hotkeys.</strong> <code>Button({ label: "Proceed", hotkey: "1", onPress })</code> works by click, by Tab and Enter, or by the digit.</li>
 <li><strong>Degrade to the band.</strong> The terminal docks a pane beside the transcript when it's wide enough. When <code>$.ui.open</code> answers <code>isPlaced: false</code>, the same report is drawn above the prompt:</li>
 </ul>
-<figure><img src="https://claude.dev/media/ac53d89fc2dbe36603c30639b12fdc7edcfba5072b9b417e656a65a2d196cc37.png" alt="A terminal with no side pane: a yellow-bordered box above the prompt shows the command, the two files with uncommitted changes it would discard, and numbered Proceed and Cancel choices."><figcaption><b>FIG E</b>At 120 columns, Blast Radius draws its report for git reset --hard in the band above the prompt</figcaption></figure>
+<figure><a href="../../assets/images/37da4bfb17e2f8fe4ecb7993f94ff9c227b7bd76c859046680348d7dcd8a5119.png"><img src="../../assets/images/37da4bfb17e2f8fe4ecb7993f94ff9c227b7bd76c859046680348d7dcd8a5119.png" alt="A terminal with no side pane: a yellow-bordered box above the prompt shows the command, the two files with uncommitted changes it would discard, and numbered Proceed and Cancel choices." loading="lazy" decoding="async"></a><figcaption><b>FIG E</b>At 120 columns, Blast Radius draws its report for git reset --hard in the band above the prompt</figcaption></figure>
 <p>It's a safety net, not a permission system. It reads the command text, so <code>$(…)</code>, aliases and scripts that call <code>rm</code> get past it. Use permission rules for a hard block.</p>
 <h3>Replay Theater: step through the last turn's edits</h3>
 <p>While a turn runs, Replay Theater records every Edit and Write call: the file, plus the text before and after. When the turn ends, a hint appears above the prompt. Press <code>r</code> (or type <code>/replay</code>) and a pane walks through the edits one diff at a time, with a strip of numbered steps and <strong>Prev</strong>, <strong>Next</strong> and <strong>Close</strong> buttons.</p>
@@ -778,7 +778,7 @@ on("command.run", { command: "replay" }, async ($, e) =&gt; ({ text: (await open
 <li><strong>Reading files.</strong> For a Write, <code>$.fs.read</code> gets the old contents just before the write lands, so the diff is real.</li>
 <li><strong>Placement is the surface's job.</strong> In fullscreen the pane docks on the right. At 80 columns it opens inline above the prompt. The mod draws the same tree either way.</li>
 </ul>
-<figure><img src="https://claude.dev/media/bb2b908077c752f4e43672b5d5e7b0d262756bf27303d0884634cd142487f996.png" alt="A tall terminal window with a magenta-bordered box above the prompt: a numbered step strip, the file greet.js, a one-line diff, and Prev, Next and Close buttons."><figcaption><b>FIG G</b>Replay Theater at 80 columns, drawn inline above the prompt</figcaption></figure>
+<figure><a href="../../assets/images/7c571e6265500fc8da9ae3eda0cc7c505410c27873cf365b5f5987a5bd795f98.png"><img src="../../assets/images/7c571e6265500fc8da9ae3eda0cc7c505410c27873cf365b5f5987a5bd795f98.png" alt="A tall terminal window with a magenta-bordered box above the prompt: a numbered step strip, the file greet.js, a one-line diff, and Prev, Next and Close buttons." loading="lazy" decoding="async"></a><figcaption><b>FIG G</b>Replay Theater at 80 columns, drawn inline above the prompt</figcaption></figure>
 <h2>FOUR HABITS WORTH KEEPING</h2>
 <ul>
 <li><strong>Lean on the types Claude Code writes for you.</strong> Each time it loads your mod, Claude Code writes the declarations for your build into the mod's <code>.claude-plugin/types/</code> folder, so your editor and <code>tsc -p</code> work with no extra step. They're the reference for every event, every method on <code>$</code> and every element's props.</li>

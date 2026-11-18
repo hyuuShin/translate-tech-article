@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -71,28 +71,28 @@
 <li><code>assets/</code>에서 프로젝트에 사용된 스프라이트 시트, 배경, 오디오를 확인합니다.</li>
 <li>컴파일된 <code>.gbc</code> 파일을 에뮬레이터에서 실행하거나 카트리지에 설치합니다.</li>
 </ul>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/lodge-podge.webp" alt="연못 옆에 있는 비버와 롯지의 픽셀 아트를 보여 주는 세 개의 게임 화면.">
+<a href="../../assets/images/258f5b3dec5359a2a3bf7d4f9896fa9606597f5bc332a82af51da888dd902003.webp"><img src="../../assets/images/258f5b3dec5359a2a3bf7d4f9896fa9606597f5bc332a82af51da888dd902003.webp" alt="연못 옆에 있는 비버와 롯지의 픽셀 아트를 보여 주는 세 개의 게임 화면." loading="lazy" decoding="async"></a>
 <p>그다음에는 몇 판 플레이해 보고, 게임을 더 재미있게 만들 방법을 Codex에 알려 주십시오. Lodge Podge에서는 비버를 더 통통하게(최대한 귀엽게) 만들고, 롯지를 지으려면 막대기뿐 아니라 진흙과 나뭇잎도 필요하도록 해 달라고 요청했습니다.</p>
 <h2>플러그인 구성</h2>
 <p>ModRetro Chromatic 플러그인에는 모델이 사용자를 대신해 활용할 수 있는 개발자 도구가 들어 있습니다.</p>
 <h3>캐릭터 애니메이션</h3>
 <p>Codex에 스프라이트 시트를 만들고 프레임을 나란히 보여 달라고 요청합니다. 애니메이션을 수정하려면 바꾸고 싶은 포즈나 방향을 지정한 후, Codex에 미리보기를 다시 만들어 달라고 요청합니다.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/walk-cycle.webp" alt="앞, 뒤, 옆을 향한 비버 포즈 여섯 개가 담긴 스프라이트 시트.">
+<a href="../../assets/images/ca35eba27f21b5e9b1a9a27357d16b7e7c4fecf7dae4b23c166dacd0972c55e0.webp"><img src="../../assets/images/ca35eba27f21b5e9b1a9a27357d16b7e7c4fecf7dae4b23c166dacd0972c55e0.webp" alt="앞, 뒤, 옆을 향한 비버 포즈 여섯 개가 담긴 스프라이트 시트." loading="lazy" decoding="async"></a>
 <h3>플레이어가 걸어 다닐 수 있는 맵 만들기</h3>
 <p>Codex에 장면의 배경과 충돌 맵(collision map)을 나란히 보여 달라고 요청합니다. 충돌 맵은 어떤 타일이 이동을 막는지 표시합니다. 배경을 보고 원하는 영역을 특정한 후, 어떤 타일을 이동 불가 또는 이동 가능으로 표시할지 Codex에 알려 주십시오.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/room-collisions.webp" alt="장면 배경과, 이동이 막힌 타일을 빨간색으로 강조한 같은 장면이 나란히 놓여 있는 모습.">
+<a href="../../assets/images/6db1daa7881aef4d5069f0f62fa5f8d545fc34e535811e434e2857f8c40d06f6.webp"><img src="../../assets/images/6db1daa7881aef4d5069f0f62fa5f8d545fc34e535811e434e2857f8c40d06f6.webp" alt="장면 배경과, 이동이 막힌 타일을 빨간색으로 강조한 같은 장면이 나란히 놓여 있는 모습." loading="lazy" decoding="async"></a>
 <h3>Codex에서 ROM 플레이</h3>
 <p>Codex에 내장 브라우저에서 게임 미리보기를 열어 달라고 요청합니다. Game Boy의 방향 패드(D-pad)에는 방향키를, <strong>A</strong>에는 <strong>Z</strong>를, <strong>B</strong>에는 <strong>X</strong>를, <strong>Start</strong>에는 <strong>Enter</strong>를 사용합니다. 에뮬레이터 위의 툴바에서 일시 정지하거나 다시 시작할 수 있습니다.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/playable-preview.webp" alt="Codex의 Chromatic 미리보기에서 실행 중인 Lodge Podge.">
+<a href="../../assets/images/b65c967712a6390193e31d6ba9338687e4d5290696c625202b2322251fe41f9c.webp"><img src="../../assets/images/b65c967712a6390193e31d6ba9338687e4d5290696c625202b2322251fe41f9c.webp" alt="Codex의 Chromatic 미리보기에서 실행 중인 Lodge Podge." loading="lazy" decoding="async"></a>
 <h3>변경하고 싶은 부분 가리키기</h3>
 <p>미리보기 툴바에서 <strong>Annotate game</strong>을 선택한 후 게임 화면을 클릭해 프레임을 고정합니다. 바꾸고 싶은 스프라이트, 타일 또는 영역을 선택하고 수정 내용을 설명합니다. <strong>Resume game</strong>을 선택하면 에뮬레이터로 돌아갑니다. Codex가 변경을 마치면 ROM을 다시 빌드하고 미리보기를 다시 열어 달라고 요청합니다.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/annotate-preview.webp" alt="툴바에서 주석 도구가 선택된 채 일시 정지된 에뮬레이터.">
+<a href="../../assets/images/566f387a033f56babb6fa41a1f518de815c64bef22c1580dd515d8b761c9dcf2.webp"><img src="../../assets/images/566f387a033f56babb6fa41a1f518de815c64bef22c1580dd515d8b761c9dcf2.webp" alt="툴바에서 주석 도구가 선택된 채 일시 정지된 에뮬레이터." loading="lazy" decoding="async"></a>
 <h3>Codex로 일련의 동작 테스트</h3>
 <p>채팅에서 에뮬레이터를 직접 제어할 수도 있습니다. Codex에 ROM을 실행하고, 버튼 입력을 순서대로 보내고, 각 단계 후에 프레임을 캡처해 달라고 요청합니다. 프레임을 나란히 보여 달라고 하면 한눈에 비교해 검토할 수 있습니다.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/playtest-frames.webp" alt="각각 프레임 번호가 표시된 에뮬레이터 프레임 세 개가 나란히 배열된 모습.">
+<a href="../../assets/images/04ba63fc19d2e5a24e60184c5d268dd009e52d3ac72950c4b197d6d2ab1e39d4.webp"><img src="../../assets/images/04ba63fc19d2e5a24e60184c5d268dd009e52d3ac72950c4b197d6d2ab1e39d4.webp" alt="각각 프레임 번호가 표시된 에뮬레이터 프레임 세 개가 나란히 배열된 모습." loading="lazy" decoding="async"></a>
 <h2>GB Studio에서 편집</h2>
 <p>GB Studio는 Game Boy 게임을 만들기 위한 비주얼 에디터입니다. 프로젝트의 <code>.gbsproj</code> 파일을 열고 <strong>Game World</strong>를 선택합니다. 내비게이터에서 장면을 선택하면 사이드바에 해당 장면의 속성이 표시됩니다. 액터를 새로운 타일로 드래그하거나, 장면에서 직접 충돌을 편집할 수 있습니다. 프로젝트를 저장한 후 Codex 채팅으로 돌아가 다시 빌드하고 미리보기를 열어 달라고 요청합니다. <a href="https://www.gbstudio.dev/docs/project-editor/scenes/">장면에 대한 GB Studio 가이드</a>에서 배경, 액터, 트리거가 서로 어떻게 맞물리는지 설명합니다.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/gb-studio-game-world.webp" alt="GB Studio의 Game World에 Lodge Podge의 Survey stakes 장면과 Woven walls 장면이 표시된 모습.">
+<a href="../../assets/images/bb18d2e7de70b5dd1c19c0f04b3ba07f4e41dd0c2f1f5d68abde2c371815b423.webp"><img src="../../assets/images/bb18d2e7de70b5dd1c19c0f04b3ba07f4e41dd0c2f1f5d68abde2c371815b423.webp" alt="GB Studio의 Game World에 Lodge Podge의 Survey stakes 장면과 Woven walls 장면이 표시된 모습." loading="lazy" decoding="async"></a>
 <h3>그 외 개발 옵션</h3>
 <ul>
 <li><strong>GB Studio 게임 확장하기.</strong> 기본 제공 이벤트로 원하는 메커니즘을 구현할 수 없다면, GB Studio의 가상 머신 언어인 GBVM으로 커스텀 이벤트를 추가하거나 C로 엔진을 확장할 수 있습니다. 자세한 내용은 <a href="https://www.gbstudio.dev/docs/extending-gbstudio/plugins/">GB Studio 플러그인 가이드</a>를 참고하십시오.</li>
@@ -133,28 +133,28 @@
 <li>Look in <code>assets/</code> for the sprite sheets, backgrounds, and audio used by the project.</li>
 <li>Run the compiled <code>.gbc</code> file in an emulator or install it on a cartridge.</li>
 </ul>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/lodge-podge.webp" alt="Three game screens showing pixel art of a beaver and a lodge beside a pond.">
+<a href="../../assets/images/258f5b3dec5359a2a3bf7d4f9896fa9606597f5bc332a82af51da888dd902003.webp"><img src="../../assets/images/258f5b3dec5359a2a3bf7d4f9896fa9606597f5bc332a82af51da888dd902003.webp" alt="Three game screens showing pixel art of a beaver and a lodge beside a pond." loading="lazy" decoding="async"></a>
 <p>From there, play a few rounds and tell Codex what would make the game more fun. In Lodge Podge, I asked Codex to make the beaver chonkier (for maximum cuteness) and to require mud and leaves as well as sticks to build the lodge.</p>
 <h2>What’s in the plugin</h2>
 <p>The ModRetro Chromatic plugin contains developer tools the model can use on your behalf.</p>
 <h3>Animate a character</h3>
 <p>Ask Codex to create a sprite sheet and show you the frames side by side. To revise the animation, identify the pose or direction you want to change, then ask Codex to rebuild the preview.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/walk-cycle.webp" alt="A sprite sheet with six front-, back-, and side-facing beaver poses.">
+<a href="../../assets/images/ca35eba27f21b5e9b1a9a27357d16b7e7c4fecf7dae4b23c166dacd0972c55e0.webp"><img src="../../assets/images/ca35eba27f21b5e9b1a9a27357d16b7e7c4fecf7dae4b23c166dacd0972c55e0.webp" alt="A sprite sheet with six front-, back-, and side-facing beaver poses." loading="lazy" decoding="async"></a>
 <h3>Build a map the player can walk through</h3>
 <p>Ask Codex to show you a scene’s background and collision map side by side. The collision map marks which tiles block movement. Use the background to identify the area you mean, then tell Codex which tiles to mark as blocked or walkable.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/room-collisions.webp" alt="A scene background beside the same scene with blocked tiles highlighted in red.">
+<a href="../../assets/images/6db1daa7881aef4d5069f0f62fa5f8d545fc34e535811e434e2857f8c40d06f6.webp"><img src="../../assets/images/6db1daa7881aef4d5069f0f62fa5f8d545fc34e535811e434e2857f8c40d06f6.webp" alt="A scene background beside the same scene with blocked tiles highlighted in red." loading="lazy" decoding="async"></a>
 <h3>Play the ROM in Codex</h3>
 <p>Ask Codex to open the game preview in its built-in browser. Use the arrow keys for the Game Boy’s D-pad, <strong>Z</strong> for <strong>A</strong>, <strong>X</strong> for <strong>B</strong>, and <strong>Enter</strong> for <strong>Start</strong>. Use the toolbar above the emulator to pause or resume.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/playable-preview.webp" alt="Lodge Podge running in the Chromatic preview in Codex.">
+<a href="../../assets/images/b65c967712a6390193e31d6ba9338687e4d5290696c625202b2322251fe41f9c.webp"><img src="../../assets/images/b65c967712a6390193e31d6ba9338687e4d5290696c625202b2322251fe41f9c.webp" alt="Lodge Podge running in the Chromatic preview in Codex." loading="lazy" decoding="async"></a>
 <h3>Point to the part you want to change</h3>
 <p>Choose <strong>Annotate game</strong> in the preview toolbar, then click the game display to freeze a frame. Select the sprite, tile, or area you want to change and describe the edit. Choose <strong>Resume game</strong> to return to the emulator. After Codex makes the change, ask it to rebuild the ROM and reopen the preview.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/annotate-preview.webp" alt="The emulator paused with the annotation tool selected in the toolbar.">
+<a href="../../assets/images/566f387a033f56babb6fa41a1f518de815c64bef22c1580dd515d8b761c9dcf2.webp"><img src="../../assets/images/566f387a033f56babb6fa41a1f518de815c64bef22c1580dd515d8b761c9dcf2.webp" alt="The emulator paused with the annotation tool selected in the toolbar." loading="lazy" decoding="async"></a>
 <h3>Have Codex test a sequence of moves</h3>
 <p>You can also control the emulator from chat. Ask Codex to run the ROM, send a sequence of button presses, and capture a frame after each step. Ask for the frames side by side so you can inspect them together.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/playtest-frames.webp" alt="Three emulator frames arranged side by side, each labeled with its frame number.">
+<a href="../../assets/images/04ba63fc19d2e5a24e60184c5d268dd009e52d3ac72950c4b197d6d2ab1e39d4.webp"><img src="../../assets/images/04ba63fc19d2e5a24e60184c5d268dd009e52d3ac72950c4b197d6d2ab1e39d4.webp" alt="Three emulator frames arranged side by side, each labeled with its frame number." loading="lazy" decoding="async"></a>
 <h2>Edit in GB Studio</h2>
 <p>GB Studio is a visual editor for building Game Boy games. Open your project’s <code>.gbsproj</code> file and choose <strong>Game World</strong>. Select a scene in the navigator to see its properties in the sidebar. You can drag an actor to a new tile or edit collisions directly on the scene. Save the project, then return to your Codex chat and ask it to rebuild and open the preview. The <a href="https://www.gbstudio.dev/docs/project-editor/scenes/">GB Studio guide to scenes</a> explains how backgrounds, actors, and triggers fit together.</p>
-<img src="https://developers.openai.com/images/blog/build-a-game-with-modretro-chromatic/gb-studio-game-world.webp" alt="GB Studio’s Game World shows the Survey stakes and Woven walls scenes for Lodge Podge.">
+<a href="../../assets/images/bb18d2e7de70b5dd1c19c0f04b3ba07f4e41dd0c2f1f5d68abde2c371815b423.webp"><img src="../../assets/images/bb18d2e7de70b5dd1c19c0f04b3ba07f4e41dd0c2f1f5d68abde2c371815b423.webp" alt="GB Studio’s Game World shows the Survey stakes and Woven walls scenes for Lodge Podge." loading="lazy" decoding="async"></a>
 <h3>Other development options</h3>
 <ul>
 <li><strong>Extend a GB Studio game.</strong> If the built-in events don’t cover a mechanic, you can add a custom event in GBVM, GB Studio’s virtual-machine language, or extend the engine in C. See the <a href="https://www.gbstudio.dev/docs/extending-gbstudio/plugins/">GB Studio plugin guide</a>.</li>

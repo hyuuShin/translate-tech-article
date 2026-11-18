@@ -176,7 +176,7 @@ img { max-width: 100%; height: auto; }
 .prose pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto; line-height: 1.55; }
 .prose pre code { background: none; padding: 0; font-size: 13.5px; word-break: normal; white-space: pre; }
 .prose figure { margin: 2em 0; }
-.prose figure img, .prose > img, .prose p > img { display: block; margin: 0 auto; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+.prose img { display: block; margin: 0 auto; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
 .prose figcaption { margin-top: 10px; font-size: 14px; color: var(--muted); text-align: center; }
 .prose figcaption p { margin: 0; }
 .prose table { width: 100%; border-collapse: collapse; font-size: 15px; display: block; overflow-x: auto; }

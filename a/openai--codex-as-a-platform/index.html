@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -90,14 +90,14 @@
 <p>가장 흥미로운 기회는 로고만 바꾼 Codex 앱을 다시 만드는 것이 아니라, 특정 개인이나 팀이 이미 일하는 방식을 반영한 소프트웨어를 만드는 것입니다.</p>
 <p>보안 분석가에게는 조사 큐, 최근 알림, 영향받는 서비스, 그리고 조치 티켓을 열기 전의 승인 단계가 필요할 수 있습니다. 지원 엔지니어에게는 계정 이력, 제품 로그, 사내 문서, 응답 초안이 필요할 수 있습니다. 제품 팀은 이슈를 준비 완료 상태로 옮기면 범위가 정해진 구현 워크플로가 시작되는 작업 보드를 원할 수 있습니다.</p>
 <p>이 모든 예시에서 인터페이스는 경험의 중요한 부분입니다. 인터페이스는 사용자가 무엇을 보고 있는지 에이전트에게 알려주고, 적절한 도구를 제공하며, 다음에 일어날 일을 사용자가 검토할 수 있는 공간을 제공합니다.</p>
-<figure><img src="https://developers.openai.com/images/blog/codex-platform-agent-stack.webp" alt="애플리케이션이 소유한 인터페이스, 비즈니스 컨텍스트, 동의 절차, Codex app-server의 에이전트 루프와 샌드박스 실행, 애플리케이션이 소유한 MCP 데이터와 작업을 보여주는 아키텍처 다이어그램."><figcaption><p>그림 1. 애플리케이션은 제품 컨텍스트, 비즈니스 규칙, 도구를 소유하고,
+<figure><a href="../../assets/images/0c58627ec9b924d88c0ded23c6ec4930abdb12cf23fdacc98daf42e42298d171.webp"><img src="../../assets/images/0c58627ec9b924d88c0ded23c6ec4930abdb12cf23fdacc98daf42e42298d171.webp" alt="애플리케이션이 소유한 인터페이스, 비즈니스 컨텍스트, 동의 절차, Codex app-server의 에이전트 루프와 샌드박스 실행, 애플리케이션이 소유한 MCP 데이터와 작업을 보여주는 아키텍처 다이어그램." loading="lazy" decoding="async"></a><figcaption><p>그림 1. 애플리케이션은 제품 컨텍스트, 비즈니스 규칙, 도구를 소유하고,
 Codex app-server는 에이전트 루프와 샌드박스 실행을 제공합니다.</p></figcaption></figure>
 <h2>예시: Relay</h2>
 <p>저희는 Codex app-server 기반의 샘플 운영 애플리케이션으로 Relay를 만들었습니다. Relay는 가상의 배송 대시보드 옆에 에이전트를 배치하고, 애플리케이션이 소유한 MCP 도구에 연결하며, 배송을 재예약하기 전에 사람의 승인을 요구합니다.</p>
 <p>사용자는 프롬프트를 처음부터 작성하는 것으로 시작하지 않습니다. 배송 건을 선택하고 <strong>Compare recovery</strong> 같은 액션을 클릭합니다. 그러면 애플리케이션이 관련 컨텍스트를 제공하고, Codex가 최신 샘플 운영 데이터를 가져오며, 에이전트가 선택 가능한 옵션을 설명합니다. 결과에 영향을 미치는 쓰기 작업은 모두 승인을 거쳐야 합니다.</p>
 <p>이후 Codex는 애플리케이션의 MCP 도구를 사용해 최신 데이터를 가져온 뒤, 조치를 권고하거나 승인 후에는 직접 조치를 수행할 수 있습니다. 도구가 기반 레코드를 변경하면 애플리케이션은 비즈니스 뷰를 새로 고칩니다. 하네스(harness)는 에이전트 루프(agent loop), 대화 상태, 스트리밍되는 활동, 도구 상호작용을 처리하고, 제품은 대시보드, 레코드, 제어 기능을 계속 직접 소유합니다.</p>
 <p>Relay는 가상의 시드 데이터를 사용하지만, 이 통합 패턴은 일반적으로 적용할 수 있습니다. 같은 패턴으로 인시던트 대응, 계정 운영, 리서치 워크플로, 또는 기존 제품 경험 안에서 에이전트가 작업해야 하는 다른 애플리케이션도 구동할 수 있습니다.</p>
-<figure><img src="https://developers.openai.com/images/blog/codex-platform-relay-operations.webp" alt="예외 큐, 배송 상세 정보, 그리고 지연된 배송 건을 조사하는 Codex 에이전트를 보여주는 Relay 배송 운영 대시보드."><figcaption><p>그림 2. Relay는 애플리케이션이 소유한 MCP 도구와 결과에 영향을 미치는 작업에 대한 사람의 승인 절차를 갖춘 배송 운영 대시보드에 Codex를 내장합니다.</p></figcaption></figure>
+<figure><a href="../../assets/images/b489346ba0cb920d92b0224d25ea946656ad048cd94f41b8cd1e5210613bccad.webp"><img src="../../assets/images/b489346ba0cb920d92b0224d25ea946656ad048cd94f41b8cd1e5210613bccad.webp" alt="예외 큐, 배송 상세 정보, 그리고 지연된 배송 건을 조사하는 Codex 에이전트를 보여주는 Relay 배송 운영 대시보드." loading="lazy" decoding="async"></a><figcaption><p>그림 2. Relay는 애플리케이션이 소유한 MCP 도구와 결과에 영향을 미치는 작업에 대한 사람의 승인 절차를 갖춘 배송 운영 대시보드에 Codex를 내장합니다.</p></figcaption></figure>
 <h2>개발자들이 만들고 있는 것</h2>
 <p>이 패턴은 이미 공개된 구현 사례에서 나타나고 있습니다.</p>
 <ul>
@@ -158,14 +158,14 @@ Codex app-server는 에이전트 루프와 샌드박스 실행을 제공합니�
 <p>The most interesting opportunity is not to reproduce the Codex app with a different logo, but to build software that reflects how a specific person or team already works:</p>
 <p>A security analyst might need an investigation queue, recent alerts, affected services, and an approval step before opening a remediation ticket. A support engineer might need account history, product logs, internal documentation, and a draft response. A product team might want a task board where moving an issue into a ready state begins a scoped implementation workflow.</p>
 <p>In each example, the interface is an important part of the experience. It tells the agent what the user is looking at, gives it the right tools, and gives the user a place to review what happens next.</p>
-<figure><img src="https://developers.openai.com/images/blog/codex-platform-agent-stack.webp" alt="Architecture diagram showing an application-owned interface, business context, and consent; Codex app-server agent loop and sandboxed execution; and application-owned MCP data and actions."><figcaption><p>Figure 1. Your application owns product context, business rules, and tools;
+<figure><a href="../../assets/images/0c58627ec9b924d88c0ded23c6ec4930abdb12cf23fdacc98daf42e42298d171.webp"><img src="../../assets/images/0c58627ec9b924d88c0ded23c6ec4930abdb12cf23fdacc98daf42e42298d171.webp" alt="Architecture diagram showing an application-owned interface, business context, and consent; Codex app-server agent loop and sandboxed execution; and application-owned MCP data and actions." loading="lazy" decoding="async"></a><figcaption><p>Figure 1. Your application owns product context, business rules, and tools;
 Codex app-server provides the agent loop and sandboxed execution.</p></figcaption></figure>
 <h2>Example: Relay</h2>
 <p>We built Relay as a sample operations application on Codex app-server. It places an agent beside a fictional shipment dashboard, connects it to application-owned MCP tools, and requires human approval before a shipment is rebooked.</p>
 <p>The user does not start by writing a prompt from scratch. They select a shipment and click an action such as <strong>Compare recovery</strong>. The application supplies the relevant context, Codex retrieves the latest sample operational data, the agent explains the available options, and any consequential write requires approval.</p>
 <p>Codex can then use the application’s MCP tools to fetch current data before recommending—or, after approval, taking—an action. When a tool changes the underlying record, the application refreshes its business view. The harness handles the agent loop, conversation state, streamed activity, and tool interaction; the product continues to own its dashboard, records, and controls.</p>
 <p>Relay uses fictional seeded data, but the integration pattern is general. The same pattern could power incident response, account operations, research workflows, or other applications where an agent should work inside an existing product experience.</p>
-<figure><img src="https://developers.openai.com/images/blog/codex-platform-relay-operations.webp" alt="Relay shipment operations dashboard showing an exception queue, shipment details, and a Codex agent investigating a delayed shipment."><figcaption><p>Figure 2. Relay embeds Codex in a shipment operations dashboard, with
+<figure><a href="../../assets/images/b489346ba0cb920d92b0224d25ea946656ad048cd94f41b8cd1e5210613bccad.webp"><img src="../../assets/images/b489346ba0cb920d92b0224d25ea946656ad048cd94f41b8cd1e5210613bccad.webp" alt="Relay shipment operations dashboard showing an exception queue, shipment details, and a Codex agent investigating a delayed shipment." loading="lazy" decoding="async"></a><figcaption><p>Figure 2. Relay embeds Codex in a shipment operations dashboard, with
 application-owned MCP tools and human approval for consequential actions.</p></figcaption></figure>
 <h2>What developers are building</h2>
 <p>This pattern is already showing up in public implementations:</p>

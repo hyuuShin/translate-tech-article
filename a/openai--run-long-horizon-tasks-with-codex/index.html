@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -52,17 +52,17 @@
   <article class="prose lang-ko"><p>2025년 9월, OpenAI는 에이전트형 코딩(agentic coding)에 최적화된 첫 번째 GPT-5 버전으로 GPT-5-Codex를 선보였습니다. 2025년 12월에는 5.2를 출시했고, 이때부터 사람들은 자율 코딩 에이전트를 신뢰하고 사용할 수 있다고 생각하기 시작했습니다. 특히 모델이 지시를 안정적으로 따를 수 있는 시간이 크게 늘어났습니다.</p>
 <p>저는 이 기준선을 직접 시험해 보고 싶었습니다. 그래서 Codex에게 빈 저장소와 전체 권한을 주고, 처음부터 디자인 도구를 만들라는 하나의 과제를 맡겼습니다. 그런 다음 GPT-5.3-Codex를 "Extra High" 추론 설정으로 실행했습니다. Codex는 약 25시간 동안 중단 없이 실행되었고, 약 1,300만 개의 토큰을 사용했으며, 약 3만 줄의 코드를 생성했습니다.</p>
 <p>이는 프로덕션 도입이 아니라 실험이었습니다. 그럼에도 장시간 작업에서 중요한 부분인 스펙 준수, 작업 집중 유지, 검증 실행, 실패 복구를 진행하는 내내 잘 수행했습니다.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-16.jpeg" alt="Codex Design Desk UI"></p>
+<p><a href="../../assets/images/e6dc6d09cc909dcd1dc9669432031fb0c07d2e42f2656406b8b73effe8173043.jpg"><img src="../../assets/images/e6dc6d09cc909dcd1dc9669432031fb0c07d2e42f2656406b8b73effe8173043.jpg" alt="Codex Design Desk UI" loading="lazy" decoding="async"></a></p>
 <h2>장시간 Codex 세션의 모습</h2>
 <p>저는 Codex에게 세션 데이터를 요약하는 페이지를 생성해 달라고 요청했습니다.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-1.jpeg" alt="Codex session summary dashboard"></p>
+<p><a href="../../assets/images/fc9cf8f2dff61ef3eb41a47a8be2e33bae737fe5b5562b7b099acf2a8e265337.jpg"><img src="../../assets/images/fc9cf8f2dff61ef3eb41a47a8be2e33bae737fe5b5562b7b099acf2a8e265337.jpg" alt="Codex session summary dashboard" loading="lazy" decoding="async"></a></p>
 <p>다음은 CLI 세션 통계와 토큰 사용량을 보여 주는 화면입니다.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-2.jpeg" alt="Codex CLI session stats and token usage"></p>
+<p><a href="../../assets/images/c5cdbcc37df71d00d6b480fa82e73c8851199304f34a4eb3d42b482fa394806d.jpg"><img src="../../assets/images/c5cdbcc37df71d00d6b480fa82e73c8851199304f34a4eb3d42b482fa394806d.jpg" alt="Codex CLI session stats and token usage" loading="lazy" decoding="async"></a></p>
 <p>이 스크린샷은 핵심적인 변화를 눈에 보이게 해 준다는 점에서 유용합니다. 에이전트형 코딩은 단발성 지능만이 아니라 점점 더 시간 지평(time horizon)의 문제가 되고 있습니다.</p>
 <h2>진짜 변화는 시간 지평</h2>
 <p>이는 단순히 "모델이 더 똑똑해졌다"는 이야기가 아닙니다. 실질적인 변화는 에이전트가 더 오래 일관성을 유지하고, 더 큰 규모의 작업을 처음부터 끝까지 완료하며, 맥락을 잃지 않고 오류에서 복구할 수 있게 되었다는 점입니다.</p>
 <p>시간 지평 벤치마크에 관한 METR의 연구는 이 추세를 이해하는 데 도움이 되는 틀입니다. 최신 에이전트가 약 50%와 80%의 신뢰도로 완료할 수 있는 소프트웨어 작업의 길이는 대략 7개월마다 두 배가 되는 속도로 빠르게 늘어 왔습니다. <a href="https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/">Measuring AI Ability to Complete Long Tasks (METR)</a>를 참고하십시오.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-3.jpeg" alt="METR chart measuring AI ability to complete long tasks"></p>
+<p><a href="../../assets/images/b6259df62d75eb429f4f2364aac64bea4924fcc14d29d4e6af4b5a97aa7c15e3.jpg"><img src="../../assets/images/b6259df62d75eb429f4f2364aac64bea4924fcc14d29d4e6af4b5a97aa7c15e3.jpg" alt="METR chart measuring AI ability to complete long tasks" loading="lazy" decoding="async"></a></p>
 <p>최근 GPT-5.3-Codex <a href="https://openai.com/index/introducing-gpt-5-3-codex/">출시 발표</a>는 에이전트 작업을 두 가지 실용적인 측면에서 한 단계 더 끌어올렸습니다.</p>
 <ol>
 <li>다단계 실행(계획 → 구현 → 검증 → 복구)에 더 강합니다.</li>
@@ -97,7 +97,7 @@
 <li><a href="https://developers.openai.com/codex/automations/">Automations</a>(반복 작업을 백그라운드에서 처리합니다)</li>
 <li><a href="https://developers.openai.com/codex/environments/git-worktrees/">Git worktrees</a>(실행을 격리하고, diff를 검토 가능한 상태로 유지하며, 불필요한 변경을 줄입니다)</li>
 </ul>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-4.jpeg" alt="Codex app workspace with project thread"></p>
+<p><a href="../../assets/images/49636c79540b67645a5616e767c809260a3665eef556b54b7ad81c8851d4947a.jpg"><img src="../../assets/images/49636c79540b67645a5616e767c809260a3665eef556b54b7ad81c8851d4947a.jpg" alt="Codex app workspace with project thread" loading="lazy" decoding="async"></a></p>
 <h2>테스트 구성</h2>
 <p>이번 "실험"에 디자인 도구를 고른 이유는 까다로운 테스트이기 때문입니다. UI, 데이터 모델, 편집 연산, 수많은 예외 상황이 모두 얽혀 있습니다. 이런 작업은 대충 넘어갈 수 없습니다. 아키텍처가 잘못되면 금방 무너집니다.</p>
 <p>저는 GPT-5.3-Codex에게 충실한 스펙을 주고 "Extra High" 추론 설정으로 실행했습니다. 그 결과 약 25시간 동안 중단 없이 실행되었고, 일관성을 유지하면서 품질 높은 코드를 만들어 냈습니다. 또한 모델은 완료한 모든 마일스톤마다 검증 단계(테스트, 린트, 타입 체크)를 실행했습니다.</p>
@@ -114,7 +114,7 @@
 <li>"완료 조건"(검증 항목과 데모 흐름)</li>
 </ul>
 <p>초기 프롬프트는 Codex에게 프롬프트/스펙 파일을 프로젝트 전체 명세로 취급하고, 마일스톤 기반 계획을 생성하라고 지시했습니다.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-5.jpeg" alt="Prompt used to kickstart the Codex run"></p>
+<p><a href="../../assets/images/dd9f89cc9512c314ef7fea7ed3980ae885fb7c9d8357c04f0e7418f176f12f62.jpg"><img src="../../assets/images/dd9f89cc9512c314ef7fea7ed3980ae885fb7c9d8357c04f0e7418f176f12f62.jpg" alt="Prompt used to kickstart the Codex run" loading="lazy" decoding="async"></a></p>
 <h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/plans.md">Plan.md</a>(마일스톤과 검증)</h4>
 <p>목적: 끝이 정해지지 않은 작업을 에이전트가 완료하고 검증할 수 있는 일련의 체크포인트로 바꿉니다.</p>
 <p>파일의 주요 섹션:</p>
@@ -125,7 +125,7 @@
 <li>같은 결정을 번복하는 일을 막기 위한 결정 기록</li>
 <li>코드베이스의 의도된 아키텍처</li>
 </ul>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-6.jpeg" alt="Codex referring to the plans markdown file while working"></p>
+<p><a href="../../assets/images/db9cf89aa34ed531ce021fbad2dc006b9ae5f80ab12a2a3e37c0ea626d713db2.jpg"><img src="../../assets/images/db9cf89aa34ed531ce021fbad2dc006b9ae5f80ab12a2a3e37c0ea626d713db2.jpg" alt="Codex referring to the plans markdown file while working" loading="lazy" decoding="async"></a></p>
 <p><em>최근 Codex 앱, CLI, IDE 확장 프로그램에 네이티브 계획 모드(plan mode)가 추가되었습니다. 이 모드는 변경을 시작하기 전에 큰 작업을 명확하고 검토 가능한 단계로 나누어 주므로, 접근 방식을 미리 합의할 수 있습니다. 추가 확인이 필요하면 Codex가 후속 질문을 합니다. 이 모드를 켜려면 /plan 슬래시 명령어를 사용하십시오.</em></p>
 <h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/implement.md">Implement.md</a> (계획을 참조하는 실행 지침)</h4>
 <p>목적: 이 파일은 런북(runbook)입니다. 계획을 따르고, diff의 범위를 제한하고, 검증을 실행하고, 문서를 업데이트하는 등 Codex가 어떻게 작업해야 하는지 정확하게 알려 줍니다.</p>
@@ -136,7 +136,7 @@
 <li>diff의 범위를 제한하고, 작업 범위를 확장하지 않습니다</li>
 <li>문서 마크다운 파일을 지속적으로 업데이트합니다</li>
 </ul>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-7.jpeg" alt="Prompt instructing Codex to read implement.md as execution instructions"></p>
+<p><a href="../../assets/images/d495bfd38304ecfc2380391a793b99d619a927b0e3060ba61a91af46807b68ca.jpg"><img src="../../assets/images/d495bfd38304ecfc2380391a793b99d619a927b0e3060ba61a91af46807b68ca.jpg" alt="Prompt instructing Codex to read implement.md as execution instructions" loading="lazy" decoding="async"></a></p>
 <h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/documentation.md">Documentation.md</a> (진행 상태와 결정 사항 기록)</h4>
 <p>목적: 이 파일은 공유 메모리이자 감사 로그입니다. 몇 시간 자리를 비웠다가 돌아와도 무슨 일이 있었는지 파악할 수 있는 이유가 바로 이 파일입니다.</p>
 <p>파일의 주요 섹션은 다음과 같습니다.</p>
@@ -146,15 +146,15 @@
 <li>실행 및 데모 방법 (명령어와 간단한 스모크 테스트)</li>
 <li>알려진 이슈와 후속 작업</li>
 </ul>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-8.jpeg" alt="Documentation file showing milestone status updates"></p>
+<p><a href="../../assets/images/f13a4ef746081b4de6ecdbcb0f270dcab15a2e31727acb5c500ea150c6ff5c92.jpg"><img src="../../assets/images/f13a4ef746081b4de6ecdbcb0f270dcab15a2e31727acb5c500ea150c6ff5c92.jpg" alt="Documentation file showing milestone status updates" loading="lazy" decoding="async"></a></p>
 <p>실행 중 마일스톤 검증이 실제로 어떻게 이루어졌는지는 다음과 같습니다.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-9.jpeg" alt="Commands Codex ran to verify quality during milestones"></p>
+<p><a href="../../assets/images/2e3904f2b6cbc61af68222e8e5bd451f7151135ef2889760fd3d0d6011c1d648.jpg"><img src="../../assets/images/2e3904f2b6cbc61af68222e8e5bd451f7151135ef2889760fd3d0d6011c1d648.jpg" alt="Commands Codex ran to verify quality during milestones" loading="lazy" decoding="async"></a></p>
 <h3>모든 마일스톤에서의 검증</h3>
 <p>Codex는 코드를 작성한 뒤 잘 동작하기를 바라고 넘어가지 않았습니다. 마일스톤이 끝날 때마다 검증 명령어를 실행했고, 실패한 부분을 고친 뒤에 다음 단계로 진행했습니다.</p>
 <p>다음은 Codex에게 사용하도록 지시한 품질 검증 명령어의 예입니다.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-10.jpeg" alt="Quality commands for lint, typecheck, tests, build, and export"></p>
+<p><a href="../../assets/images/ad5c2f6b1161766c6e9fd3249c99635b2f623950a6a8334cfb9a79e43303ca50.jpg"><img src="../../assets/images/ad5c2f6b1161766c6e9fd3249c99635b2f623950a6a8334cfb9a79e43303ca50.jpg" alt="Quality commands for lint, typecheck, tests, build, and export" loading="lazy" decoding="async"></a></p>
 <p>다음은 lint 실패 이후 Codex가 문제를 수정한 예입니다.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-11.jpeg" alt="Codex fixing issues after npm run lint"></p>
+<p><a href="../../assets/images/a0293a0622f2904ff6472d2554ff322cce49e7a5675817b3255d1f01225f2232.jpg"><img src="../../assets/images/a0293a0622f2904ff6472d2554ff322cce49e7a5675817b3255d1f01225f2232.jpg" alt="Codex fixing issues after npm run lint" loading="lazy" decoding="async"></a></p>
 <h2>에이전트가 만든 결과물</h2>
 <p>결과물이 완벽하거나 프로덕션 수준은 아니었지만, 실제로 동작하고 테스트할 수 있었습니다. 이번 실행의 기준은 "컴파일이 되는가"가 아니라 "지시를 따르는가, 그리고 실제로 동작하는가"였습니다.</p>
 <p>구현된 주요 기능은 다음과 같습니다.</p>
@@ -194,17 +194,17 @@
   <article class="prose lang-en" hidden lang="en"><p>In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably follow instructions.</p>
 <p>I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.</p>
 <p>This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-16.jpeg" alt="Codex Design Desk UI"></p>
+<p><a href="../../assets/images/e6dc6d09cc909dcd1dc9669432031fb0c07d2e42f2656406b8b73effe8173043.jpg"><img src="../../assets/images/e6dc6d09cc909dcd1dc9669432031fb0c07d2e42f2656406b8b73effe8173043.jpg" alt="Codex Design Desk UI" loading="lazy" decoding="async"></a></p>
 <h2>What a long-run Codex session looks like</h2>
 <p>I asked Codex to generate a summary page for the session data:</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-1.jpeg" alt="Codex session summary dashboard"></p>
+<p><a href="../../assets/images/fc9cf8f2dff61ef3eb41a47a8be2e33bae737fe5b5562b7b099acf2a8e265337.jpg"><img src="../../assets/images/fc9cf8f2dff61ef3eb41a47a8be2e33bae737fe5b5562b7b099acf2a8e265337.jpg" alt="Codex session summary dashboard" loading="lazy" decoding="async"></a></p>
 <p>And here is a view of the CLI session stats and token usage:</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-2.jpeg" alt="Codex CLI session stats and token usage"></p>
+<p><a href="../../assets/images/c5cdbcc37df71d00d6b480fa82e73c8851199304f34a4eb3d42b482fa394806d.jpg"><img src="../../assets/images/c5cdbcc37df71d00d6b480fa82e73c8851199304f34a4eb3d42b482fa394806d.jpg" alt="Codex CLI session stats and token usage" loading="lazy" decoding="async"></a></p>
 <p>These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.</p>
 <h2>The real shift is time horizon</h2>
 <p>This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.</p>
 <p>METR’s work on time-horizon benchmarks is a helpful framing for this trend: the length of software tasks frontier agents can complete with ~50% and 80% reliability has been climbing fast, with a rough ~7 month doubling time. Refer to <a href="https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/">Measuring AI Ability to Complete Long Tasks (METR)</a>.</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-3.jpeg" alt="METR chart measuring AI ability to complete long tasks"></p>
+<p><a href="../../assets/images/b6259df62d75eb429f4f2364aac64bea4924fcc14d29d4e6af4b5a97aa7c15e3.jpg"><img src="../../assets/images/b6259df62d75eb429f4f2364aac64bea4924fcc14d29d4e6af4b5a97aa7c15e3.jpg" alt="METR chart measuring AI ability to complete long tasks" loading="lazy" decoding="async"></a></p>
 <p>Our recent GPT-5.3-Codex <a href="https://openai.com/index/introducing-gpt-5-3-codex/">launch announcement</a> pushes this further for agent work in two practical ways:</p>
 <ol>
 <li>It’s better at multi-step execution (plan → implement → validate → repair).</li>
@@ -239,7 +239,7 @@
 <li><a href="https://developers.openai.com/codex/automations/">Automations</a> (routine work in the background)</li>
 <li><a href="https://developers.openai.com/codex/environments/git-worktrees/">Git worktrees</a> (isolate runs, keep diffs reviewable, reduce thrash)</li>
 </ul>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-4.jpeg" alt="Codex app workspace with project thread"></p>
+<p><a href="../../assets/images/49636c79540b67645a5616e767c809260a3665eef556b54b7ad81c8851d4947a.jpg"><img src="../../assets/images/49636c79540b67645a5616e767c809260a3665eef556b54b7ad81c8851d4947a.jpg" alt="Codex app workspace with project thread" loading="lazy" decoding="async"></a></p>
 <h2>My setup for the test</h2>
 <p>I picked a design tool for this “experiment” because it’s an unforgiving test: UI + data model + editing operations + lots of edge cases. You can’t bluff it. If the architecture is wrong, it breaks quickly.</p>
 <p>I gave GPT-5.3-Codex a meaty spec, ran it at “Extra High” reasoning, and it ended up running uninterrupted for ~25 hours and was able to stay coherent and ship quality code. The model also ran verification steps (tests, lint, typecheck) for every milestone it completed.</p>
@@ -256,7 +256,7 @@
 <li>“Done when” (checks + demo flow)</li>
 </ul>
 <p>The initial prompt told Codex to treat the prompt/spec file as the full project specification and generate a milestone-based plan:</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-5.jpeg" alt="Prompt used to kickstart the Codex run"></p>
+<p><a href="../../assets/images/dd9f89cc9512c314ef7fea7ed3980ae885fb7c9d8357c04f0e7418f176f12f62.jpg"><img src="../../assets/images/dd9f89cc9512c314ef7fea7ed3980ae885fb7c9d8357c04f0e7418f176f12f62.jpg" alt="Prompt used to kickstart the Codex run" loading="lazy" decoding="async"></a></p>
 <h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/plans.md">Plan.md</a> (milestones + validations)</h4>
 <p>Purpose: Turn open-ended work into a sequence of checkpoints the agent can finish and verify.</p>
 <p>Key sections in the file:</p>
@@ -267,7 +267,7 @@
 <li>Decision notes to avoid oscillation</li>
 <li>Intended architecture of the codebase</li>
 </ul>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-6.jpeg" alt="Codex referring to the plans markdown file while working"></p>
+<p><a href="../../assets/images/db9cf89aa34ed531ce021fbad2dc006b9ae5f80ab12a2a3e37c0ea626d713db2.jpg"><img src="../../assets/images/db9cf89aa34ed531ce021fbad2dc006b9ae5f80ab12a2a3e37c0ea626d713db2.jpg" alt="Codex referring to the plans markdown file while working" loading="lazy" decoding="async"></a></p>
 <p><em>Note that we recently added a native plan mode to the Codex app, CLI, and IDE extension. This helps break a larger task into a clear, reviewable sequence of steps before making changes, so you can align on approach upfront. If additional clarification is needed, Codex will ask follow up questions. To toggle it on, use the /plan slash command.</em></p>
 <h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/implement.md">Implement.md</a> (execution instructions referencing the plan)</h4>
 <p>Purpose: This is the runbook. It tells Codex exactly how to operate: follow the plan, keep diffs scoped, run validations, update docs.</p>
@@ -278,7 +278,7 @@
 <li>Keep diffs scoped (don’t expand scope)</li>
 <li>Update documentation markdown file continuously</li>
 </ul>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-7.jpeg" alt="Prompt instructing Codex to read implement.md as execution instructions"></p>
+<p><a href="../../assets/images/d495bfd38304ecfc2380391a793b99d619a927b0e3060ba61a91af46807b68ca.jpg"><img src="../../assets/images/d495bfd38304ecfc2380391a793b99d619a927b0e3060ba61a91af46807b68ca.jpg" alt="Prompt instructing Codex to read implement.md as execution instructions" loading="lazy" decoding="async"></a></p>
 <h4><a href="https://github.com/derrickchoi-openai/design-desk/blob/main/docs/documentation.md">Documentation.md</a> (status + decisions as it shipped)</h4>
 <p>Purpose: This is the shared memory and audit log. It’s how I can step away for hours and still understand what happened.</p>
 <p>Key sections in the file:</p>
@@ -288,15 +288,15 @@
 <li>How to run + demo (commands + quick smoke tests)</li>
 <li>Known issues / follow-ups</li>
 </ul>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-8.jpeg" alt="Documentation file showing milestone status updates"></p>
+<p><a href="../../assets/images/f13a4ef746081b4de6ecdbcb0f270dcab15a2e31727acb5c500ea150c6ff5c92.jpg"><img src="../../assets/images/f13a4ef746081b4de6ecdbcb0f270dcab15a2e31727acb5c500ea150c6ff5c92.jpg" alt="Documentation file showing milestone status updates" loading="lazy" decoding="async"></a></p>
 <p>This is what milestone verification looked like in practice during the run:</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-9.jpeg" alt="Commands Codex ran to verify quality during milestones"></p>
+<p><a href="../../assets/images/2e3904f2b6cbc61af68222e8e5bd451f7151135ef2889760fd3d0d6011c1d648.jpg"><img src="../../assets/images/2e3904f2b6cbc61af68222e8e5bd451f7151135ef2889760fd3d0d6011c1d648.jpg" alt="Commands Codex ran to verify quality during milestones" loading="lazy" decoding="async"></a></p>
 <h3>Verification at every milestone</h3>
 <p>Codex did not just write code and hope it worked. After milestones, it ran verification commands and repaired failures before continuing.</p>
 <p>Here are examples of the quality commands it was instructed to use:</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-10.jpeg" alt="Quality commands for lint, typecheck, tests, build, and export"></p>
+<p><a href="../../assets/images/ad5c2f6b1161766c6e9fd3249c99635b2f623950a6a8334cfb9a79e43303ca50.jpg"><img src="../../assets/images/ad5c2f6b1161766c6e9fd3249c99635b2f623950a6a8334cfb9a79e43303ca50.jpg" alt="Quality commands for lint, typecheck, tests, build, and export" loading="lazy" decoding="async"></a></p>
 <p>And an example of Codex fixing issues after a lint failure:</p>
-<p><img src="https://developers.openai.com/images/blog/long-horizon-11.jpeg" alt="Codex fixing issues after npm run lint"></p>
+<p><a href="../../assets/images/a0293a0622f2904ff6472d2554ff322cce49e7a5675817b3255d1f01225f2232.jpg"><img src="../../assets/images/a0293a0622f2904ff6472d2554ff322cce49e7a5675817b3255d1f01225f2232.jpg" alt="Codex fixing issues after npm run lint" loading="lazy" decoding="async"></a></p>
 <h2>What the agent built</h2>
 <p>The result was not perfect or production-ready, but it was real and testable. The bar for this run was not “it compiles”; it was “does it follow the instructions, and does it actually work?”</p>
 <p>High-level capabilities implemented:</p>

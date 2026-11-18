@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -53,7 +53,7 @@
 <p>이제 Codex Code Review는 <code>AGENTS.md</code>에 정의한 커스텀 리포지토리 규칙(repository rules)을 사용해 이러한 문제를 찾아내고, 발견 사항의 근거가 되는 지침을 작성자에게 안내할 수 있습니다. 이미 코딩 작업을 안내하는 데 <code>AGENTS.md</code>를 사용하고 있다면, 같은 파일로 리뷰도 안내할 수 있습니다. 기여자나 코딩 에이전트가 리포지토리에서 익숙하지 않은 영역을 작업하고 있어 그 이력을 아직 모르는 경우에 특히 유용합니다. 이 글에서는 리포지토리 규칙이 어떤 역할을 하는지, 그리고 규칙을 잘 작성하는 방법을 테스트 과정에서 얻은 교훈과 함께 소개합니다.</p>
 <h2>더 많아지는 코드 출시</h2>
 <p>코딩 에이전트는 더 큰 규모의 변경을 맡아 더 오랜 시간 동안 작업할 수 있어, 팀이 더 많은 아이디어를 코드로 옮기는 데 도움이 됩니다. OpenAI에서는 주간 PR 수가 4분기 이후 두 배 넘게 늘었고, 많은 고객에게서도 비슷한 추세가 나타나고 있습니다. 코드가 많아지는 것은 좋은 일입니다. 팀이 새로운 기능을 출시하고 더 많은 문제를 해결하는 데 도움이 되기 때문입니다. 하지만 무엇을 살펴봐야 하는지 아는 사람을 기다리는 풀 리퀘스트도 그만큼 늘어나고, 코드 리뷰가 금세 병목이 될 수 있습니다.</p>
-<img src="https://developers.openai.com/images/blog/codex-pr-volume-trend.svg" alt="세 분기에 걸친 주간 PR 수 증가">
+<a href="../../assets/images/b112f6ae3fb48a3a18080255b64020fc409fdd93a393d2bf78b0f7bf3cb98450.svg"><img src="../../assets/images/b112f6ae3fb48a3a18080255b64020fc409fdd93a393d2bf78b0f7bf3cb98450.svg" alt="세 분기에 걸친 주간 PR 수 증가" loading="lazy" decoding="async"></a>
 <p>여러 변경이 한꺼번에 들어오면 리뷰는 더 어려워집니다. diff만 보면 전혀 문제가 없어 보여도, 이전 클라이언트를 깨뜨리거나 작성자가 알지 못하는 경계를 넘을 수 있습니다. 작성자가 아직 대응할 수 있을 때, 누군가가 그 맥락을 기억해 공유해야 합니다.</p>
 <h2>리뷰 병목</h2>
 <p>더 많은 풀 리퀘스트가 올라오면 리뷰어는 각 변경의 의도를 파악하고 관련 맥락을 모아 피드백을 남길 시간이 줄어듭니다. 작성자가 다른 작업으로 넘어간 뒤에는 작은 수정조차 더 오래 걸릴 수 있습니다. 빠른 피드백은 사람이 병목이 되지 않으면서도 빨라진 개발 속도를 최대한 활용하는 데 도움이 됩니다.</p>
@@ -108,7 +108,7 @@ Search for breaking changes in external integration surfaces:
 <p>Codex Code Review can now use custom repository rules in <code>AGENTS.md</code> to catch those issues and point authors to the guidance behind a finding. If you already use <code>AGENTS.md</code> to guide coding tasks, the same file can help guide reviews, too. This is especially useful when contributors or coding agents are working in an unfamiliar part of a repository and may not know its history yet. In this post, we’ll show where repository rules fit and how to write them well, including what we learned while testing them.</p>
 <h2>Shipping more code</h2>
 <p>Coding agents can take on larger changes and work over longer horizons, helping teams move more of their ideas into code. At OpenAI, weekly PR volume has more than doubled since Q4, and we’re seeing similar trends for many of our customers. More code is good: it helps teams ship new features and solve more problems. It also means more pull requests waiting for someone who knows what to look for, and code review can quickly become the bottleneck.</p>
-<img src="https://developers.openai.com/images/blog/codex-pr-volume-trend.svg" alt="Weekly PR volume increases across three quarters">
+<a href="../../assets/images/b112f6ae3fb48a3a18080255b64020fc409fdd93a393d2bf78b0f7bf3cb98450.svg"><img src="../../assets/images/b112f6ae3fb48a3a18080255b64020fc409fdd93a393d2bf78b0f7bf3cb98450.svg" alt="Weekly PR volume increases across three quarters" loading="lazy" decoding="async"></a>
 <p>Review gets harder when several changes arrive at once. A diff can look completely reasonable and still break an older client or cross a boundary the author did not know about. Someone has to remember that context and share it while the author can still act on it.</p>
 <h2>The review bottleneck</h2>
 <p>When more pull requests land, reviewers have less time to work out what each change is trying to do and gather the relevant context before leaving feedback. Once an author moves on to something else, even a small revision can take longer. Fast feedback helps teams make the most of faster development without asking people to become the bottleneck.</p>

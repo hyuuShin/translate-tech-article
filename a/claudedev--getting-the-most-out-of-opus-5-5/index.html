@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -66,7 +66,7 @@
 <pre><code>Migrate the payment endpoints from the old client to the new one.
 Done means: every endpoint uses the new client, the old client is deleted, and the test suite passes.
 Stop and ask me only if a test fails for a reason you can't explain.</code></pre>
-<figure><img src="https://claude.dev/media/88d75704ac7ad2bde70a2a5cb1fd5c1800228810397be996b1dbfd91b61a047e.png" alt="세 개의 라벨이 붙은 상자로 나뉜 예시 프롬프트: 작업 전체(결제 엔드포인트를 이전 클라이언트에서 새 클라이언트로 마이그레이션), 강조 표시된 종료 기준(모든 엔드포인트가 새 클라이언트를 사용하고, 이전 클라이언트가 삭제되고, 테스트 스위트가 통과함), 멈출 시점(설명할 수 없는 이유로 테스트가 실패할 때만). 하단 문구: '작업 전체를 한 번의 메시지로 전달하십시오. 종료 기준을 명시하십시오. 그런 다음 그대로 두십시오.'"><figcaption><b>그림 A</b>하나의 메시지에 작업 전체, 종료 기준, 멈출 시점을 담습니다.</figcaption></figure>
+<figure><a href="../../assets/images/83d5a6f5145181c1c8c23d58ba49e4d405a63dfb2707678e6f700a9adaf1fe90.png"><img src="../../assets/images/83d5a6f5145181c1c8c23d58ba49e4d405a63dfb2707678e6f700a9adaf1fe90.png" alt="세 개의 라벨이 붙은 상자로 나뉜 예시 프롬프트: 작업 전체(결제 엔드포인트를 이전 클라이언트에서 새 클라이언트로 마이그레이션), 강조 표시된 종료 기준(모든 엔드포인트가 새 클라이언트를 사용하고, 이전 클라이언트가 삭제되고, 테스트 스위트가 통과함), 멈출 시점(설명할 수 없는 이유로 테스트가 실패할 때만). 하단 문구: '작업 전체를 한 번의 메시지로 전달하십시오. 종료 기준을 명시하십시오. 그런 다음 그대로 두십시오.'" loading="lazy" decoding="async"></a><figcaption><b>그림 A</b>하나의 메시지에 작업 전체, 종료 기준, 멈출 시점을 담습니다.</figcaption></figure>
 <h3>'열심히 생각하라'는 지시 중단하기</h3>
 <p><strong>할 일.</strong> 프롬프트와 저장해 둔 지침에서 '신중하게 생각하라', '단계별로 생각하라' 같은 문구를 제거하십시오.</p>
 <p><strong>Opus 5.5에서 중요한 이유.</strong> Opus 5.5는 응답하기 전에 항상 생각하며, 얼마나 생각할지도 스스로 정합니다. 생각하라고 요청할 필요가 없습니다. 채팅 제품에서 진행한 테스트에서는 '신중하게 생각하라'는 문구를 제거하자 응답이 더 빨리 시작되었고, 품질이 뚜렷하게 떨어지지는 않았습니다.</p>
@@ -91,7 +91,7 @@ Don't use a cream or off-white background, italic accent words in headings, numb
 프롬프트
 <pre><code>When a step doesn't need my input, keep going. Put status notes in the same message as your next action.
 Stop and ask only when you can't continue without me, or before anything destructive: deleting data, force-pushing, or changing anything outside this repository.</code></pre>
-<figure><img src="https://claude.dev/media/33679878db758a7730f1bb8988328df623e2aca8acec93a4bb6ecba3bc37ee43.png" alt="'원하는 중단 시점 알려 주기'라는 제목의 CLAUDE.md 카드에 두 개의 상자가 있습니다. 계속 진행: 단계에 내 입력이 필요하지 않으면 계속 진행하고, 상태 메모는 다음 작업과 같은 메시지에 넣습니다. 멈추고 질문: 나 없이는 계속할 수 없을 때, 또는 데이터 삭제, 강제 푸시, 이 저장소 외부의 변경처럼 되돌릴 수 없는 작업 전에만 합니다. 하단 문구: '프로젝트에 맞게 수정하십시오. 파괴적인 명령에 대해서도 권한 확인 프롬프트를 켜 두십시오.'"><figcaption><b>그림 B</b>CLAUDE.md 규칙: 언제 계속 진행하고 언제 멈추고 물어볼지 정합니다.</figcaption></figure>
+<figure><a href="../../assets/images/21c283b46da6c7168caf7a054c31f167f48906d8f0e7c84ca349435708b36a58.png"><img src="../../assets/images/21c283b46da6c7168caf7a054c31f167f48906d8f0e7c84ca349435708b36a58.png" alt="'원하는 중단 시점 알려 주기'라는 제목의 CLAUDE.md 카드에 두 개의 상자가 있습니다. 계속 진행: 단계에 내 입력이 필요하지 않으면 계속 진행하고, 상태 메모는 다음 작업과 같은 메시지에 넣습니다. 멈추고 질문: 나 없이는 계속할 수 없을 때, 또는 데이터 삭제, 강제 푸시, 이 저장소 외부의 변경처럼 되돌릴 수 없는 작업 전에만 합니다. 하단 문구: '프로젝트에 맞게 수정하십시오. 파괴적인 명령에 대해서도 권한 확인 프롬프트를 켜 두십시오.'" loading="lazy" decoding="async"></a><figcaption><b>그림 B</b>CLAUDE.md 규칙: 언제 계속 진행하고 언제 멈추고 물어볼지 정합니다.</figcaption></figure>
 <p>실행이 '계속할까요?'라는 질문과 함께 멈추면 '계속'이라고 답하십시오. 이런 일이 자주 발생한다면 위의 규칙이 도움이 됩니다.</p>
 <p>계속 진행하라는 규칙은 중단이 줄어든다는 뜻이므로, 위험하거나 되돌리기 어려운 작업 전에는 사용자가 직접 확인하는 단계를 유지하십시오. 위 규칙의 마지막 줄이 그 역할을 합니다. 파괴적인 명령에 대해서도 권한 확인 프롬프트를 켜 두십시오.</p>
 <p>페어 프로그래밍에서는 반대의 방식이 필요할 수도 있습니다. 시작하기 전에 한 줄짜리 계획을 제시하고, 끝날 때 짧은 요약을 제공하도록 하는 방식입니다. 이 내용은 CLAUDE.md에 대신 적으십시오. Opus 5.5는 어느 쪽이든 따릅니다.</p>
@@ -103,7 +103,7 @@ Stop and ask only when you can't continue without me, or before anything destruc
 <pre><code>Audit every service in services/ for the retry bug in the linked issue.
 Give each service to its own subagent. When a subagent reports back, check its evidence before you accept it.
 Finish with one table: service, affected yes or no, and the evidence.</code></pre>
-<figure><img src="https://claude.dev/media/96f05d24a6728ed462139b2430e36c897ec36d8777109fb73ce839e6db266427.png" alt="Diagram titled “Give each service to its own subagent.” The prompt “Audit every service in services/ for the retry bug in the linked issue” fans out to four subagents. Their reports join at a “Check its evidence” step (“When a subagent reports back, check its evidence before you accept it”), then an arrow leads to “Finish with one table,” an empty table with the columns Service, Affected yes or no, and The evidence."><figcaption><b>그림 C</b>서브에이전트로 작업을 나누고, 각 서브에이전트의 근거를 확인한 뒤, 하나의 표로 마무리합니다.</figcaption></figure>
+<figure><a href="../../assets/images/f7eefc85b63c724199884c3a9db693f43b021af3932ded31f1f8452993761be2.png"><img src="../../assets/images/f7eefc85b63c724199884c3a9db693f43b021af3932ded31f1f8452993761be2.png" alt="Diagram titled “Give each service to its own subagent.” The prompt “Audit every service in services/ for the retry bug in the linked issue” fans out to four subagents. Their reports join at a “Check its evidence” step (“When a subagent reports back, check its evidence before you accept it”), then an arrow leads to “Finish with one table,” an empty table with the columns Service, Affected yes or no, and The evidence." loading="lazy" decoding="async"></a><figcaption><b>그림 C</b>서브에이전트로 작업을 나누고, 각 서브에이전트의 근거를 확인한 뒤, 하나의 표로 마무리합니다.</figcaption></figure>
 <h3>작업 목록을 파일로 관리</h3>
 <p><strong>할 일.</strong> 오래 걸리는 실행에서는 Opus 5.5에게 작업 목록을 파일에 보관하고 진행하면서 갱신하도록 요청하십시오. 그런 다음 스크롤백이 아니라 그 파일을 읽고 실행이 어디까지 진행되었는지 확인하십시오.</p>
 <p><strong>Opus 5.5에서 중요한 이유.</strong> 이제 실행 시간이 더 길어졌습니다. 긴 실행은 컨텍스트 윈도우(context window)를 가득 채우고, 그러면 Claude Code가 이전 턴을 요약합니다. 파일에 저장한 목록은 이 과정에서도 유지되며, 무엇이 끝났고 무엇이 남았는지 한눈에 보여 줍니다.</p>
@@ -175,7 +175,7 @@ PROMPT
 <p><strong>방법:</strong> Claude에 /fast를 입력합니다.</p>
 <h2>Opus 5.5 체크리스트</h2>
 <p>다음 장기 작업을 시작하기 전에 확인해 보십시오.</p>
-<figure><img src="https://claude.dev/media/70157ea87e7b847039bcb94cd8d1d5c83262cae578fc24bca80b91f7f98dbf56.png" alt="The checklist as a card with four groups of checkbox items: Asking, Long runs in Claude Code, Checking, and Flags. The same items are listed as text below."><figcaption><b>그림 D</b>한눈에 보는 체크리스트</figcaption></figure>
+<figure><a href="../../assets/images/034b04e2b72893404bfcbe4a5724dc76b383846bbdb83e28acae32c1e357d5d0.png"><img src="../../assets/images/034b04e2b72893404bfcbe4a5724dc76b383846bbdb83e28acae32c1e357d5d0.png" alt="The checklist as a card with four groups of checkbox items: Asking, Long runs in Claude Code, Checking, and Flags. The same items are listed as text below." loading="lazy" decoding="async"></a><figcaption><b>그림 D</b>한눈에 보는 체크리스트</figcaption></figure>
 <p><strong>요청하기</strong></p>
 <ul>
 <li>작업에 “완료”의 기준이 무엇인지 명시되어 있습니다.</li>
@@ -219,7 +219,7 @@ PROMPT
 PROMPT<pre><code>Migrate the payment endpoints from the old client to the new one.
 Done means: every endpoint uses the new client, the old client is deleted, and the test suite passes.
 Stop and ask me only if a test fails for a reason you can't explain.</code></pre>
-<figure><img src="https://claude.dev/media/88d75704ac7ad2bde70a2a5cb1fd5c1800228810397be996b1dbfd91b61a047e.png" alt="The example prompt split into three labelled boxes: the whole task (migrate the payment endpoints from the old client to the new one), the finish line, highlighted (every endpoint uses the new client, the old client is deleted, and the test suite passes), and when to stop (only if a test fails for a reason you can’t explain). Footer: “Give the whole task in one message. Name the finish line. Then leave it alone.”"><figcaption><b>FIG A</b>One message: the whole task, the finish line, and when to stop.</figcaption></figure>
+<figure><a href="../../assets/images/83d5a6f5145181c1c8c23d58ba49e4d405a63dfb2707678e6f700a9adaf1fe90.png"><img src="../../assets/images/83d5a6f5145181c1c8c23d58ba49e4d405a63dfb2707678e6f700a9adaf1fe90.png" alt="The example prompt split into three labelled boxes: the whole task (migrate the payment endpoints from the old client to the new one), the finish line, highlighted (every endpoint uses the new client, the old client is deleted, and the test suite passes), and when to stop (only if a test fails for a reason you can’t explain). Footer: “Give the whole task in one message. Name the finish line. Then leave it alone.”" loading="lazy" decoding="async"></a><figcaption><b>FIG A</b>One message: the whole task, the finish line, and when to stop.</figcaption></figure>
 <h3>Stop telling it to “think hard”</h3>
 <p><strong>What to do.</strong> Remove “think carefully,” “think step by step,” and similar lines from your prompts and your saved instructions.</p>
 <p><strong>Why it matters on Opus 5.5.</strong> Opus 5.5 always thinks before it replies, and it decides how much. You don’t need to ask it to think. In our testing in a chat product, removing a “think carefully” line made replies start sooner, with no clear drop in quality.</p>
@@ -242,7 +242,7 @@ Don't use a cream or off-white background, italic accent words in headings, numb
 <p><strong>How.</strong> Add this to CLAUDE.md, and edit it to fit your project:</p>
 PROMPT<pre><code>When a step doesn't need my input, keep going. Put status notes in the same message as your next action.
 Stop and ask only when you can't continue without me, or before anything destructive: deleting data, force-pushing, or changing anything outside this repository.</code></pre>
-<figure><img src="https://claude.dev/media/33679878db758a7730f1bb8988328df623e2aca8acec93a4bb6ecba3bc37ee43.png" alt="A CLAUDE.md card titled “Tell it which stops you want” with two boxes. Keep going: when a step doesn’t need my input, keep going, and put status notes in the same message as your next action. Stop and ask: only when you can’t continue without me, or before anything destructive: deleting data, force-pushing, or changing anything outside this repository. Footer: “Edit it to fit your project. Keep permission prompts on for destructive commands too.”"><figcaption><b>FIG B</b>The CLAUDE.md rule: when to keep going, and when to stop and ask.</figcaption></figure>
+<figure><a href="../../assets/images/21c283b46da6c7168caf7a054c31f167f48906d8f0e7c84ca349435708b36a58.png"><img src="../../assets/images/21c283b46da6c7168caf7a054c31f167f48906d8f0e7c84ca349435708b36a58.png" alt="A CLAUDE.md card titled “Tell it which stops you want” with two boxes. Keep going: when a step doesn’t need my input, keep going, and put status notes in the same message as your next action. Stop and ask: only when you can’t continue without me, or before anything destructive: deleting data, force-pushing, or changing anything outside this repository. Footer: “Edit it to fit your project. Keep permission prompts on for destructive commands too.”" loading="lazy" decoding="async"></a><figcaption><b>FIG B</b>The CLAUDE.md rule: when to keep going, and when to stop and ask.</figcaption></figure>
 <p>If a run stops with “Want me to continue?” reply “continue.” If that happens often, the rule above will help.</p>
 <p>A rule to keep going means fewer stops, so keep your own check before anything risky or hard to undo. The last line of the rule above does that. Keep permission prompts on for destructive commands too.</p>
 <p>For pair programming, you may want the opposite: a one-line plan before it starts and a short recap at the end. Say that in your CLAUDE.md instead. Opus 5.5 follows either one.</p>
@@ -253,7 +253,7 @@ Stop and ask only when you can't continue without me, or before anything destruc
 PROMPT<pre><code>Audit every service in services/ for the retry bug in the linked issue.
 Give each service to its own subagent. When a subagent reports back, check its evidence before you accept it.
 Finish with one table: service, affected yes or no, and the evidence.</code></pre>
-<figure><img src="https://claude.dev/media/96f05d24a6728ed462139b2430e36c897ec36d8777109fb73ce839e6db266427.png" alt="Diagram titled “Give each service to its own subagent.” The prompt “Audit every service in services/ for the retry bug in the linked issue” fans out to four subagents. Their reports join at a “Check its evidence” step (“When a subagent reports back, check its evidence before you accept it”), then an arrow leads to “Finish with one table,” an empty table with the columns Service, Affected yes or no, and The evidence."><figcaption><b>FIG C</b>Fan out to subagents, check each one’s evidence, then finish with one table.</figcaption></figure>
+<figure><a href="../../assets/images/f7eefc85b63c724199884c3a9db693f43b021af3932ded31f1f8452993761be2.png"><img src="../../assets/images/f7eefc85b63c724199884c3a9db693f43b021af3932ded31f1f8452993761be2.png" alt="Diagram titled “Give each service to its own subagent.” The prompt “Audit every service in services/ for the retry bug in the linked issue” fans out to four subagents. Their reports join at a “Check its evidence” step (“When a subagent reports back, check its evidence before you accept it”), then an arrow leads to “Finish with one table,” an empty table with the columns Service, Affected yes or no, and The evidence." loading="lazy" decoding="async"></a><figcaption><b>FIG C</b>Fan out to subagents, check each one’s evidence, then finish with one table.</figcaption></figure>
 <h3>Keep the task list in a file</h3>
 <p><strong>What to do.</strong> For a run that will take a while, ask Opus 5.5 to keep its task list in a file and update it as it goes. Then read the file, not the scrollback, to see where the run is.</p>
 <p><strong>Why it matters on Opus 5.5.</strong> Runs are longer now. A long run fills the context window, and Claude Code then summarizes older turns. A list in a file survives that, and it shows you at a glance what’s done and what’s left.</p>
@@ -323,7 +323,7 @@ PROMPT<pre><code>Once you have answered something, treat that answer as done. Fo
 <p><strong>How.</strong> Type /fast into Claude.</p>
 <h2>YOUR OPUS 5.5 CHECKLIST</h2>
 <p>Run through this before your next long task.</p>
-<figure><img src="https://claude.dev/media/70157ea87e7b847039bcb94cd8d1d5c83262cae578fc24bca80b91f7f98dbf56.png" alt="The checklist as a card with four groups of checkbox items: Asking, Long runs in Claude Code, Checking, and Flags. The same items are listed as text below."><figcaption><b>FIG D</b>The checklist at a glance.</figcaption></figure>
+<figure><a href="../../assets/images/034b04e2b72893404bfcbe4a5724dc76b383846bbdb83e28acae32c1e357d5d0.png"><img src="../../assets/images/034b04e2b72893404bfcbe4a5724dc76b383846bbdb83e28acae32c1e357d5d0.png" alt="The checklist as a card with four groups of checkbox items: Asking, Long runs in Claude Code, Checking, and Flags. The same items are listed as text below." loading="lazy" decoding="async"></a><figcaption><b>FIG D</b>The checklist at a glance.</figcaption></figure>
 <p><strong>Asking</strong></p>
 <ul>
 <li>The task says what “done” looks like</li>

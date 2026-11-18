@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -78,10 +78,10 @@ CODEText
 <li>메모리: 사용자의 선호와 에이전트 자체의 메모리</li>
 <li>가드레일: 에이전트가 읽기만 하는 모든 곳에 적용하는 읽기 전용 접근 권한, 그리고 실행당 지출 한도</li>
 </ul>
-<figure><img src="https://claude.dev/media/fdbe45db5e3ce9afbb00bf62f87e64078a683800bc492d4ac6cf716a2d313a00.png" alt="에이전트의 아키텍처: 일정이 에이전트를 깨우면 에이전트는 소스에서 내용을 읽고 독자를 위한 브리프를 하나의 대상에 게시합니다. 메모리에는 에이전트의 상태와 독자의 선호가 저장되며, 가드레일이 에이전트를 둘러싸고 있습니다."></figure>
+<figure><a href="../../assets/images/99e35b7eb701a9098f8a3d57c5fe8567cacac14caa7da57d994d49cee183a60a.png"><img src="../../assets/images/99e35b7eb701a9098f8a3d57c5fe8567cacac14caa7da57d994d49cee183a60a.png" alt="에이전트의 아키텍처: 일정이 에이전트를 깨우면 에이전트는 소스에서 내용을 읽고 독자를 위한 브리프를 하나의 대상에 게시합니다. 메모리에는 에이전트의 상태와 독자의 선호가 저장되며, 가드레일이 에이전트를 둘러싸고 있습니다." loading="lazy" decoding="async"></a></figure>
 <h2>소스</h2>
 <p>에이전트는 기본적으로 Slack 채널과 GitHub 풀 리퀘스트라는 두 가지 소스를 읽습니다. 채널과 저장소는 <code>preferences</code> 파일에 나열합니다. 이 템플릿은 다른 소스를 사용하도록 확장할 수 있습니다.</p>
-<figure><img src="https://claude.dev/media/d8508de61bb90f3bfccf6184dd3d7cbe9c65e2e76bd00477efd1620e3910dae7.png" alt="소스가 강조 표시된 아키텍처 다이어그램. 소스는 읽기 전용이며 볼트의 자격 증명을 사용해 MCP 또는 HTTPS로 접근하고, 에이전트에 데이터를 공급합니다."></figure>
+<figure><a href="../../assets/images/c6a213689c8746ca1881a41e40fc1a43c171aad253f4e4ed720e5649b55e9474.png"><img src="../../assets/images/c6a213689c8746ca1881a41e40fc1a43c171aad253f4e4ed720e5649b55e9474.png" alt="소스가 강조 표시된 아키텍처 다이어그램. 소스는 읽기 전용이며 볼트의 자격 증명을 사용해 MCP 또는 HTTPS로 접근하고, 에이전트에 데이터를 공급합니다." loading="lazy" decoding="async"></a></figure>
 <h3>에이전트에 범위가 제한된 전용 자격 증명 부여</h3>
 <p><a href="https://platform.claude.com/docs/en/managed-agents/overview">Managed Agents</a>에서는 자격 증명이 <a href="https://platform.claude.com/docs/en/managed-agents/vaults">볼트(vault)</a>에 저장됩니다. 에이전트는 이러한 자격 증명을 참조할 수 있지만, 실제 값은 Claude의 코드가 실행되는 <a href="https://claude.com/resources/articles/giving-companies-more-control-over-their-ai-agents-with-nvidia">샌드박스 외부</a>의 볼트에 남아 있습니다(<a href="https://www.anthropic.com/engineering/managed-agents">여기</a>와 <a href="https://x.com/katelyn_lesse/status/2099315903884415400">여기</a>를 참고하십시오).</p>
 <ul>
@@ -118,7 +118,7 @@ await client.beta.vaults.credentials.create(vaultId, {
 <p><code>agent.md</code>의 규칙 세 가지가 이 문제를 해결하는 데 도움이 됩니다. 소스 읽기에 실패하면 에이전트는 해당 소스의 북마크를 그대로 두고, 나머지 소스로 브리핑을 작성하며, 읽지 못한 대상을 밝히는 한 줄("이번 실행에서는 풀 리퀘스트를 확인할 수 없음")로 브리핑을 마무리합니다. 이렇게 하면 독자가 이 사실을 알 수 있습니다.</p>
 <h2>목적지</h2>
 <p>이 템플릿은 실행할 때마다 날짜가 표시된 게시물을 Slack 채널 한 곳에 게시합니다.</p>
-<figure><img src="https://claude.dev/media/15481dc4dff01b4a613e8ff36039bc14036ab97781eddeaf749746533b97bd16.png" alt="목적지가 강조된 아키텍처 다이어그램. 오늘의 브리핑이 이미 게시되었는지 확인한 뒤, 에이전트는 하나의 목적지에 게시하고 이 목적지가 독자에게 브리핑을 전달합니다."></figure>
+<figure><a href="../../assets/images/638a8a6942b2b85a3d72f38a7aceb1b756a3e41f7b891c3d24a02ffa580235d2.png"><img src="../../assets/images/638a8a6942b2b85a3d72f38a7aceb1b756a3e41f7b891c3d24a02ffa580235d2.png" alt="목적지가 강조된 아키텍처 다이어그램. 오늘의 브리핑이 이미 게시되었는지 확인한 뒤, 에이전트는 하나의 목적지에 게시하고 이 목적지가 독자에게 브리핑을 전달합니다." loading="lazy" decoding="async"></a></figure>
 <p>에이전트는 샌드박스의 bash 도구를 사용해 Slack에 게시하며, 읽기에 사용하는 것과 같은 봇 토큰을 사용합니다.</p>
 <p>게시를 별도로 승인해야 하는 주체는 없습니다. 에이전트가 bash 명령으로 게시물을 전송하며, 기본 제공되는 bash 도구는 기본적으로 승인을 요청하지 않고 실행됩니다. 또한 <code>slack.com</code>은 에이전트가 실행되는 샌드박스인 <a href="https://platform.claude.com/docs/en/managed-agents/environments">환경</a>의 허용 목록(allowlist)에 포함되어 있습니다. 게시는 요청 한 번으로 이루어집니다.</p>
 CODEShell
@@ -132,7 +132,7 @@ CODEShell
 <p>에이전트는 메모리 스토어에 실행 기록(<code>runs/&lt;date&gt;.md</code>)을 남깁니다. 게시하기 전에 해당 실행을 "posting"으로 표시하고, 게시 후에는 메시지 ID와 함께 "posted"로, 불분명한 경우에는 "maybe posted"로 표시합니다.</p>
 <h2>에이전트</h2>
 <p>Claude Managed Agents에서 <a href="https://platform.claude.com/docs/en/managed-agents/agent-setup">에이전트</a>는 모델, 시스템 프롬프트, 도구로 구성된 버전 관리형 설정입니다. 각 실행은 실행 단계를 따라 진행한 뒤 종료됩니다.</p>
-<figure><img src="https://claude.dev/media/8b00d803c6eee8a1c6419c15961f688cba2f6fbff5031e1bd0539725cba1780b.png" alt="에이전트가 강조된 아키텍처 다이어그램. 실행 루프와 판단 규칙을 담은 프롬프트와 모델로 구성됩니다."></figure>
+<figure><a href="../../assets/images/889be2823c437cbb00ff7578a706f96a05f4b92ad42d9849debd36eb18f2c4e5.png"><img src="../../assets/images/889be2823c437cbb00ff7578a706f96a05f4b92ad42d9849debd36eb18f2c4e5.png" alt="에이전트가 강조된 아키텍처 다이어그램. 실행 루프와 판단 규칙을 담은 프롬프트와 모델로 구성됩니다." loading="lazy" decoding="async"></a></figure>
 <p>참조 구현에서 에이전트 설정은 <code>agent.md</code>입니다.</p>
 CODEMarkdown
 <pre><code>---
@@ -168,7 +168,7 @@ CODEText
 <pre><code>5. Verify. The world moved while you read. For every item you will report, re-check its live source just before posting: resolved since you read it, drop it; still open but changed, fix the line; cannot confirm, drop it and list it in the run record's cuts. One stale "still waiting on you" costs more trust than ten missing items, so never hedge an item's status: assert it or drop it. Every link is copied from the source's own link field (a pull request's html_url, a Slack permalink), never assembled by hand.</code></pre>
 <h2>스케줄</h2>
 <p><a href="https://claude.com/platform/claude-managed-agents">Claude Managed Agents</a>에서 에이전트는 설정 파일일 뿐이며, 이를 실행하는 것은 <a href="https://platform.claude.com/docs/en/managed-agents/scheduled-deployments">디플로이먼트(deployment)</a>입니다. 디플로이먼트에는 에이전트, 환경, 각 실행의 첫 메시지가 지정되며, 스케줄, 볼트, 메모리 스토어, 예산도 함께 담깁니다. 스케줄이 작동할 때마다 플랫폼은 새로운 에이전트 <a href="https://platform.claude.com/docs/en/managed-agents/sessions">세션</a>을 시작합니다.</p>
-<figure><img src="https://claude.dev/media/a206f78f34b18dcf7a51bc9bca1acaaf3b68df80ee4034ff521cfbf353af7bc5.png" alt="스케줄이 강조된 아키텍처 다이어그램. 예약된 디플로이먼트가 실행할 때마다 에이전트를 깨웁니다."></figure>
+<figure><a href="../../assets/images/1e859beb8a70e35bc28c827e3d77cb94b4f528fd5d1e01a58f7653b442e00698.png"><img src="../../assets/images/1e859beb8a70e35bc28c827e3d77cb94b4f528fd5d1e01a58f7653b442e00698.png" alt="스케줄이 강조된 아키텍처 다이어그램. 예약된 디플로이먼트가 실행할 때마다 에이전트를 깨웁니다." loading="lazy" decoding="async"></a></figure>
 <p>이 템플릿에서 디플로이먼트는 <code>deployment.md</code>에 정의되어 있으며, 첫 메시지가 본문에 들어 있습니다.</p>
 CODEMarkdown
 <pre><code>---
@@ -202,7 +202,7 @@ CODEShell
 <p>흔히 발생하는 버그로, 에이전트가 서버의 시간대를 기준으로 날짜를 계산해서 오늘 아침을 "어제"라고 부르는 경우가 있습니다. <code>deployment.md</code>에서는 <code>timezone</code> 필드가 실행 시점을 정하고, 본문의 두 번째 줄이 날짜 계산에 사용할 시간대를 에이전트에 알려 줍니다.</p>
 <h2>메모리</h2>
 <p>각 실행은 이전 실행에 대한 기억이 없는 새로운 샌드박스에서 시작합니다. 메모리가 없으면 피드백이 반영되지 않습니다. 하지만 오래된 메모리는 에이전트를 혼란스럽게 할 수 있습니다. 이미 해결된 항목을 아직 대기 중인 것으로 보고하거나, "이미 보고했다"는 이유로 아직 열려 있는 항목을 누락하는 경우입니다.</p>
-<figure><img src="https://claude.dev/media/30e51eab0381bb583fe355fe412162b4e8868643b8d58b2c76c4aa2d0eafea57.png" alt="메모리가 강조된 아키텍처 다이어그램. 상태(State)는 에이전트가 읽고 쓰는 영역이고, 선호 설정(Preferences)은 독자가 작성하고 에이전트는 읽기만 하는 영역입니다."></figure>
+<figure><a href="../../assets/images/6badbc8818fb66dd1ecd0374f6b3dd32851611f7b137987fcbbcab0ed575306b.png"><img src="../../assets/images/6badbc8818fb66dd1ecd0374f6b3dd32851611f7b137987fcbbcab0ed575306b.png" alt="메모리가 강조된 아키텍처 다이어그램. 상태(State)는 에이전트가 읽고 쓰는 영역이고, 선호 설정(Preferences)은 독자가 작성하고 에이전트는 읽기만 하는 영역입니다." loading="lazy" decoding="async"></a></figure>
 <p>이 템플릿은 /mnt/memory/ 아래에 마운트되는 폴더인 <a href="https://platform.claude.com/docs/en/managed-agents/memory">메모리 스토어(memory store)</a>를 두 개 사용합니다(Sources 참조).</p>
 <ul>
 <li>
@@ -223,7 +223,7 @@ CODEText
 2026-09-11 slack:C0234567891 1789117333.000300 enterprise escalation: owner named, in progress</code></pre>
 <h2>가드레일(Guardrails)</h2>
 <p>이 자동화는 일정에 따라 "백그라운드"에서 실행되므로, 에이전트가 할 수 있는 일과 사용할 수 있는 비용에 한도를 설정합니다.</p>
-<figure><img src="https://claude.dev/media/746533f20f4e2bf093d08a04f368a8c5eca739de6579c384e9742b86d5385f50.png" alt="The architecture diagram with Guardrails highlighted: a boundary around the agent with caps on turns, time and spend, and a heartbeat that someone watches."></figure>
+<figure><a href="../../assets/images/1b8b9e8a0e1f9b88173378a569f53f89b2b79c407af85fd5b0aecc9ad2bfef08.png"><img src="../../assets/images/1b8b9e8a0e1f9b88173378a569f53f89b2b79c407af85fd5b0aecc9ad2bfef08.png" alt="The architecture diagram with Guardrails highlighted: a boundary around the agent with caps on turns, time and spend, and a heartbeat that someone watches." loading="lazy" decoding="async"></a></figure>
 <h3>에이전트가 할 수 있는 일에 대한 제한</h3>
 <p>에이전트는 다른 사람이 작성한 메시지와 이슈를 읽으며, 그 텍스트가 지시문으로 해석될 수 있습니다. 에이전트가 그런 지시를 따르더라도 할 수 있는 일이 제한되도록 하십시오. 이 예시에서는 GitHub 토큰과 <code>preferences</code> 저장소가 읽기 전용이고, 실행 환경은 허용 목록(allowlist)에 있는 호스트에만 접근할 수 있습니다. 그래도 심어진 지시문이 브리프의 내용을 바꿀 수는 있으며, 에이전트가 실행 사이에 보관하는 메모를 통해서도 가능합니다. 하지만 GitHub에 쓰기를 하거나 사용자의 규칙을 수정할 수는 없습니다.</p>
 <p>Slack은 예외입니다. 같은 토큰으로 게시도 할 수 있으므로, 읽거나 게시해야 하는 곳에만 봇을 초대하십시오.</p>
@@ -279,10 +279,10 @@ CODEText<pre><code>daily-brief/
 <li>Memory - Your preferences and the agent's own memory</li>
 <li>Guardrails - Read-only access wherever the agent only reads, and a spending cap per run</li>
 </ul>
-<figure><img src="https://claude.dev/media/fdbe45db5e3ce9afbb00bf62f87e64078a683800bc492d4ac6cf716a2d313a00.png" alt="Architecture of the agent: a schedule wakes the agent, which reads from its sources and posts a brief to one destination for the reader. Memory holds the agent's state and the reader's preferences, and guardrails surround the agent."></figure>
+<figure><a href="../../assets/images/99e35b7eb701a9098f8a3d57c5fe8567cacac14caa7da57d994d49cee183a60a.png"><img src="../../assets/images/99e35b7eb701a9098f8a3d57c5fe8567cacac14caa7da57d994d49cee183a60a.png" alt="Architecture of the agent: a schedule wakes the agent, which reads from its sources and posts a brief to one destination for the reader. Memory holds the agent's state and the reader's preferences, and guardrails surround the agent." loading="lazy" decoding="async"></a></figure>
 <h2>SOURCES</h2>
 <p>The agent reads two default sources: Slack channels and GitHub pull requests. The channels and repos are listed in your <code>preferences</code> file. The template can be extended to use other sources.</p>
-<figure><img src="https://claude.dev/media/d8508de61bb90f3bfccf6184dd3d7cbe9c65e2e76bd00477efd1620e3910dae7.png" alt="The architecture diagram with Sources highlighted. The sources are read-only, reached through MCP or HTTPS with credentials from a vault, and feed the agent."></figure>
+<figure><a href="../../assets/images/c6a213689c8746ca1881a41e40fc1a43c171aad253f4e4ed720e5649b55e9474.png"><img src="../../assets/images/c6a213689c8746ca1881a41e40fc1a43c171aad253f4e4ed720e5649b55e9474.png" alt="The architecture diagram with Sources highlighted. The sources are read-only, reached through MCP or HTTPS with credentials from a vault, and feed the agent." loading="lazy" decoding="async"></a></figure>
 <h3>Give the agent its own, scoped credentials</h3>
 <p>With <a href="https://platform.claude.com/docs/en/managed-agents/overview">Managed Agents</a>, credentials live in <a href="https://platform.claude.com/docs/en/managed-agents/vaults">vaults</a>. The agent can reference these credentials but the real values stay in the vault, <a href="https://claude.com/resources/articles/giving-companies-more-control-over-their-ai-agents-with-nvidia">outside the sandbox</a> where Claude's code runs (see <a href="https://www.anthropic.com/engineering/managed-agents">here</a> and <a href="https://x.com/katelyn_lesse/status/2099315903884415400">here</a>):</p>
 <ul>
@@ -317,7 +317,7 @@ await client.beta.vaults.credentials.create(vaultId, {
 <p>Three rules in <code>agent.md</code> help fix this. When a source fails, the agent will: keep the source’s bookmark where it is, write the brief from the other sources, and end the brief with one line naming what it couldn't read ("pull requests unavailable this run"), so the reader is made aware.</p>
 <h2>DESTINATION</h2>
 <p>Our template posts to one Slack channel, with a dated post each time it runs.</p>
-<figure><img src="https://claude.dev/media/15481dc4dff01b4a613e8ff36039bc14036ab97781eddeaf749746533b97bd16.png" alt="The architecture diagram with Destination highlighted. After a check that today's brief isn't already posted, the agent posts to one destination, which delivers the brief to the reader."></figure>
+<figure><a href="../../assets/images/638a8a6942b2b85a3d72f38a7aceb1b756a3e41f7b891c3d24a02ffa580235d2.png"><img src="../../assets/images/638a8a6942b2b85a3d72f38a7aceb1b756a3e41f7b891c3d24a02ffa580235d2.png" alt="The architecture diagram with Destination highlighted. After a check that today's brief isn't already posted, the agent posts to one destination, which delivers the brief to the reader." loading="lazy" decoding="async"></a></figure>
 <p>The agent posts to Slack using the bash tool in its sandbox, using the same bot token it reads with.</p>
 <p>Nothing has to approve the post. The agent sends it with a bash command, and the built-in bash tool runs without asking for approval by default. <code>slack.com</code> is also on the allowlist of the agent's <a href="https://platform.claude.com/docs/en/managed-agents/environments">environment</a>, the sandbox it runs in. The post is one request:</p>
 CODEShell<pre><code>curl -s https://slack.com/api/chat.postMessage \
@@ -330,7 +330,7 @@ CODEShell<pre><code>curl -s https://slack.com/api/chat.postMessage \
 <p>The agent keeps a run record in its memory store (<code>runs/&lt;date&gt;.md</code>). It marks the run "posting" before the post, then "posted" with the message ID, or "maybe posted."</p>
 <h2>AGENT</h2>
 <p>In Claude Managed Agents, an <a href="https://platform.claude.com/docs/en/managed-agents/agent-setup">agent</a> is a versioned configuration: a model, a system prompt, and tools. Each run follows its run steps and stops.</p>
-<figure><img src="https://claude.dev/media/8b00d803c6eee8a1c6419c15961f688cba2f6fbff5031e1bd0539725cba1780b.png" alt="The architecture diagram with the Agent highlighted: a model plus a prompt that holds the run loop and the judgement rules."></figure>
+<figure><a href="../../assets/images/889be2823c437cbb00ff7578a706f96a05f4b92ad42d9849debd36eb18f2c4e5.png"><img src="../../assets/images/889be2823c437cbb00ff7578a706f96a05f4b92ad42d9849debd36eb18f2c4e5.png" alt="The architecture diagram with the Agent highlighted: a model plus a prompt that holds the run loop and the judgement rules." loading="lazy" decoding="async"></a></figure>
 <p>In our reference implementation, the agent configuration is <code>agent.md</code>:</p>
 CODEMarkdown<pre><code>---
 name: Daily brief
@@ -363,7 +363,7 @@ CODEText<pre><code>4. Decide. An item earns a line when the reader would act on 
 CODEText<pre><code>5. Verify. The world moved while you read. For every item you will report, re-check its live source just before posting: resolved since you read it, drop it; still open but changed, fix the line; cannot confirm, drop it and list it in the run record's cuts. One stale "still waiting on you" costs more trust than ten missing items, so never hedge an item's status: assert it or drop it. Every link is copied from the source's own link field (a pull request's html_url, a Slack permalink), never assembled by hand.</code></pre>
 <h2>SCHEDULE</h2>
 <p>With <a href="https://claude.com/platform/claude-managed-agents">Claude Managed Agents</a>, the agent is only a configuration file; a <a href="https://platform.claude.com/docs/en/managed-agents/scheduled-deployments">deployment</a> runs it. The deployment names the agent, environment, and the first message of each run. It also holds the schedule, vault, memory stores, and budget. Each time the schedule fires, the platform starts a fresh agent <a href="https://platform.claude.com/docs/en/managed-agents/sessions">session</a>.</p>
-<figure><img src="https://claude.dev/media/a206f78f34b18dcf7a51bc9bca1acaaf3b68df80ee4034ff521cfbf353af7bc5.png" alt="The architecture diagram with Schedule highlighted: a scheduled deployment that wakes the agent for each run."></figure>
+<figure><a href="../../assets/images/1e859beb8a70e35bc28c827e3d77cb94b4f528fd5d1e01a58f7653b442e00698.png"><img src="../../assets/images/1e859beb8a70e35bc28c827e3d77cb94b4f528fd5d1e01a58f7653b442e00698.png" alt="The architecture diagram with Schedule highlighted: a scheduled deployment that wakes the agent for each run." loading="lazy" decoding="async"></a></figure>
 <p>In our template, the deployment is captured in <code>deployment.md</code>, with the first message as its body:</p>
 CODEMarkdown<pre><code>---
 name: Daily brief
@@ -395,7 +395,7 @@ CODEShell<pre><code>ant apply deployment.md</code></pre>
 <p>A common bug is the agent calling this morning "yesterday" because it computes dates in the server's time zone. In <code>deployment.md</code>, the <code>timezone</code> field sets when the run fires and the second line of the body tells the agent which zone to use for dates.</p>
 <h2>MEMORY</h2>
 <p>Each run starts in a fresh sandbox with no memory of the last one. Without memory, feedback doesn't stick. However, stale memory can confuse the agent: it reports an item as still waiting after it was resolved, or drops one that's still open because it was "already reported."</p>
-<figure><img src="https://claude.dev/media/30e51eab0381bb583fe355fe412162b4e8868643b8d58b2c76c4aa2d0eafea57.png" alt="The architecture diagram with Memory highlighted. State is what the agent reads and writes, and Preferences is what the reader writes and the agent only reads."></figure>
+<figure><a href="../../assets/images/6badbc8818fb66dd1ecd0374f6b3dd32851611f7b137987fcbbcab0ed575306b.png"><img src="../../assets/images/6badbc8818fb66dd1ecd0374f6b3dd32851611f7b137987fcbbcab0ed575306b.png" alt="The architecture diagram with Memory highlighted. State is what the agent reads and writes, and Preferences is what the reader writes and the agent only reads." loading="lazy" decoding="async"></a></figure>
 <p>Our template keeps two <a href="https://platform.claude.com/docs/en/managed-agents/memory">memory stores</a>, the folders mounted under /mnt/memory/ (see Sources):</p>
 <ul>
 <li>
@@ -415,7 +415,7 @@ CODEText<pre><code>2026-09-09 slack:C0123456789 1788963600.000100 refund thread:
 2026-09-11 slack:C0234567891 1789117333.000300 enterprise escalation: owner named, in progress</code></pre>
 <h2>GUARDRAILS</h2>
 <p>Because our automation runs in the “background” on a schedule, we set limits on what the agent can do and what it can spend.</p>
-<figure><img src="https://claude.dev/media/746533f20f4e2bf093d08a04f368a8c5eca739de6579c384e9742b86d5385f50.png" alt="The architecture diagram with Guardrails highlighted: a boundary around the agent with caps on turns, time and spend, and a heartbeat that someone watches."></figure>
+<figure><a href="../../assets/images/1b8b9e8a0e1f9b88173378a569f53f89b2b79c407af85fd5b0aecc9ad2bfef08.png"><img src="../../assets/images/1b8b9e8a0e1f9b88173378a569f53f89b2b79c407af85fd5b0aecc9ad2bfef08.png" alt="The architecture diagram with Guardrails highlighted: a boundary around the agent with caps on turns, time and spend, and a heartbeat that someone watches." loading="lazy" decoding="async"></a></figure>
 <h3>Limits on what it can do</h3>
 <p>The agent reads messages and issues that other people wrote, and that text can be interpreted as instructions. Limit what the agent could do if it followed them. In our example, the GitHub token and the <code>preferences</code> store are read-only, and the environment only reaches the hosts on its allowlist. A planted instruction can still change what the brief says, including through the notes the agent keeps between runs. It can't write to GitHub or edit your rules.</p>
 <p>Slack is the exception: the same token posts, so invite the bot only where it needs to read or post.</p>
