@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Claude Code 팀이 검증을 바라보는 방식 · claude.dev</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-claudedev">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html" class="on">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/claude-dev/index.html">claude.dev</a> / Engineering</p>
+    <h1 class="lang-ko">Claude Code 팀이 검증을 바라보는 방식</h1>
+    <h1 class="lang-en" hidden lang="en">How the Claude Code team thinks about verification</h1>
+    
+    <p class="art-sum lang-ko">엔드투엔드 테스트, 속성 기반 테스트(property test), 차등 테스트(differential test)를 통해 코딩 에이전트가 증거를 바탕으로 자신의 작업을 검증하는 방법과, Claude Code 팀이 검증기(verifier)의 신뢰성을 유지하기 위해 하는 일을 소개합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">How end-to-end, property and differential tests let coding agents verify their work with evidence, and what the Claude Code team does to keep its verifiers honest.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 11월 16일</dd></div>
+      <div><dt>저자</dt><dd>Addy Osmani</dd></div>
+      <div><dt>분량</dt><dd>10분</dd></div>
+      
+      <div><dt>원문</dt><dd><a href="https://claude.dev/blog/how-the-claude-code-team-thinks-about-verification/">https://claude.dev/blog/how-the-claude-code-team-thinks-about-verification/</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>Claude Code 팀에서는 코드의 대부분(약 90%)을 Claude가 작성하고 <a href="https://claude.dev/blog/solving-code-review-at-anthropic/">검토합니다</a>. 이 정도 규모에서는 에이전트가 자신의 작업을 증거로 검증할 수 있도록 어떻게 지원하느냐가 매우 중요해집니다.</p>
+<p>검증 루프(verification loop)는 Claude에게 더 많은 작업을 위임할 수 있게 해 주는 기본 구성 요소입니다. 검증 루프가 없으면 모든 것을 직접 확인해야 하므로 한 번에 Claude를 한두 개밖에 실행할 수 없습니다. 검증 루프가 있으면 수십 개, 수백 개를 병렬로 실행할 수 있습니다.</p>
+<p>에이전트에게 <a href="https://claude.com/blog/building-verification-loops-in-claude-code-with-skills">출력물을 검증할 방법</a>을 주는 것이 품질을 높이는 효과적인 방법이기 때문입니다. 구조화된 파일 생성에 대한 내부 테스트에서, 별도의 채점기(grader)가 루브릭(rubric)에 따라 Claude의 작업을 확인하도록 했더니 표준 프롬프트 루프보다 <a href="https://claude.com/blog/claude-managed-agents">작업 성공률이 최대 10포인트 향상</a>되었고, 가장 어려운 문제에서 향상 폭이 가장 컸습니다.</p>
+<p>한때는 검증 비용이 컸던 것들(테스트, 벤치마크, 스펙, 실제 종단 간 실행)을 이제는 에이전트에게 저렴하게 요청할 수 있습니다. 코드와 마찬가지로 에이전트는 테스트, 벤치마크, 스펙을 빠르게 생성할 수 있습니다. 또한 한 번 생성된 테스트와 벤치마크는 소프트웨어로 실행되므로, 추가 토큰을 많이 쓰지 않고도 자주 실행할 수 있습니다.</p>
+<p>검증 결과를 활용해 해당 작업에서 에이전트의 성능을 개선하면 검증 루프를 닫을 수도 있습니다. 예를 들어 에이전트가 로그에 사용자 데이터가 남아 있는지 확인하는 테스트를 반복해서 통과하지 못한다면, hook을 만들거나 CLAUDE.md에 더 명시적인 규칙을 추가해 같은 문제를 방지할 수 있습니다. 이렇게 하면 같은 문제가 다시 발생하는 것을 (대부분) 막을 수 있습니다.</p>
+<p>검증이 높은 속도로 품질 높은 코드를 만드는 데 핵심이라면, 어떤 유형의 테스트를 사용해야 하고 파이프라인 전반에 어떻게 적용해야 할까요? 이 글에서는 이 질문에 답하고, Claude Code 팀이 사용하는 프로세스도 함께 소개합니다.</p>
+<h2>테스트별 가치 차이: 투자할 만한 3가지 테스트</h2>
+<p>어떤 유형의 테스트를 선택하든 피해야 할 실패 양상이 몇 가지 있습니다.</p>
+<p>테스트가 불안정하면(flaky) 에이전트는 실패한 코드를 고치는 대신 테스트를 다시 실행하도록 학습하게 됩니다. 테스트가 느리면 에이전트가 배치 단위로 실행하는 테스트 수가 줄어들어 문제의 원인을 정확히 찾아내기 어려워질 수 있습니다. 무거운 테스트는 변경 사항을 커밋하기 전에 실행하는 것이 가장 좋습니다.</p>
+<p>이제 투자할 가치가 가장 크다고 생각하는 세 가지 테스트 유형을 소개합니다.</p>
+<h3>E2E 테스트</h3>
+<p>한 가지 테스트 유형에만 집중해야 한다면 종단 간(end-to-end, E2E) 테스트를 선택하십시오. 이 테스트는 상품을 장바구니에 담고, 결제하고, 주문 확인 페이지로 이동하는 것과 같은 실제 사용자 흐름을 기술합니다.</p>
+<p>E2E 테스트가 효과적인 이유는 속이기 어렵기 때문입니다. 기능 전체가 동작하거나 동작하지 않거나 둘 중 하나입니다. 또한 완료 기준이 명확하고, 무엇이 깨졌는지 구체적으로 알려 줍니다.</p>
+<figure><img src="https://claude.dev/media/3c9c60f4b0696a20f33ef62b6ddcb99c322fd19c440c28de234a6c804f7912a4.png" alt="Unit test failure vs. end-to-end test failure. Left: checkout.test.ts shows only “FAIL checkout.test.ts / Error: Timeout after 30s”, captioned “Shooting blind. No step, no trace.” Right: checkout.spec.ts shows a step trace (Register, Add item to cart, Checkout failed, See confirmation page not reached), a screenshot of shop.example/checkout with “Payment form failed to load” and a disabled “Place order” button, and “What step failed: Checkout: ‘Place order’ stayed disabled because the payment form never loaded”, captioned “Screenshots, trace, and a description of what step failed.”"><figcaption><b>FIG A</b>단위 테스트는 “Error: Timeout after 30 seconds”만 보여 줄 수 있지만, 종단 간 테스트는 무엇이 깨졌는지에 대한 설명과 함께 스크린샷을 보여 줄 수 있습니다.</figcaption></figure>
+<p>단위 테스트는 더 빠르고 덜 불안정하지만, 단위 테스트를 통과하고도 기능이 깨질 수 있습니다. 에이전트와 테스트 모두 작업 전체를 이해하지 못하기 때문입니다.</p>
+<p>E2E 테스트에서는 에이전트에게 실제로 실행 중인 시스템을 다룰 수 있는 손과 눈을 주는 것이 효과적입니다. skill을 사용해 <a href="https://chromedevtools.github.io/devtools-protocol/">CDP</a>, 시뮬레이터, API 하네스 같은 도구로 앱을 부팅하고, 조작하고, 검사할 수 있습니다.</p>
+<p>기능 맵(feature map)은 에이전트의 가이드이자 채점 루브릭 역할을 할 수 있습니다. 기능 맵은 보통 사용자 관점에서 기능을 나열하고, 경로, 키보드 단축키, 셀렉터, 기대 결과에 대한 설명을 담고 있기 때문입니다.</p>
+<h3>속성 테스트: 깨질 수 없는 제약 조건</h3>
+<p>많은 테스트는 무엇이 잘못될 수 있다고 생각했는지를 기반으로 작성됩니다. 속성 테스트(property test)는 사람들이 놓치기 쉬운 엣지 케이스를 다루며, 에이전트가 자주 실패하는 영역도 바로 여기입니다.</p>
+<p>먼저 깨질 수 없다고 생각하는 명제를 작성한 다음, 테스트 라이브러리(JS/TS는 <a href="https://fast-check.dev/">fast-check</a>, Python은 <a href="https://hypothesis.readthedocs.io/en/latest/">Hypothesis</a>, Rust는 <a href="https://proptest-rs.github.io/proptest/">proptest</a> 등)를 사용해 이를 반증하려는 입력을 수천 개 생성합니다.</p>
+<p>거의 모든 소프트웨어 프로젝트에는 다음과 같은 속성이 많이 있습니다.</p>
+<ul>
+<li><strong>왕복 인코딩(Round-trip encoding)</strong>: “X를 인코딩한 다음 다시 디코딩하면 X가 됩니다.” 파싱과 직렬화에도 적용됩니다.</li>
+<li><strong>불변식(Invariants)</strong>: “계좌 잔액은 음수가 될 수 없다”처럼 항상 참이어야 하는 조건입니다.</li>
+<li><strong>멱등성(Idempotency)</strong>: 마이그레이션, 정규화, 재시도 같은 동작을 두 번 수행해도 한 번 수행한 것과 효과가 같습니다.</li>
+<li><strong>동등성(Equivalence)</strong>: 최적화된 코드가 단순하지만 정확한 코드와 같은 결과를 냅니다.</li>
+</ul>
+<p>속성 테스트 라이브러리는 원래 코드를 작성한 에이전트와 같은 편향 없이 만들어진 엣지 케이스를 사용하므로, 에이전트가 정직하게 작업하도록 하는 데 매우 좋은 방법입니다. 또한 스펙이 실제 운영 환경의 동작과 어긋나 더 이상 신뢰할 수 있는 검증 기준이 되지 못하는 재작성 작업에서도 특히 유용합니다.</p>
+<h3>차분 테스트: 기존 시스템이 오라클</h3>
+<p>차분 테스트(differential test)는 기능이 동일하게 유지되어야 하는 <a href="https://claude.com/resources/articles/ai-code-migration">대규모 마이그레이션</a> 사례에서 특히 효과적입니다. 이 테스트에서는 기존 시스템과 새 시스템을 같은 입력으로 모두 실행하고 결과가 다른지 확인합니다. 결과가 다르다면 수정해야 할 버그나 호환성을 깨뜨리는 변경이 있는 것입니다.</p>
+<p>차등 테스트(differential test)의 핵심은 무작위로 생성한 입력이나 프로덕션 트래픽의 샘플을 사용하는 것입니다. 또한 공백 같은 무관한 요소는 정규화하고, 새 환경이 기존 환경과 달라도 되는 경우를 위해 승인된 변경 목록을 관리하는 것이 좋습니다.</p>
+<h2>CLAUDE CODE 팀이 검증을 바라보는 방식</h2>
+<p>앞서 <a href="https://claude.dev/blog/solving-code-review-at-anthropic/">Anthropic에서 코드 리뷰가 어떻게 이루어지는지</a> 소개한 적이 있습니다. 이번 글에서는 작업물을 어떻게 검증하는지 더 자세히 다룹니다.</p>
+<h3>검증은 변경 사항을 실제로 실행하는 것</h3>
+<p>앱을 처음부터 끝까지 실행해 보는 것이 테스트보다 더 중요합니다. iOS 변경 사항을 시뮬레이터에서 확인해 보지 않고 배포하지는 않을 것이며, Claude도 마찬가지입니다.</p>
+<p>Claude는 사람이나 QA 엔지니어처럼 앱 전체를 테스트할 수 있습니다. 웹 변경 사항에는 Claude Chrome extension을, 모바일에는 iOS 또는 Android MCP를, 데스크톱에는 computer use를 사용하도록 요청하거나, 백엔드 작업에서는 서비스를 로컬에서 실행하도록 요청하십시오.</p>
+<p>시뮬레이터를 시작하거나 앱을 실행하는 방법을 코드화하려면 verify라는 스킬(skill)을 만드십시오. 이 스킬은 저장소의 .claude/skills/ 폴더 안에서 관련 코드와 최대한 가까운 위치에 두고, 필요한 만큼 추가할 수 있습니다. Claude는 변경 사항을 커밋하기 전에 verify 스킬을 사용해야 한다는 것을 알고 있습니다.</p>
+<p>그다음에는 verify 스킬을 빠르고 안정적으로 만드는 데 투자하십시오. Claude에게 스킬을 반복해서 개선하고 스트레스 테스트를 하도록 요청하십시오. 이 스킬은 스모크 테스트 하네스(harness)이므로 매우 견고해야 합니다.</p>
+<p>Claude에게 변경 사항을 처음부터 끝까지 스모크 테스트할 수 있는 방법을 주면 결과가 훨씬 좋아집니다. 사람이 하듯이 Claude가 반복해서 개선하고 실제 실수를 더 빨리 잡아내는 모습을 볼 수 있습니다. Anthropic에서는 거의 모든 변경 사항을 이런 방식으로 테스트합니다.</p>
+<h3>실패한 테스트는 사람의 확인이 필요함</h3>
+<p>모든 변경 사항을 사람이 읽을 수는 없으므로, 사람이 봐야 할 대상을 정하는 기준 중 하나로 실패를 활용합니다. Claude가 점검을 실행하고 실패한 항목을 수정하려고 시도합니다. 세 차례 시도한 뒤에도 점검이 계속 실패하면 Claude는 작업을 멈추고 사람을 투입합니다.</p>
+<h3>코드 오너가 직접 점검 항목을 작성함</h3>
+<p>코드를 소유한 사람이 해당 코드의 점검 항목을 작성하고, 오너라면 지적했을 내용을 점검이 잡아낼 때까지 다듬습니다. 점검 결과로 리뷰어가 호출될 때는 그 이유를 함께 알려 주어야 합니다. 그래야 리뷰어가 diff를 보고 이유를 직접 파악하지 않아도 됩니다.</p>
+<h3>diff를 기준으로 작동하는 신뢰성 점검</h3>
+<p>저희는 39개 항목으로 구성된 신뢰성 체크리스트를 관리합니다. 각 항목에는 diff에서 읽어 낼 수 있는 트리거, 점검 내용, 그리고 그 배경이 된 장애나 PR이 포함되어 있습니다. 예를 들어 “--resume loads old transcripts”라는 항목이 있습니다. 세션 저장소나 메시지 타입이 바뀌면, 이전 트랜스크립트에는 새 필드가 없으므로 새 필드를 안전하게 불러올 수 있는지 확인합니다.</p>
+<p>Claude는 diff를 읽고 트리거가 일치하는 항목만 점검하며, 보통 3개에서 10개 정도입니다. 따라서 과거 장애를 누구도 외우고 있을 필요가 없습니다.</p>
+<h3>리뷰어는 한 명, 라운드는 여러 번</h3>
+<p>리뷰어를 더 많이 쌓는 방식으로 리뷰를 개선하려 하지 않습니다. 기본 리뷰어 위에 비용이 더 많이 드는 두 번째 리뷰어를 추가하는 것은 기본 리뷰어를 조정하는 것보다 나쁜 접근인 경우가 많습니다. 대신 해당 코드에서 리뷰어가 무엇에 주의해야 하는지를 적은 <a href="https://code.claude.com/docs/en/code-review-customize">REVIEW.md</a>를 두고 있습니다.</p>
+<p>또한 리뷰와 검증 라운드는 서로 이어져야 한다고 생각합니다. 매번 처음부터 모든 것을 다시 점검하지 않고, 각 단계가 이전 라운드의 컨텍스트와 과거의 실패 사례를 참고하도록 합니다. 비용이 더 적게 들고 더 많은 문제를 찾아냅니다.</p>
+<h3>변경 사항은 자신을 판정하는 점검을 수정할 수 없음</h3>
+<p>변경 사항이 자신을 판정하는 점검을 수정할 수 있다면 그 점검은 제대로 작동하지 않는 것입니다. Code Review는 REVIEW.md 파일을 베이스 브랜치나 기본 브랜치에서 읽으며, <a href="https://code.claude.com/docs/en/code-review-customize">pull request의 변경 사항에서는 절대 읽지 않습니다</a>. Claude Code 팀은 변경 사항을 통과시킬지 결정하는 규칙이 변경 사항으로는 수정할 수 없는 브랜치에 있도록 보장합니다.</p>
+<p>또한 Claude Code 팀은 리뷰를 커밋 단위로 한정합니다. 리뷰가 진행되는 동안 누군가 푸시를 하면 그 리뷰 결과는 더 이상 쓸모가 없습니다. 최신이 아닌 커밋에 대한 리뷰 통과는 아무 의미가 없습니다.</p>
+<p>팀은 비용이 적게 드는 점검도 먼저 실행합니다. 에이전트가 로컬에서 테스트하지 않고 푸시하면, 스스로 잡을 수 있었던 버그 때문에 공용 리뷰 시간과 CI 시간을 쓰게 됩니다. 저희 팀에서는 Claude가 pull request를 열기 전에 테스트, 빌드, 린터를 실행합니다. Claude가 작업을 마칠 때 테스트를 실행하는 <a href="https://code.claude.com/docs/en/hooks">훅(hook)</a>이나, 테스트 스위트 통과를 목표로 하는 <a href="https://code.claude.com/docs/en/goal">/goal</a>로 이를 강제할 수 있습니다.</p>
+<h3>새 게이트는 observe 모드로 시작</h3>
+<p>저희 저장소에서는 각 커밋에 어떤 방식으로 검증했는지를 스탬프로 남깁니다. 스탬프에는 "none"도 포함되므로 검증되지 않은 커밋을 조회할 수 있습니다.</p>
+<p>또한 세션에 /code-review나 /verify가 포함되어 있지 않으면 커밋을 차단할 수 있는 커밋 게이트도 만들었습니다. 이 게이트는 off, observe, enforce 모드로 설정할 수 있습니다.</p>
+<p>observe 모드에서는 차단되었을 커밋을 로그로 남깁니다. 이를 통해 오탐을 검토하고 아무도 영향을 받지 않는지 확인할 수 있습니다.</p>
+<p>enforce 모드에서는 커밋을 차단합니다. 어떤 커밋이든 검증하지 못한 이유를 커밋 메시지에 설명으로 남길 수 있습니다. 한 세션에서 커밋이 두 번 차단되었다면 그다음 커밋은 통과시켜 Claude가 막힌 상태에 빠지지 않도록 합니다. Claude Code도 완벽하지는 않기 때문입니다.</p>
+<h3>실제로 중요한 기준으로 점검 항목을 검증하기</h3>
+<p>Claude Code 팀은 리뷰어 자체도 정기적으로 검토합니다. 머지된 변경 중 되돌려진 건수, 머지 전에 메인테이너가 거절한 변경 건수, 그리고 문제없이 유지된 변경 중 규모가 비슷한 일부 변경 건수를 추적합니다.</p>
+<p>공식적인 평가(evaluation)를 통해서도 이를 수행할 수 있습니다. <a href="https://claude.dev/blog/solving-code-review-at-anthropic/">코드 리뷰 관련 글</a>에서 Code Review 팀이 과거의 장애와 revert를 기반으로 평가를 구성한 방법을 설명했습니다. 각 사례마다 리뷰 시점의 상태로 저장소를 재현하고, 버그가 무엇이었는지를 한 문장으로 적은 정답지를 제공합니다. 해당 버그를 정확하게 설명한 지적에만 점수를 줍니다. 과도한 지적을 막기 위한 대조군으로는 머지된 후 안정적으로 유지된 변경 사항을 사용합니다. 튜닝용 세트는 시스템을 평가할 때 쓰는 고정된 테스트 세트와 분리되어 있습니다.</p>
+<p>또한 이들은 원시 발견 결과(raw findings), 검증 이후, 최종 리뷰 단계의 재현율(recall rate)을 각각 따로 평가했습니다. 이를 통해 시스템이 이미 찾아낸 버그를 중간에 놓치고 있는지 확인할 수 있습니다. 이 모든 단계를 하나의 종단 간(end-to-end) 점수로 취급하는 평가로는 이러한 미묘한 차이를 포착할 수 없습니다.</p>
+<p>유효성 외에 우리가 중요하게 보는 또 다른 기준은 해당 변경이 얼마나 중요한가입니다. 좋은 리뷰어는 기술적으로 맞는 사항의 대부분을 잡아내지만, 사람들은 특정 버그가 반드시 고쳐야 하는 것인지, 고치는 것이 좋은 것인지, 사소한 지적인지를 중요하게 생각합니다.</p>
+<p>Code Review에도 바로 이런 개념이 있어서, 항목에 <a href="https://code.claude.com/docs/en/code-review-pull-requests">Important, Nit 또는 Pre-existing</a> 태그를 붙입니다. "pre-existing" 태그는 이미 버그였던 사항에 대해 리뷰어가 작성자에게 책임을 묻지 않아야 한다는 의미입니다.</p>
+<p>마지막으로 Claude Code 팀은 다음 개선이 실제로 버그를 잡아내기보다 평가에 과적합(overfitting)되는 시점까지 재현율을 끌어올립니다.</p>
+<h3>놓친 사례를 규칙으로 전환</h3>
+<p>Claude Code 저장소에서는 놓친 사례를 규칙으로 바꾸는 두 가지 방법을 사용합니다. 첫 번째는 사람이 남긴 코드 리뷰 코멘트와 PR 되돌리기(revert)에서 패턴을 추출하여 공통적인 문제를 파악하는 것입니다. 잠재적인 규칙으로 인정받으려면 최소 두 개의 PR에서 발생해야 하고, diff만으로 식별할 수 있어야 합니다. 세 개의 에이전트가 이를 반증하려고 시도하며, 통과한 규칙은 PR에서 사람이 검토하고 승인합니다.</p>
+<p>두 번째 방법은 알려진 장애(incident)와 연관된 PR에 대해 세 개의 버그 탐지기를 다시 실행하는 것입니다. 최소 두 개가 버그를 찾아내면 탐지 가능한 버그로 판단합니다. 작은 diff에서도 버그를 놓친다면, 이는 REVIEW.md의 규칙으로 만들 가치가 있는 공백입니다.</p>
+<p>불안정한 테스트(flaky test)도 같은 방식으로 다룹니다. Claude는 이를 건너뛰거나, sleep을 추가하거나, 통과할 때까지 재시도할 수 없습니다. 근본 원인을 찾지 못하면 해당 테스트를 삭제하고 그 이유를 기록합니다.</p>
+<p>규칙도 정리가 필요합니다. 테스트 스위트, 검증 단계, .md 파일은 내버려 두면 늘어나기만 하므로, 정기적으로 정리합니다.</p>
+<h2>좋은 테스트, 좋은 결과</h2>
+<p>에이전트가 강력한 피드백 루프로 자신의 작업을 검증할 수 있게 해 주면 모든 것이 달라진다는 점을 확인했습니다. 검증 계층도 다른 시스템과 똑같이 다루십시오. 검증 대상인 변경이 닿지 않는 곳에 두고, 실제로 중요했던 버그를 기준으로 평가하며, 무언가를 놓치면 같은 일이 두 번 이상 일어나지 않도록 교훈을 기록하십시오. 그리고 그 교훈이 계속 실행할 가치가 있도록 가지치기(prune)하십시오.</p>
+<p>그렇게 하면 여러분의 일은 모든 diff를 읽는 것에서, "완료"가 어떤 모습인지 정의하고 증거를 검토하는 것으로 바뀝니다. 이것이 여러 Claude를 동시에 실행할 수 있게 해 주는 힘입니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>On the Claude Code team, the vast majority of our code (~90%) is written and <a href="https://claude.dev/blog/solving-code-review-at-anthropic/">reviewed by Claude</a>. At this scale, how we equip our agents to verify their work with evidence becomes extremely important.</p>
+<p>Verification loops are the building block that lets you delegate more work to Claude. Without them, you can really only run one or two Claudes at a time, because you have to check everything yourself. With them, you can run dozens or hundreds in parallel.</p>
+<p>That’s because giving agents a <a href="https://claude.com/blog/building-verification-loops-in-claude-code-with-skills">way to verify their output</a> is an effective way to improve quality. In internal testing around structured file generation, having a separate grader check Claude’s work against a rubric <a href="https://claude.com/blog/claude-managed-agents">improved task success by up to 10 points</a> over a standard prompting loop, with the largest gains on the hardest problems.</p>
+<p>What was once expensive to verify (tests, benchmarks, specs, real end-to-end runs) is now cheap to request from an agent. Like code, agents can quickly generate tests, benchmarks, and specs. And once generated, these tests and benchmarks run as software so they can be run frequently without using many additional tokens.</p>
+<p>You can also close the verification loop by using the results to improve the agent’s performance on that task. For example, if an agent repeatedly fails a test that checks logs for user data, you can create a hook or a more explicit rule in your CLAUDE.md to avoid future issues. This (mostly) stops issues from happening again.</p>
+<p>So if verification is critical to producing quality code at a high velocity, what types of tests should you use and how should you apply them across your pipeline? This article answers those questions and also shares the process used by the Claude Code team.</p>
+<h2>NOT ALL TESTS ARE CREATED EQUAL: 3 TESTS WORTH INVESTING IN</h2>
+<p>No matter which test type you choose, there are a few failure modes to avoid.</p>
+<p>If your tests are flaky you’ll train the agent to run them again rather than fixing the failing code. If your tests are slow, the agent will do fewer tests across batches which can make pinpointing issues difficult. Heavier tests are best deployed before you’ve committed the changes.</p>
+<p>Now, here are the three types of tests I think are most worth investing in.</p>
+<h3>E2E tests</h3>
+<p>If you have to focus on one test type, pick end-to-end. These tests describe real user flows like adding an item to a cart, checking out, and moving to a confirmation page.</p>
+<p>The reason E2E tests are so effective is that they are difficult to fool–either the whole feature works or it doesn't. They also have definitive done criteria and can concretely tell you what’s broken.</p>
+<figure><img src="https://claude.dev/media/3c9c60f4b0696a20f33ef62b6ddcb99c322fd19c440c28de234a6c804f7912a4.png" alt="Unit test failure vs. end-to-end test failure. Left: checkout.test.ts shows only “FAIL checkout.test.ts / Error: Timeout after 30s”, captioned “Shooting blind. No step, no trace.” Right: checkout.spec.ts shows a step trace (Register, Add item to cart, Checkout failed, See confirmation page not reached), a screenshot of shop.example/checkout with “Payment form failed to load” and a disabled “Place order” button, and “What step failed: Checkout: ‘Place order’ stayed disabled because the payment form never loaded”, captioned “Screenshots, trace, and a description of what step failed.”"><figcaption><b>FIG A</b>A unit test may show “Error: Timeout after 30 seconds,” but an end-to-end test can show a screenshot with a description of what’s broken.</figcaption></figure>
+<p>While unit tests are faster and less flaky, it’s possible to pass them and still break the feature. This is because both the agent and the test don’t understand the full task.</p>
+<p>With E2E tests, it is effective to give your agent hands and eyes on the real running system. You can use a skill to boot, drive, and inspect the app with tools like <a href="https://chromedevtools.github.io/devtools-protocol/">CDP</a>, simulators, or API harnesses.</p>
+<p>The feature map can serve as a guide and grading rubric for agents as they typically list features from the user’s point of view with descriptions of paths, keyboard shortcuts, selectors, and expected results.</p>
+<h3>Property tests: constraints that can’t break</h3>
+<p>A lot of tests are based on what you thought might go wrong. Property tests look at the edge cases that people tend to miss, which is where agents often fail.</p>
+<p>You start by writing a statement you think can’t fail and then use a test library (<a href="https://fast-check.dev/">fast-check</a> for JS/TS, <a href="https://hypothesis.readthedocs.io/en/latest/">Hypothesis</a> for Python, <a href="https://proptest-rs.github.io/proptest/">proptest</a> for Rust, etc.) to generate thousands of inputs that try to prove otherwise.</p>
+<p>There are many properties in virtually every software project like:</p>
+<ul>
+<li><strong>Round-trip encoding</strong>: “if you encode X then decode it back, you get X.” This works for parsing and serialization as well.</li>
+<li><strong>Invariants</strong>: Things that must always be true, like “account balance can never become negative.”</li>
+<li><strong>Idempotency</strong>: Doing an action (migration, normalization, retry) twice has the same effect as doing it once.</li>
+<li><strong>Equivalence</strong>: Optimized code produces the same result as naive but correct code.</li>
+</ul>
+<p>Property libraries are a great way to keep agents honest by using edge cases that aren’t created with the same bias as the agent that created the original code. They are also particularly helpful for rewrites when the spec has drifted from production behavior and is no longer a reliable source for verification.</p>
+<h3>Differential tests: the old system is the oracle</h3>
+<p>Differential tests are particularly effective for <a href="https://claude.com/resources/articles/ai-code-migration">large-scale migration</a> use cases where functionality is expected to remain the same. For these tests, you run both the old system and the new system with the same inputs and see if you get different results. If you do, there is a bug or breaking change that needs to be fixed.</p>
+<p>The key for differential tests is to use randomly generated inputs or a sample of production traffic. You’ll also want to normalize irrelevant factors like whitespace and keep a list of approved changes for situations where the new environment should differ from the old.</p>
+<h2>HOW THE CLAUDE CODE TEAM THINKS ABOUT VERIFICATION</h2>
+<p>We have previously written about <a href="https://claude.dev/blog/solving-code-review-at-anthropic/">how code review works at Anthropic</a>, but this article aims to go deeper on how we verify our work.</p>
+<h3>Verification means running the change</h3>
+<p>Running the app end to end matters more than tests. You wouldn't ship an iOS change without trying it in a simulator, and the same goes for Claude.</p>
+<p>Claude can test the whole app the way a human or QA engineer would. Ask it to use the Claude Chrome extension for web changes, an iOS or Android MCP for mobile, computer use for desktop, or to run the service locally for backend work.</p>
+<p>To codify how to start the simulator or run your app, create a skill called verify. Put it in a .claude/skills/ folder in your repo, as close to the relevant code as you can, and add as many as you need. Claude knows to use the verify skill before committing changes.</p>
+<p>Then invest in making your verify skill fast and reliable. Ask Claude to iterate on it and stress test it. It's your smoke test harness, so you want it rock solid.</p>
+<p>When you give Claude a way to smoke test its changes end to end, you get much better results. You'll see it iterate and catch real mistakes faster, the way a human would. This is how we test nearly all changes at Anthropic.</p>
+<h3>Failing tests require human attention</h3>
+<p>Nobody can read every change, so we use failures as one way to decide what needs a person. Claude runs the checks and tries to fix anything that fails. If a check is still failing after three rounds, Claude stops and brings in a human.</p>
+<h3>Code owners write their own checks</h3>
+<p>The people who own the code write the checks for it, and refine them until they flag what the owner would flag. When a check pulls in a reviewer, it should say why, so they don't have to work it out from the diff.</p>
+<h3>Reliability checks trigger on the diff</h3>
+<p>We maintain a reliability checklist with 39 items, each with a trigger that can be read from a diff, a check, and the incidents or PRs behind it. One is “--resume loads old transcripts.” When session storage or message types change, we ask whether a new field loads safely, since older transcripts won’t have it.</p>
+<p>Claude reads the diff and checks only the items whose trigger matches–usually 3 to 10–so nobody has to memorize past outages.</p>
+<h3>One reviewer, multiple rounds</h3>
+<p>We don't try to improve reviews by stacking on more reviewers. Adding a second, more expensive, reviewer on top of the primary one is often a worse approach than tuning the primary. Instead, we have a <a href="https://code.claude.com/docs/en/code-review-customize">REVIEW.md</a> that says what the reviewer should pay attention to for this code.</p>
+<p>We also think review and verification rounds should build on each other. We point each pass at context from earlier rounds and past failures rather than re-checking everything from scratch. It’s cheaper and finds more.</p>
+<h3>Changes can't modify their own checks</h3>
+<p>If a change can modify the check that judges it, the check is broken. Code Review reads the REVIEW.md file from the base or default branch, <a href="https://code.claude.com/docs/en/code-review-customize">never from the pull request's changes</a>. The Claude Code team ensures the rules that gate changes are on a branch that the change can't modify.</p>
+<p>The Claude Code team also reserves reviews for commits. If someone's pushing while the review is happening, then the review result is no longer useful. A passing review on an out-of-date commit means nothing.</p>
+<p>The team also runs cheap checks first. If an agent pushes before testing locally, it has spent shared review and CI time when it could have caught the bug itself. On our team, Claude runs the tests, build, and linter before opening a pull request. You can enforce this with a <a href="https://code.claude.com/docs/en/hooks">hook</a> that runs the tests when Claude finishes, or a <a href="https://code.claude.com/docs/en/goal">/goal</a> of a passing test suite.</p>
+<h3>Start a new gate in observe mode</h3>
+<p>In our own repos, we stamp each commit with how it was verified. The stamp even includes "none" so we can query for commits that weren't verified.</p>
+<p>We've also created a commit gate that can block a commit if the session did not contain /code-review or /verify. We've set it up with off, observe, and enforce modes.</p>
+<p>Observe mode will log what would have been blocked, so that we can review any false positives and ensure no one is impacted.</p>
+<p>Enforce mode will block the commit. Any commit can carry an explanation in its message as to why it didn't get verified. If commits have been blocked twice in the session, the next one will be allowed through so Claude doesn't get stuck – Claude Code isn't perfect.</p>
+<h3>Test your checks on what actually matters</h3>
+<p>The Claude Code team also regularly reviews the reviewers. We track how many merged changes were reverted, how many changes a maintainer rejected before merging, and a size-matched subset of changes that have stayed clean.</p>
+<p>This can also be done with a formal evaluation. In our <a href="https://claude.dev/blog/solving-code-review-at-anthropic/">code review post</a>, we described how the Code Review team has set up an evaluation based on previous incidents and reverts. They recreate the repo to the state at the time of review for each example, and provide a one-sentence answer key to what the bug was. Only findings that correctly describe the bug in question get points. They use merged and stable changes as a control to prevent over-flagging. Their tuning set is split out from the fixed test set they use to evaluate their system.</p>
+<p>They also evaluated the recall rate for raw findings, post-verification, and final review separately. This lets them see if the system is losing bugs it had already found. Any evaluation that treats all these as one end-to-end score won't capture this nuance.</p>
+<p>In addition to validity, the other dimension we care about is how important it is to make the change. A good reviewer will catch most things that are technically correct, but people care about whether a given bug is a must-fix, a should-fix, or a nit.</p>
+<p>Code Review has this exact idea, and it will tag things as <a href="https://code.claude.com/docs/en/code-review-pull-requests">Important, Nit or Pre-existing</a>. The "pre-existing" tag means that the reviewer shouldn't hold the author responsible for something that was already a bug.</p>
+<p>Finally, the Claude Code team tunes recall up to the point where the next improvement would be overfitting to the eval rather than actually catching bugs.</p>
+<h3>Turn misses into rules</h3>
+<p>In the Claude Code repo, we have two methods of turning missed cases into rules. The first is extracting patterns in human code review comments and PR reverts to identify common issues. These must occur in at least two PRs and be identifiable from a diff to be considered a potential rule. Three agents will try to disprove them, and they will be reviewed and approved by a human in a PR.</p>
+<p>The second method is replaying three bug finders against a PR that is associated with a known incident. If at least two find the bug, it's a detectable bug. If the bug is missed on a small diff, this is a gap that is worth turning into a rule in REVIEW.md.</p>
+<p>Flaky tests get the same treatment. Claude can't skip them, add sleeps or retry until they pass. If it can't find the root cause, it deletes the test and writes down why.</p>
+<p>Rules need cleaning up too. Test suites, verification steps and .md files only grow if you let them, so we tidy them up on a routine.</p>
+<h2>GOOD TESTS, GOOD RESULTS</h2>
+<p>We’ve found that giving your agent a way to verify its work with a strong feedback loop makes all the difference. Treat your verification layer like you would any other system. Keep it out of reach of the changes they judge, grade them against the bugs that mattered to you, and write down lessons when they miss something so that it doesn’t happen more than once, and prune those lessons so they stay worth running.</p>
+<p>Do that and your job shifts from reading every diff to defining what “done” looks like and reviewing the evidence, which is what lets you run many Claudes at once.</p></article>
+
+  <p class="art-back"><a href="../../s/claude-dev/index.html">← claude.dev 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  
+  
+</footer>
+</body>
+</html>
