@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Ultrafast로 몰입 상태를 유지하는 방법 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">Ultrafast로 몰입 상태를 유지하는 방법</h1>
+    <h1 class="lang-en" hidden lang="en">How I stay in the flow with Ultrafast</h1>
+    
+    <p class="art-sum lang-ko">Codex에서 Ultrafast를 활용해 작은 UI 변경을 시도하고 피드백을 주면서 몰입 상태를 유지하는 방법과, API에서 이를 적용해 보고 싶은 지점을 소개합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">How I use Ultrafast in Codex to try small UI changes, give feedback, and stay in the zone, and where I’d try it in the API.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 11월 20일</dd></div>
+      <div><dt>저자</dt><dd>Dominik Kundel</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/how-i-stay-in-the-flow-with-ultrafast">https://developers.openai.com/blog/how-i-stay-in-the-flow-with-ultrafast</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>저는 DevTools에서 CSS를 만져 보던 시절이 조금 그립습니다. 색상, 글꼴 크기, 애니메이션 곡선을 이것저것 바꿔 가며 느낌이 맞을 때까지 다듬곤 했습니다. 시작할 때는 무엇을 원하는지 정확히 알지 못했고, 작업하면서 그것을 찾아갔습니다. 그때는 몰입 상태였습니다.</p>
+<p>요즘은 Codex에 작업을 많이 맡겨 두고 컴퓨터 앞을 떠나곤 합니다. 하지만 특히 새로운 UI를 만들 때는 해법을 향해 반복적으로 다듬어 가고 싶을 때가 많습니다. Ultrafast 덕분에 그 DevTools의 감각을 상당 부분 되찾았습니다.</p>
+<p>이번 주 초에 저희는 <a href="https://learn.chatgpt.com/docs/agent-configuration/speed">Ultrafast</a>와 함께 GPT-6.2 Astra와 Sol을 출시했으며, Codex에서 최대 4.5배 빠른 토큰 생성을 제공합니다. Sol Ultrafast는 이제 $200 Pro 요금제에서 사용할 수 있고, API에서는 6배 대신 Standard 가격의 3배로 <a href="https://developers.openai.com/api/docs/pricing">프로모션</a>을 진행하고 있습니다.</p>
+<p>지금은 Ultrafast 없이 일하는 모습을 상상하기 어렵습니다. 그래서 장애 대응 디버깅처럼 1분 1초가 중요한 순간 외에도 Ultrafast가 유용했던 몇 가지 방식과, 추가된 속도가 별로 도움이 되지 않을 수 있는 경우를 소개합니다.</p>
+<h2>몰입 상태에 들어가기</h2>
+<p>UI 작업을 할 때는 보통 대략적인 방향을 잡고 최대한 빨리 화면에 무언가를 띄웁니다.</p>
+<p>전체 경험이 어떤 모습이어야 하는지 아직 모르는 상태에서 긴 작업을 기다리거나, 높은 추론 수준에 토큰을 많이 쓰는 것은 오히려 역효과일 수 있습니다. 그것은 제가 아직 완전히 정하지 못한 생각을 모델이 정확히 구현해 주기를 바라며 대박을 기대하는 것과 비슷합니다. 저는 차라리 앉아서 몇 가지를 시도하고, 변경 사항을 확인하며 피드백을 주는 편을 선호합니다. 모든 세부 사항을 미리 지시하려 하기보다, Codex가 만들어 내는 결과에 반응하며 방향을 잡을 수 있습니다. 또한 각각의 변경이 몇 초밖에 걸리지 않는 경우가 많아서 몰입 상태를 유지할 수 있습니다.</p>
+<p><a href="../../assets/images/2d9ce0964fc2a95eb0542486904d15500a4ac68c81edc45dc2d1eaaf6b72b26a.webp"><img src="../../assets/images/2d9ce0964fc2a95eb0542486904d15500a4ac68c81edc45dc2d1eaaf6b72b26a.webp" alt="Codex updates a shopping bag in the in-app browser as I annotate the free-shipping indicator and ask to move it next to the title." loading="lazy" decoding="async"></a></p>
+<p>Ultrafast를 더욱 마법처럼 느끼게 해 주는 몇 가지 요령을 알게 되었습니다.</p>
+<ul>
+<li>
+<p><strong>핫 모듈 리로딩(hot module reloading)이 되는 개발 서버를 사용합니다.</strong> 전체 빌드를 기다리지 않고, Codex가 변경하는 즉시 결과를 확인하고 싶기 때문입니다.</p>
+</li>
+<li>
+<p><strong>인앱 브라우저에 사이트를 열어 둡니다.</strong> 채팅 옆에 미리보기를 두면 프롬프트를 입력하는 동안에도 변경 사항을 볼 수 있습니다.</p>
+</li>
+<li>
+<p><strong>짧고 개별적인 작업을 요청합니다.</strong> 저는 작은 피드백을 하나씩 보내고, 눈에 띄는 것이 있을 때마다 사이트의 다른 부분으로 옮겨 다니는 경우가 많습니다.</p>
+</li>
+<li>
+<p><strong>주석 기능을 사용합니다.</strong> 바꾸고 싶은 대상을 위치로 설명하는 것보다 정확히 가리키는 편이 훨씬 쉽습니다.</p>
+</li>
+<li>
+<p><strong>음성 입력이나 음성 모드를 사용해 봅니다.</strong> 작은 작업 여러 개를 빠르게 대기열에 넣어 두고, 저는 결과를 계속 보면서 Codex가 처리하도록 할 수 있습니다.</p>
+</li>
+<li>
+<p><strong>Light/Low 추론 수준으로 시작합니다.</strong> 이런 지시는 대부분 꽤 쉬운 편입니다. 애니메이션 설계처럼 더 섬세한 작업이라면 High로 바꿨다가 다시 Low로 돌아오기도 합니다.</p>
+</li>
+<li>
+<p><strong>불필요한 경우 빠른 반복 루프에서 검증을 제외합니다.</strong> 작은 시각적 수정에서는 제가 브라우저에서 결과를 확인하는 동안 Codex는 코드 변경에만 집중하도록 지시합니다. 결과가 마음에 들면 그때 관련 테스트를 작성하고 추가 검사를 실행하도록 요청합니다.</p>
+</li>
+</ul>
+<p><strong>보너스 팁:</strong> Codex Micro가 있다면, 이를 사용해 Ultrafast와 함께 음성 입력을 실행하는 것이 좋습니다. 페이지를 스크롤하며 검토하는 동안 피드백을 빠르게 여러 개 대기열에 넣을 수 있습니다. 대신 음성 입력용 키보드 단축키를 설정해도 같은 방식으로 사용할 수 있습니다.</p>
+<p><a href="../../assets/images/b1e66b8c57fc7478e78d63e0f27ab3271b92024a953cbc371534c2ca644c912b.webp"><img src="../../assets/images/b1e66b8c57fc7478e78d63e0f27ab3271b92024a953cbc371534c2ca644c912b.webp" alt="Dictated requests queue in Codex beside a shoe product page: show the color name, cross out unavailable sizes, and move the size guide up." loading="lazy" decoding="async"></a></p>
+<h2>문서 작업과 컴퓨터 사용에 Ultrafast 활용하기</h2>
+<p>슬라이드와 문서에도 같은 방식을 사용합니다. Codex에 전체 슬라이드 덱을 디자인해 달라고 요청하기보다, 한 번에 슬라이드 하나씩 진행하며 피드백을 주고 변경 사항을 확인한 뒤 거기서부터 반복하는 경우가 많습니다. 문서의 경우에는 읽으면서 개별 문단에 피드백을 주고, 그렇게 수정을 이어 갑니다.</p>
+<p>더 일반적으로는, 주로 모델의 지능에 의존하고 변경 사이에 추가 검증이 많이 필요하지 않은 작업에 매우 유용하다고 느꼈습니다. 슬라이드 수정, 문서 편집, 스프레드시트 입력, 개별 동작이 빠른 일부 컴퓨터 사용 작업 등이 그 예입니다.</p>
+<h2>Ultrafast가 덜 유용한 경우</h2>
+<p>토큰 생성이 빨라진다고 해서 전체 작업이 4.5배 빨리 끝나는 것은 아닙니다. 한 턴의 대부분이 빌드, 테스트 스위트, 컴파일러 또는 다른 도구 호출을 기다리는 데 쓰인다면 전체 속도 향상 폭은 더 작아집니다. 컴파일러는 여전히 걸리는 만큼 시간이 걸립니다.</p>
+<p>저는 Medium 추론 수준의 GPT-6.2 Sol에게 Android 운동 타이머가 실행되는 동안 화면을 켜 두도록 만들어 달라고 요청했습니다. 각 막대는 한 줄짜리 수정, 증분 빌드, 18개 테스트 전체를 포함한 세 번 실행의 평균을 나타냅니다.</p>
+<p><a href="../../assets/images/bca320089e862a449474846ae6b2fe288006e32712ba0dcb0a00ddb5e4b74026.webp"><img src="../../assets/images/bca320089e862a449474846ae6b2fe288006e32712ba0dcb0a00ddb5e4b74026.webp" alt="Average Android timer task duration: 16.7 seconds on Standard, 16.0 on Fast, and 15.7 on Ultrafast. Tests take about 13 seconds in all three modes." loading="lazy" decoding="async"></a></p>
+<p>이미지 생성도 좋은 예입니다. 작업의 일부로 Codex에 이미지를 생성하도록 요청하면, 대부분의 시간을 이미지가 생성되기를 기다리는 데 쓰게 될 수 있습니다. Ultrafast는 그 앞뒤 단계의 속도를 높일 수는 있지만, 이미지 자체의 생성 속도를 높이지는 못합니다.</p>
+<p>잘 정의되어 있으면서 모델의 많은 실험과 검증이 필요한 작업에서도 추가된 속도의 가치는 낮을 수 있습니다. 특히 Codex를 밤새 돌려 두고 자리를 비워도 괜찮은 경우에는 더욱 그렇습니다.</p>
+<h2>API에서 시도해 볼 만한 곳</h2>
+<p>같은 원칙이 API에도 적용됩니다. 사용자가 모델을 기다리는 시간과 도구를 기다리는 시간을 비교해 보십시오.</p>
+<p>Ultrafast가 도움이 될 수 있는 몇 가지 사용 사례는 다음과 같습니다.</p>
+<ul>
+<li>
+<p><strong>문서 요약 및 Q&amp;A.</strong> 문서가 이미 컨텍스트에 들어 있다면, 모델은 추가 도구 호출을 많이 하지 않고도 요약을 생성하거나 후속 질문에 답할 수 있습니다.</p>
+</li>
+<li>
+<p><strong>빠른 도구 호출과 컴퓨터 사용(computer use).</strong> 양식 입력이 흥미로운 사례입니다. 앱이 코드 모드를 지원한다면, 모델은 모든 동작마다 왕복하지 않고 스크립트를 작성해 여러 필드를 한 번에 채울 수 있습니다.</p>
+</li>
+<li>
+<p><strong>음성 경험.</strong> 빠른 응답이 중요한 경우에는 GPT-Live-1과 함께 백엔드 모델로 Ultrafast를 사용해 보려고 합니다.</p>
+</li>
+</ul>
+<p>이미 API 워크플로가 있다면 <a href="https://developers.openai.com/api/docs/guides/ultrafast-mode"><code>service_tier</code>를 <code>ultrafast</code>로 설정</a>해 보고 결과가 나오기까지의 시간을 측정해 보십시오.</p>
+<p><a href="../../assets/images/d2a3e2860c57a9d43134613a9e5cfd2972957225ffc2e65c0e5b9112aa7d77fc.webp"><img src="../../assets/images/d2a3e2860c57a9d43134613a9e5cfd2972957225ffc2e65c0e5b9112aa7d77fc.webp" alt="Responses API 요청에서 service_tier를 ultrafast로 설정해, GPT-6.2 Sol이 야외에서 신은 신발의 반품에 관한 질문에 답하는 예시입니다." loading="lazy" decoding="async"></a></p>
+<p>GPT-6.2 Astra와 Sol의 <a href="https://developers.openai.com/api/docs/pricing">프로모션 요금</a>은 2027년 2월 28일까지 Standard의 3배이며, 3월 1일부터는 평소의 6배가 적용됩니다.</p>
+<h2>몰입 상태 유지하기</h2>
+<p>제게 가장 큰 변화는 아직 완전히 정리하지 못한 무언가를 향해 작업할 때도 다시 몰입 상태로 돌아갈 수 있다는 점입니다. UI를 설계하든, 슬라이드를 다듬든, 문서를 편집하든, 여러 가지를 시도해 보고 어떤 방식이 좋은지 확인하면서 생각의 흐름을 잃지 않고 계속 나아갈 수 있습니다. 예전에 DevTools에서 실험하며 느끼던 감각이 바로 이런 것이었고, Codex로 그 감각을 되찾게 되어 정말 즐겁습니다. Ultrafast를 사용해 보신다면 Light 또는 Low 추론 수준으로 시작하고, 피드백 루프를 짧게 유지하면서 어디까지 갈 수 있는지 확인해 보십시오.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>I kind of miss tweaking CSS in DevTools. Trying different colors, font sizes, or animation curves until things felt right. I didn’t necessarily know what I wanted when I started. I was figuring it out as I went. I was in the zone.</p>
+<p>These days I fire off a lot of tasks to Codex and walk away from my computer. But especially when building a new UI, I often want to iterate towards a solution instead. Ultrafast has given me a lot of that DevTools feeling back.</p>
+<p>Earlier this week, we launched GPT-6.2 Astra and Sol with <a href="https://learn.chatgpt.com/docs/agent-configuration/speed">Ultrafast</a>, offering up to 4.5× faster token generation in Codex. Sol Ultrafast is now available on the $200 Pro plan, and we’re running an <a href="https://developers.openai.com/api/docs/pricing">API promotion</a> at 3× Standard pricing instead of 6×.</p>
+<p>At this point, I can’t imagine working without it. So here are a couple of ways I’ve found Ultrafast to be magical beyond moments where every minute counts, like debugging an incident, and when the extra speed might be less useful.</p>
+<h2>Getting in the zone</h2>
+<p>For UI work, I’ll usually start with a rough direction and get something on screen as quickly as possible.</p>
+<p>If I don’t know what I want the whole experience to look like, waiting for a long task and burning a bunch of extra tokens on higher reasoning can actually be counterproductive. I’m basically hoping to hit the jackpot and have the model build exactly what I had in mind, even though I haven’t fully figured that out myself. I’d rather sit there, try a few things, see the changes, and give feedback as I go. I can react to what Codex is building instead of trying to proactively dictate every detail up front. And because the individual changes often only take a couple of seconds, I can stay in the zone.</p>
+<p><a href="../../assets/images/2d9ce0964fc2a95eb0542486904d15500a4ac68c81edc45dc2d1eaaf6b72b26a.webp"><img src="../../assets/images/2d9ce0964fc2a95eb0542486904d15500a4ac68c81edc45dc2d1eaaf6b72b26a.webp" alt="Codex updates a shopping bag in the in-app browser as I annotate the free-shipping indicator and ask to move it next to the title." loading="lazy" decoding="async"></a></p>
+<p>There’s a couple of things I’ve learned that make Ultrafast feel even more magical:</p>
+<ul>
+<li>
+<p><strong>Use a dev server with hot module reloading.</strong> I want to see changes as soon as Codex makes them instead of waiting for a full build.</p>
+</li>
+<li>
+<p><strong>Keep the site open in the in-app browser.</strong> Having the preview next to the chat lets me see changes while I’m prompting.</p>
+</li>
+<li>
+<p><strong>Give short, individual tasks.</strong> I’ll often send one small piece of feedback at a time and jump between different parts of the site as I notice things.</p>
+</li>
+<li>
+<p><strong>Use annotations.</strong> It’s much easier to point at the exact thing I want to change than to describe where it is.</p>
+</li>
+<li>
+<p><strong>Try dictation or voice mode.</strong> I can quickly queue up several small tasks and let Codex work through them while I keep looking at the result.</p>
+</li>
+<li>
+<p><strong>Start with Light/Low reasoning.</strong> Most of these instructions are fairly easy. For something more nuanced, like designing an animation, I might switch to High and then go back to Low.</p>
+</li>
+<li>
+<p><strong>Keep verification out of the quick iteration loop when it’s unnecessary.</strong> For small visual edits, I tell Codex to focus on the code changes while I check the result in the browser. Once I’m happy, I ask it to write the relevant tests and run the additional checks.</p>
+</li>
+</ul>
+<p><strong>Bonus tip:</strong> If you have a Codex Micro, using it to trigger dictation with Ultrafast is a great way to quickly queue up a bunch of feedback as you scroll through a page to review it. Alternatively, set up a keyboard shortcut for dictation so you can do the same thing.</p>
+<p><a href="../../assets/images/b1e66b8c57fc7478e78d63e0f27ab3271b92024a953cbc371534c2ca644c912b.webp"><img src="../../assets/images/b1e66b8c57fc7478e78d63e0f27ab3271b92024a953cbc371534c2ca644c912b.webp" alt="Dictated requests queue in Codex beside a shoe product page: show the color name, cross out unavailable sizes, and move the size guide up." loading="lazy" decoding="async"></a></p>
+<h2>Using Ultrafast for documents and computer use</h2>
+<p>I use the same approach for slides and documents. Rather than asking Codex to design a full deck, I’ll often go one slide at a time, give feedback, see the changes, and iterate from there. With documents, I’ll give feedback on individual passages as I’m reading and work through the edits that way.</p>
+<p>More generally, I’ve found it really useful for tasks that rely mostly on the intelligence of the model and don’t need a lot of additional validation between changes. That could be tweaking slides, editing documents, filling out spreadsheets, or even some computer use tasks where the individual actions are quick.</p>
+<h2>When Ultrafast is less useful</h2>
+<p>Faster token generation doesn’t mean the entire task finishes 4.5× faster. If most of a turn is spent waiting for a build, test suite, compiler, or other tool call, the overall speedup will be smaller. The compiler still takes as long as it takes.</p>
+<p>I asked GPT-6.2 Sol at Medium reasoning to make an Android workout timer keep the screen awake while it was running. Each bar shows the average of three runs, including the one-line edit, an incremental build, and all 18 tests.</p>
+<p><a href="../../assets/images/bca320089e862a449474846ae6b2fe288006e32712ba0dcb0a00ddb5e4b74026.webp"><img src="../../assets/images/bca320089e862a449474846ae6b2fe288006e32712ba0dcb0a00ddb5e4b74026.webp" alt="Average Android timer task duration: 16.7 seconds on Standard, 16.0 on Fast, and 15.7 on Ultrafast. Tests take about 13 seconds in all three modes." loading="lazy" decoding="async"></a></p>
+<p>Image generation is another good example. If I’m asking Codex to generate an image as part of a task, I might spend most of the time waiting for the image to be generated. Ultrafast can speed up the steps around it, but it won’t make the image itself generate faster.</p>
+<p>For a well-defined task that needs a lot of experimentation and validation from the model, the extra speed might also be less valuable. Especially if I’m comfortable walking away and letting Codex run it overnight.</p>
+<h2>Where I’d try it in the API</h2>
+<p>The same principle applies to the API: look at how much time someone spends waiting for the model versus waiting for tools.</p>
+<p>A couple of use cases where Ultrafast can be helpful:</p>
+<ul>
+<li>
+<p><strong>Document summaries and Q&amp;A.</strong> If a document is already in context, the model can generate a summary or answer a follow-up without a lot of additional tool calls.</p>
+</li>
+<li>
+<p><strong>Fast tool calls and computer use.</strong> Form filling is an interesting example. If your app supports a code mode, the model could write a script to fill several fields instead of going back and forth for every action.</p>
+</li>
+<li>
+<p><strong>Voice experiences.</strong> I’d try Ultrafast as a backend model alongside GPT-Live-1 when a quick turnaround matters.</p>
+</li>
+</ul>
+<p>If you already have an API workflow, try <a href="https://developers.openai.com/api/docs/guides/ultrafast-mode">setting <code>service_tier</code> to <code>ultrafast</code></a> and measure the time to the result.</p>
+<p><a href="../../assets/images/d2a3e2860c57a9d43134613a9e5cfd2972957225ffc2e65c0e5b9112aa7d77fc.webp"><img src="../../assets/images/d2a3e2860c57a9d43134613a9e5cfd2972957225ffc2e65c0e5b9112aa7d77fc.webp" alt="A Responses API request sets service_tier to ultrafast for GPT-6.2 Sol to answer a question about returning shoes worn outdoors." loading="lazy" decoding="async"></a></p>
+<p>For GPT-6.2 Astra and Sol, the <a href="https://developers.openai.com/api/docs/pricing">promotional rate</a> is 3× Standard through February 28, 2027, instead of the usual 6× starting March 1.</p>
+<h2>Staying in the flow</h2>
+<p>For me, the biggest change is that I can get back into the zone when I’m working towards something I haven’t fully figured out yet. Whether I’m designing a UI, tweaking a slide, or editing a document, I can try things, see what feels right, and keep going without losing my train of thought. That’s the feeling I used to get experimenting in DevTools, and it’s been really fun getting it back with Codex. If you’re trying Ultrafast, start with Light or Low reasoning, keep your feedback loops short, and see where you end up.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  
+  
+</footer>
+</body>
+</html>
