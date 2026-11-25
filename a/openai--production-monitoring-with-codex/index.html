@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Codex를 활용한 프로덕션 모니터링 · OpenAI Codex Blog</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body class="theme-openai">
+<nav class="hubbar">
+  <a class="hubbar-home" href="../../index.html">AI 아티클 한국어판</a>
+  <div class="hubbar-links">
+    
+    <a href="../../s/anthropic-engineering/index.html">Anthropic Engineering</a>
+    
+    <a href="../../s/anthropic-research/index.html">Anthropic Research</a>
+    
+    <a href="../../s/claude-dev/index.html">claude.dev</a>
+    
+    <a href="../../s/openai-codex/index.html" class="on">OpenAI Codex Blog</a>
+    
+    <a href="../../s/openai-learn/index.html">OpenAI Learn</a>
+    
+  </div>
+</nav>
+
+<main class="wrap article">
+  <header class="art-head">
+    <p class="art-crumb"><a href="../../s/openai-codex/index.html">OpenAI Codex Blog</a> / Codex</p>
+    <h1 class="lang-ko">Codex를 활용한 프로덕션 모니터링</h1>
+    <h1 class="lang-en" hidden lang="en">Production monitoring with Codex</h1>
+    
+    <p class="art-sum lang-ko">텔레메트리, 배포 이력, 코드를 활용해 Codex로 프로덕션 장애를 조사합니다.</p>
+    <p class="art-sum lang-en" hidden lang="en">Investigate production failures with Codex using telemetry, deployment history, and code.</p>
+    
+    <dl class="art-meta">
+      <div><dt>게시일</dt><dd>2026년 11월 24일</dd></div>
+      <div><dt>저자</dt><dd>Anke Hao, Tony Loehr, Tony Alaniz</dd></div>
+      
+      
+      <div><dt>원문</dt><dd><a href="https://developers.openai.com/blog/production-monitoring-with-codex">https://developers.openai.com/blog/production-monitoring-with-codex</a></dd></div>
+    </dl>
+    <div class="lang-switch" id="lang">
+      <button class="on" data-lang="ko">한국어</button>
+      <button data-lang="en">English 원문</button>
+    </div>
+  </header>
+
+  <article class="prose lang-ko"><p>한밤중에 알림이 울리면 대기 중인 온콜(on-call) 엔지니어는 대개 서둘러 컴퓨터 앞에 앉아 여러 소스를 수동으로 뒤지며 무엇이 잘못되었는지 찾기 시작합니다. 로그, 메트릭, 코드를 샅샅이 살펴보며 여러 가설과 대조합니다. 최근 배포가 원인인지, 트래픽이 급증했는지, 의존하는 서비스가 장애를 일으켰는지를 확인합니다.</p>
+<p>Codex 배포 엔지니어로서 저희는 수동적이고 불완전한 프로덕션 모니터링 체계 때문에 조사가 느려지거나 알림이 늦어져 어려움을 겪는 엔지니어링 팀을 자주 봅니다. 철저히 뒤져 보지 않으면 근본 원인이 불분명한 경우가 많습니다. 이때 온콜 엔지니어는 여러 플랫폼에서 확인한 내용을 직접 비교하며 다양한 가설을 검증하거나 배제해야 합니다.</p>
+<p>Codex는 알림이 발생하는 즉시 온콜 엔지니어를 도와 다양한 정보 소스를 대신 훑어볼 수 있습니다. 기존 프로덕션 모니터링 시스템에 Codex를 내장하면, 팀이 이미 사용하는 도구로 문제를 분류하고 근본 원인을 찾아낼 수 있습니다.</p>
+<p>이 데모에서는 Grafana, Kubernetes, Codex Security를 사용한 조사 과정을 단계별로 살펴봅니다.</p>
+<h2>Codex 통합</h2>
+<p>앞서 말한 알림 상황으로 돌아가, 이 과정에 Codex를 어떻게 통합할 수 있는지 살펴보겠습니다. 큰 틀에서는 프로덕션 모니터링 시스템에 새로 합류한 SRE에게 어떤 정보를 제공할지 생각해 보면 도움이 됩니다.</p>
+<figure>  <ol> <li>   1  증거  <p>트리거</p> <p>알림, 인시던트 또는 운영자 요청</p>  </li><li>   2  증거  <p>증거 수집</p> <p>로그, 트레이스, 메트릭, 런타임 상태</p>  </li><li>   3  추론  <p>컨텍스트 연관 분석</p> <p>코드, 배포, 구성, 인시던트 이력</p>  </li><li>   4  추론  <p>가설 수립</p> <p>증거에 기반한 원인과 이를 구분하는 테스트</p>  </li><li>   5  조치 및 승인  <p>범위가 제한된 조치 제안</p> <p>구체적이고 되돌릴 수 있으며 증거와 연결된 조치</p>  </li><li>   6  조치 및 승인  <p>사람의 승인</p> <p>지정된 승인자가 조치를 승인합니다.</p> <p>승인되면 변경 사항을 적용합니다.</p> </li><li>   7  검증 및 학습  <p>복구 검증</p> <p>신뢰할 수 있고 합의된 복구 신호를 확인합니다.</p> <p>복구되었다면 결과를 문서화합니다.</p> </li><li>   8  검증 및 학습  <p>결과 문서화</p> <p>조사 결과, 결정, 처리 결과, 후속 조치</p>  </li> </ol>   거부됨: 제안 수정   복구되지 않음: 조사   </figure>
+<h2>적절한 접근 권한 부여</h2>
+<p>첫 단계는 Codex가 판단에 필요한 관련 컨텍스트(트레이스, 런타임 상태, 배포 이력 등)에 접근할 수 있게 하고, 에이전트에게 주는 지침에서 그 소스가 무엇이며 어디에 있는지 명확히 밝히는 것입니다. 점진적 공개(progressive disclosure) 원칙을 염두에 두면, 이러한 소스에 대한 접근은 일반적으로 읽기 전용이어야 하며, 좁은 범위에서 시작해 더 많은 정보가 필요해질 때 접근 범위를 넓히는 편이 좋습니다. 이를 원활하게 하려면 각 시스템에 서비스 계정을 만들어 Codex가 접근할 수 있는 리소스를 세밀하게 제어할 수 있습니다.</p>
+<figure> <dl>  <dt>옵저버빌리티 플랫폼</dt> <dd>알림을 감지하고 증거를 저장합니다</dd>  <dt>Codex 실행 환경</dt> <dd>증거, 코드, 도구를 연결합니다</dd>  <dt>모델 추론 계층</dt> <dd>OpenAI 모델을 제공합니다</dd>  </dl>  </figure>
+<h2>수정안 제안</h2>
+<p>이러한 컨텍스트를 바탕으로 Codex는 여러 소스의 정보를 종합해 근본 원인에 대한 가설을 세울 수 있습니다. 이때 지침에서는 Codex가 내리는 모든 판단에 증거와 인용을 요구해야 합니다. 그래야 검토자가 판단의 근거를 쉽게 이해할 수 있습니다. 근본 원인 분석(RCA)을 담당하는 실행자(executor) 에이전트와 실행자의 가설에 이의를 제기하는 검토자(reviewer) 에이전트처럼 여러 에이전트를 두는 구성도 시도해 볼 수 있습니다.</p>
+<p><strong>참고:</strong> 단일 에이전트 구성과 멀티 에이전트 구성의 차이에 대해 더 알고 싶다면 <a href="https://learn.chatgpt.com/docs/agent-configuration/subagents#why-subagent-workflows-help">Codex 서브에이전트 가이드</a>를 확인하십시오.</p>
+<p>다음 단계는 Codex가 범위가 제한된 해결책을 제안하게 하는 것입니다. 해결책이 증거에 기반하도록 RCA 결과와 가설을 뒷받침하는 데 사용한 인용을 활용해야 합니다. 해결책에는 예방 조치로 롤백 계획도 함께 포함하는 것이 이상적입니다. 이렇게 제안된 수정안은 보고서나 PR 형태로 만들 수 있습니다.</p>
+<h2>검토 및 복구 검증</h2>
+<p>휴먼 인 더 루프(human-in-the-loop) 워크플로의 일환으로, 사람 승인자가 게이트키퍼 역할을 하며 해결책을 승인해야 합니다. 변경 사항이 적용되면 Codex는 사람과 협력하여, 이 과정을 시작할 때 접근 권한을 부여받은 것과 동일한 소스에서 복구 신호를 검증할 수 있습니다.</p>
+<p>인시던트가 해결된 후에는 Codex가 사후 분석(postmortem)과 결과 문서화도 도울 수 있습니다.</p>
+<h2>반복 가능한 워크플로 구성</h2>
+<p>과거 인시던트 같은 대표적인 시나리오로 이 워크플로를 진행해 보십시오. 매번 리허설처럼 활용하여 불편한 지점을 개선하고, 여기서 얻은 교훈을 다음번 지침을 개선하는 데 반영하는 것입니다.</p>
+<p>이 과정을 몇 차례 실전에서 검증한 뒤에는 이를 반복 가능한 워크플로로 만드는 방법을 더 자세히 살펴볼 차례입니다. 런북(runbook)을 스킬(skill)로 전환하는 방식은 그렇지 않으면 구성원의 머릿속에만 있을 암묵지를 체계화하기 위해 저희가 권장하는 접근 방식입니다.</p>
+<p>리허설에서 배운 내용을 활용해 워크플로를 다듬으십시오.</p>
+<ol>
+<li><strong>Codex에 필요한 컨텍스트 파악하기.</strong> Codex가 인시던트를 조사하는 데 사용한 커넥터(connector)를 정리합니다. 더 적은 수의 소스로 동일한 인시던트를 다시 시도해 보고, Codex가 결론에 도달하기 위해 더 많은 증거가 필요한 지점을 기록합니다.</li>
+<li><strong>지침 수정하기.</strong> 사람이 Codex를 바로잡아야 했던 단계를 찾습니다. 해당 단계가 올바른 소스를 가리키도록 하거나 누락된 컨텍스트를 제공하도록 수정한 뒤, 리허설을 다시 실행합니다.</li>
+<li><strong>에이전트 구성 비교하기.</strong> 동일한 인시던트를 에이전트 하나로 실행해 본 다음, 리뷰어를 추가하여 다시 실행합니다. 각 구성이 근본 원인을 파악하고 인시던트를 완화하는 데 걸리는 시간과, 사람이 바로잡아야 하는 빈도를 비교합니다.</li>
+</ol>
+<p>프로세스가 어느 정도 표준화되면 <a href="https://developers.openai.com/codex/build-skills">Codex 스킬(skill)</a> 또는 <a href="https://developers.openai.com/codex/plugins">플러그인(plugin)</a>으로 만들어 여러 팀원이 재사용할 수 있도록 합니다. 다음에 새벽 3시에 알림이 울리면, Codex가 가장 먼저 깨어날 수 있습니다.</p></article>
+  <article class="prose lang-en" hidden lang="en"><p>When an alert sounds in the middle of the night, an on-call engineer usually scrambles to their computer and starts manually searching through various sources, trying to find out what went wrong. They’ll dig through logs, metrics, and code to compare to various hypotheses: was it the recent deployment that caused the issue? A traffic spike? Dependency failure?</p>
+<p>As Codex deployment engineers, we routinely see engineering teams struggle with slow investigations or delayed alerts due to a manual or spotty production monitoring system. Oftentimes the root cause is unclear without an exhaustive search, where the engineer on-call must manually compare what they see across multiple platforms to validate or rule out a broad range of hypothesis.</p>
+<p>Codex can come in to help the on-call engineer right when the alert happens, sorting through all the different sources of information for them. Once it is embedded within your existing production monitoring systems, it can investigate with the tools your team already uses to triage the issue and identify its root cause.</p>
+<p>In this demo, we walk through investigations using Grafana, Kubernetes, and Codex Security.</p>
+    
+<h2>Incorporating Codex</h2>
+<p>Let’s go back to that alert and explore how we can integrate Codex in the process. At a high level, it’s helpful to think about what information you would give an SRE onboarding onto your production monitoring system.</p>
+ <figure>  <ol> <li>   1  Evidence  <p>Trigger</p> <p>Alert, incident, or operator request</p>  </li><li>   2  Evidence  <p>Collect evidence</p> <p>Logs, traces, metrics, and runtime state</p>  </li><li>   3  Reasoning  <p>Correlate context</p> <p>Code, deployments, configuration, and incident history</p>  </li><li>   4  Reasoning  <p>Form hypotheses</p> <p>Evidence-backed causes and discriminating tests</p>  </li><li>   5  Action and approval  <p>Propose a bounded action</p> <p>Specific, reversible, and linked to evidence</p>  </li><li>   6  Action and approval  <p>Human approval</p> <p>A named approver authorizes the action.</p> <p>If approved, apply the change.</p> </li><li>   7  Verification and learning  <p>Verify recovery</p> <p>Check trusted, agreed recovery signals.</p> <p>If recovered, document the outcome.</p> </li><li>   8  Verification and learning  <p>Document outcome</p> <p>Findings, decision, result, and follow-ups</p>  </li> </ol>   Denied: revise proposal   Not recovered: investigate     </figure> 
+<h2>Give it the right access</h2>
+<p>The first step is to ensure that Codex has access to the relevant context needed to make a judgment, including traces, runtime state, or deployment history, and that your instructions to the agent are clear about what and where those sources are. Keeping in mind the principles of progressive disclosure, the access to these sources should typically be read-only, and it’s better to start with a smaller scope and broaden access once there’s a need for more information. To best facilitate this, you can create service accounts in those systems to maintain granular control over the resources Codex can access.</p>
+ <figure> <dl>  <dt>Observability platform</dt> <dd>Detects alerts and stores evidence</dd>  <dt>Codex execution environment</dt> <dd>Connects evidence, code, and tools</dd>  <dt>Model inference layer</dt> <dd>Provides OpenAI models</dd>  </dl>  </figure> 
+<h2>Proposing a fix</h2>
+<p>With this context, Codex can collate all the information across these sources to form hypotheses about the root cause. Here, the instructions should require evidence and citations for every judgment it makes, so that the reviewer will be able to easily understand the rationale behind the decisions. You can also test out having multiple agents, such as an executor agent responsible for root cause analysis (RCA) and a reviewer agent for challenging the executor’s hypotheses.</p>
+<p><strong>Note:</strong> If you’re interested in learning more about single vs. multi-agent setups, check out the <a href="https://learn.chatgpt.com/docs/agent-configuration/subagents#why-subagent-workflows-help">Codex subagents guide</a>.</p>
+<p>The next step is to have Codex propose a bounded solution. To make sure it is evidence-based, it should draw on its RCA and the citations it used to back up its hypotheses. Ideally, the solution should also be supplemented with a rollback plan as a precautionary measure. These proposed fixes can come in the form of a report or a PR.</p>
+<h2>Reviewing and verifying recovery</h2>
+<p>As part of a human-in-the-loop workflow, a human approver should be the gatekeeper and authorize the solution. Once the change is applied, Codex can work in tandem with the human to verify recovery signals across the same sources that it was granted access to at the start of this process.</p>
+<p>Once the incident is resolved, Codex can also assist with the postmortem and documenting the outcome.</p>
+<h2>Creating a repeatable workflow</h2>
+<p>Take this workflow through representative scenarios, such as past incidents. Each time should act like a rehearsal, an opportunity to iron out the friction points and feed the lessons learned back into improving the instructions for the next time.</p>
+<p>Once this process has been battle-tested a few times, it’s time to take a closer look at how to make this a repeatable workflow. Turning runbooks into skills is our recommended approach to codifying this otherwise tribal knowledge.</p>
+<p>Use what you learned in the rehearsals to refine the workflow.</p>
+ <ol>
+<li><strong>Identify the context Codex needs.</strong> List the connectors Codex used to investigate the incident. Try the same incident with fewer sources and note where Codex needs more evidence to reach a conclusion.</li>
+<li><strong>Revise the instructions.</strong> Find the step where someone had to correct Codex. Update that step to point to the right source or supply the missing context, then run the rehearsal again.</li>
+<li><strong>Compare agent setups.</strong> Run the same incident with one agent, then add a reviewer. Compare how long each setup takes to identify the root cause and mitigate the incident, and how often someone has to correct it.</li>
+</ol> 
+<p>Once the process has been largely standardized, capture it in a <a href="https://developers.openai.com/codex/build-skills">Codex skill</a> or <a href="https://developers.openai.com/codex/plugins">plugin</a> to make it reusable across different team members. The next time an alert goes off at 3 a.m., Codex can be the first one to wake up.</p></article>
+
+  <p class="art-back"><a href="../../s/openai-codex/index.html">← OpenAI Codex Blog 목록으로</a></p>
+</main>
+<script>
+  document.getElementById("lang").addEventListener("click", function (e) {
+    var lang = e.target.dataset.lang;
+    if (!lang) return;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === e.target); });
+    document.querySelectorAll(".lang-ko").forEach(function (n) { n.hidden = lang !== "ko"; });
+    document.querySelectorAll(".lang-en").forEach(function (n) { n.hidden = lang !== "en"; });
+  });
+</script>
+
+<footer class="foot">
+  <p>개인 학습을 위한 비공식 한국어 번역입니다. 모든 글의 저작권은 원저작자에게 있으며, 정확한 내용은 원문을 확인하시기 바랍니다.</p>
+  
+  
+</footer>
+</body>
+</html>
